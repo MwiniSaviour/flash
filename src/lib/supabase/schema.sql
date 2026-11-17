@@ -1,7 +1,7 @@
 -- Flash schema.
 --
 -- GENERATED FILE — do not edit.
--- Source: supabase/migrations (3 migrations)
+-- Source: supabase/migrations (4 migrations)
 -- Refresh: npm run db:schema
 --
 -- supabase/migrations/20261116115441_init.sql
@@ -603,3 +603,22 @@ alter table public.parcels
 
 comment on column public.parcels.quantity is
   'How many parcels this booking carries. Each one is charged on its own.';
+
+-- supabase/migrations/20261117014000_parcel_recipient.sql
+-- Flash — who a parcel is for, and what is inside it.
+--
+-- A courier needs a name to hand the parcel to and a number to call, and the
+-- sender often wants to say what is inside. The server keeps all three with
+-- the booking so the receipt, the tracker and the door all agree.
+
+alter table public.parcels
+  add column recipient_name text not null default '',
+  add column recipient_phone text not null default '',
+  add column details text not null default '';
+
+comment on column public.parcels.recipient_name is
+  'The person the courier hands the parcel to.';
+comment on column public.parcels.recipient_phone is
+  'How the courier reaches that person.';
+comment on column public.parcels.details is
+  'What is inside, in the sender''s own words.';

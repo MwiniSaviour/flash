@@ -33,7 +33,7 @@ export function scheduleLabel(schedule: Schedule): string {
     timeZone: "UTC",
   }).format(moment);
 
-  const time = new Intl.DateTimeFormat("en-GB", {
+  const time = new Intl.DateTimeFormat("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "UTC",
