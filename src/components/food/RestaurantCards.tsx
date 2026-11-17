@@ -5,6 +5,7 @@ import { Rating } from "@/components/flash/ui";
 import { cedis, distance, minutes } from "@/lib/flash/format";
 import { deliveryQuote } from "@/lib/flash/pricing";
 import type { Restaurant } from "@/lib/flash/types";
+import { deliverySrcSet, deliveryUrl } from "@/lib/media/url";
 
 /**
  * The browse card.
@@ -23,7 +24,8 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
       <span className="relative block aspect-square w-full overflow-hidden rounded-[16px] bg-media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={restaurant.image.src}
+          src={deliveryUrl(restaurant.image.src, 800)}
+          srcSet={deliverySrcSet(restaurant.image.src)}
           alt={restaurant.image.alt}
           className="h-full w-full object-cover"
           loading="lazy"
@@ -76,7 +78,8 @@ export function RestaurantRailCard({ restaurant }: { restaurant: Restaurant }) {
       <span className="relative block aspect-[4/3] w-full overflow-hidden rounded-[14px] bg-media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={restaurant.image.src}
+          src={deliveryUrl(restaurant.image.src, 800)}
+          srcSet={deliverySrcSet(restaurant.image.src)}
           alt={restaurant.image.alt}
           className="h-full w-full object-cover"
           loading="lazy"
@@ -111,7 +114,8 @@ export function RestaurantListCard({ restaurant }: { restaurant: Restaurant }) {
       <span className="relative block h-[92px] w-[92px] shrink-0 overflow-hidden rounded-[12px] bg-media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={restaurant.image.src}
+          src={deliveryUrl(restaurant.image.src, 800)}
+          srcSet={deliverySrcSet(restaurant.image.src)}
           alt={restaurant.image.alt}
           className="h-full w-full object-cover"
           loading="lazy"

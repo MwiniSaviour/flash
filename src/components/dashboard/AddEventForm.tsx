@@ -3,15 +3,17 @@
 import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { PhotoUpload } from "@/components/flash/PhotoUpload";
 import { publishEvent } from "@/lib/flash/business-actions";
 
 /**
  * Post an event.
  *
  * What a promoter needs to put an event on Flash: what it is, where it is,
- * when it is, and what a ticket costs.
+ * when it is, and what a ticket costs. A poster can be uploaded when
+ * Cloudinary is connected; otherwise the catalogue supplies one.
  */
-export function AddEventForm() {
+export function AddEventForm({ canUpload = false }: { canUpload?: boolean }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [venue, setVenue] = useState("");
@@ -22,6 +24,7 @@ export function AddEventForm() {
   const [tierName, setTierName] = useState("General Admission");
   const [price, setPrice] = useState("");
   const [capacity, setCapacity] = useState("100");
+  const [imageSrc, setImageSrc] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -40,6 +43,8 @@ export function AddEventForm() {
         tierName,
         price: Number(price),
         capacity: Number(capacity),
+        imageSrc: imageSrc || undefined,
+        imageAlt: imageSrc ? `Poster for ${title || "a new event"}` : undefined,
       });
 
       if (!result.ok) {
@@ -50,6 +55,7 @@ export function AddEventForm() {
       setTitle("");
       setVenue("");
       setPrice("");
+      setImageSrc("");
       setDone(true);
       setTimeout(() => setDone(false), 2200);
     });
@@ -167,6 +173,17 @@ export function AddEventForm() {
           className="h-11 w-full rounded-[11px] border border-line bg-surface px-3 text-[13.5px] text-ink focus:border-brand/50 focus:outline-none"
         />
       </label>
+
+      {canUpload ? (
+        <div className="mt-2.5">
+          <PhotoUpload
+            kind="poster"
+            label="Upload an event poster"
+            value={imageSrc}
+            onChange={setImageSrc}
+          />
+        </div>
+      ) : null}
 
       {error ? (
         <p role="alert" className="mt-2 text-[12.5px] text-danger-ink">

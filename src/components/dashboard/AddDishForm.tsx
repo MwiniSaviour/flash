@@ -3,19 +3,28 @@
 import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { PhotoUpload } from "@/components/flash/PhotoUpload";
 import { publishMenuItem } from "@/lib/flash/business-actions";
 
 /**
  * Add a dish.
  *
- * A dish needs a name, a line about it and a price. Nothing else — the
- * portions and the extras come from the kitchen's settings.
+ * A dish needs a name, a line about it and a price. Nothing else - the
+ * portions and the extras come from the kitchen's settings. A photo can be
+ * uploaded when Cloudinary is connected; otherwise the catalogue supplies it.
  */
-export function AddDishForm({ restaurantId }: { restaurantId: string }) {
+export function AddDishForm({
+  restaurantId,
+  canUpload = false,
+}: {
+  restaurantId: string;
+  canUpload?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [imageSrc, setImageSrc] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -29,6 +38,8 @@ export function AddDishForm({ restaurantId }: { restaurantId: string }) {
         name,
         description,
         price: Number(price),
+        imageSrc: imageSrc || undefined,
+        imageAlt: imageSrc ? `${name || "A dish"} from the kitchen` : undefined,
       });
 
       if (!result.ok) {
@@ -39,6 +50,7 @@ export function AddDishForm({ restaurantId }: { restaurantId: string }) {
       setName("");
       setDescription("");
       setPrice("");
+      setImageSrc("");
       setDone(true);
       setTimeout(() => setDone(false), 2200);
     });
@@ -94,6 +106,17 @@ export function AddDishForm({ restaurantId }: { restaurantId: string }) {
           />
         </span>
       </label>
+
+      {canUpload ? (
+        <div className="mt-2.5">
+          <PhotoUpload
+            kind="dish"
+            label="Upload a dish photo"
+            value={imageSrc}
+            onChange={setImageSrc}
+          />
+        </div>
+      ) : null}
 
       {error ? (
         <p role="alert" className="mt-2 text-[12.5px] text-danger-ink">

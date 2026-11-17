@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { currentUserId } from "@/lib/auth/server";
+import { destroyImage } from "@/lib/media/cloudinary";
+import { isOwnedCloudinaryUrl, publicIdFromUrl } from "@/lib/media/url";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { findCover } from "./covers";
@@ -18,7 +20,6 @@ import { ensureProfile } from "./profile";
 import { deliveryQuote, discountOn } from "./pricing";
 import { isBusinessAccount } from "./repository";
 import type { Fulfilment, MenuItem } from "./types";
-
 /**
  * The writes.
  *
@@ -495,21 +496,26 @@ export async function updateCover(input: {
   restaurantId: string;
   imageSrc: string;
 }): Promise<ActionResult<{ imageSrc: string }>> {
-  const cover = findCover(input.imageSrc);
-  if (!cover) return { ok: false, error: "That photograph is not in the catalogue." };
-
   const client = createAdminClient();
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "Sign in to manage your kitchen." };
+
+  // A catalogue photograph, or a Cloudinary asset this account uploaded.
+  const cover =
+    findCover(input.imageSrc) ??
+    (isOwnedCloudinaryUrl(input.imageSrc, userId)
+      ? { src: input.imageSrc, alt: "The kitchen's own cover photograph" }
+      : null);
+
+  if (!cover) return { ok: false, error: "That photograph is not yours to use." };
 
   if (!client) {
     return { ok: true, data: { imageSrc: cover.src }, demo: true };
   }
 
-  const userId = await currentUserId();
-  if (!userId) return { ok: false, error: "Sign in to manage your kitchen." };
-
   const { data: kitchen, error: kitchenError } = await client
     .from("restaurants")
-    .select("id, owner_user_id")
+    .select("id, owner_user_id, image_src")
     .eq("id", input.restaurantId)
     .maybeSingle();
 
@@ -525,6 +531,10 @@ export async function updateCover(input: {
     .eq("id", input.restaurantId);
 
   if (error) return { ok: false, error: "We could not change the cover. Try again." };
+
+  // Do not leave the replaced photograph sitting in storage.
+  const previous = publicIdFromUrl(kitchen.image_src ?? "");
+  if (previous && previous !== publicIdFromUrl(cover.src)) await destroyImage(previous);
 
   revalidatePath("/dashboard");
   revalidatePath("/food");

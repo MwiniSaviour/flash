@@ -6,6 +6,7 @@ import { Icon } from "@/components/flash/Icon";
 import { Tag } from "@/components/flash/ui";
 import type { MenuItem } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
+import { deliverySrcSet, deliveryUrl } from "@/lib/media/url";
 
 /**
  * The dish card.
@@ -32,7 +33,8 @@ export function MenuItemCard({
         <span className="relative block aspect-square w-full overflow-hidden rounded-[14px] bg-media">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={item.image.src}
+            src={deliveryUrl(item.image.src, 480)}
+          srcSet={deliverySrcSet(item.image.src)}
             alt={item.image.alt}
             className="h-full w-full object-cover"
             loading="lazy"

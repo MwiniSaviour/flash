@@ -15,6 +15,10 @@ export type FlashEnv = {
   readonly clerkPublishableKey: string | null;
   readonly clerkSecretKey: string | null;
   readonly clerkWebhookSecret: string | null;
+  readonly cloudinaryCloudName: string | null;
+  readonly cloudinaryApiKey: string | null;
+  readonly cloudinaryApiSecret: string | null;
+  readonly cloudinaryFolder: string;
 };
 
 const DEFAULT_SITE_URL = "http://localhost:3000";
@@ -43,6 +47,10 @@ export function getEnv(): FlashEnv {
     clerkPublishableKey: clean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
     clerkSecretKey: clean(process.env.CLERK_SECRET_KEY),
     clerkWebhookSecret: clean(process.env.CLERK_WEBHOOK_SECRET),
+    cloudinaryCloudName: clean(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME),
+    cloudinaryApiKey: clean(process.env.CLOUDINARY_API_KEY),
+    cloudinaryApiSecret: clean(process.env.CLOUDINARY_API_SECRET),
+    cloudinaryFolder: clean(process.env.CLOUDINARY_FOLDER) ?? "flash",
   });
 
   return cached;
@@ -64,6 +72,12 @@ export function hasSupabaseAdminEnv(): boolean {
 export function hasClerkEnv(): boolean {
   const env = getEnv();
   return Boolean(env.clerkPublishableKey && env.clerkSecretKey);
+}
+
+/** True when all three Cloudinary credentials are present. */
+export function hasCloudinaryEnv(): boolean {
+  const env = getEnv();
+  return Boolean(env.cloudinaryCloudName && env.cloudinaryApiKey && env.cloudinaryApiSecret);
 }
 
 /**
@@ -115,6 +129,22 @@ export function envIssues(): string[] {
       issues.push(
         "CLERK_SECRET_KEY is set but NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is missing.",
       );
+    }
+
+    if (env.cloudinaryCloudName && !env.cloudinaryApiKey) {
+      issues.push("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is set but CLOUDINARY_API_KEY is missing.");
+    }
+
+    if (env.cloudinaryApiKey && !env.cloudinaryCloudName) {
+      issues.push("CLOUDINARY_API_KEY is set but NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is missing.");
+    }
+
+    if (env.cloudinaryApiKey && !env.cloudinaryApiSecret) {
+      issues.push("CLOUDINARY_API_KEY is set but CLOUDINARY_API_SECRET is missing.");
+    }
+
+    if (env.cloudinaryApiSecret && !env.cloudinaryApiKey) {
+      issues.push("CLOUDINARY_API_SECRET is set but CLOUDINARY_API_KEY is missing.");
     }
   }
 

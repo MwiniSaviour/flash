@@ -104,7 +104,22 @@ It is a separate package with its own toolchain — type-check it there
 - **Ids are text, and they are stable.** Fixture rows keep their fixture ids
   (`evt-…`, `rst-…`, `mi-…`); runtime rows get minted ids from the app.
 
-## 6. Do NOT
+## 6. File storage
+
+- **Cloudinary is the only file store.** Postgres holds URLs, never bytes, and
+  `public/assets/images/` is a fixed demo catalogue, not an upload target.
+- All uploads go through `src/lib/media/` and one server action. The browser
+  never holds a Cloudinary credential and never uploads directly.
+- Validation is on bytes (magic numbers, ≤ 8 MB), never on the declared MIME
+  type. Every upload must carry the incoming transformation in
+  `src/lib/media/cloudinary.ts`: `c_limit,w_2400,h_2400,q_auto:good`, webp.
+  Never put `f_auto` in an incoming transformation — it is a delivery-only
+  instruction.
+- Replacing a stored image destroys the old asset; a failed database write
+  destroys the new one. `isOwnedCloudinaryUrl` binds a URL to its uploader
+  before any write.
+
+## 7. Do NOT
 
 - Do **not** invent a payment provider, a rating count, a delivery estimate or
   a map tile that the product does not have. The route diagram is a diagram;
@@ -121,12 +136,13 @@ It is a separate package with its own toolchain — type-check it there
 - Do **not** let a client component import the repository, the admin client or
   the server session. They are server-only.
 
-## 7. Before you call a task done
+## 8. Before you call a task done
 
 ```bash
 npm run check
 npm run build
 npm run db:check
+npm run media:check
 ```
 
 Then look at the screens: `.impeccable/review/` holds the phone (390) and

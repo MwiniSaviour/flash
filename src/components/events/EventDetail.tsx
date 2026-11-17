@@ -8,6 +8,7 @@ import { StickyAction } from "@/components/flash/StickyAction";
 import { Tag } from "@/components/flash/ui";import { cedis, dayMonth, distance, timeRange } from "@/lib/flash/format";
 import type { Event } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
+import { deliverySrcSet, deliveryUrl } from "@/lib/media/url";
 
 /**
  * The event page: the picture, the facts, and the ticket tiers.
@@ -27,7 +28,8 @@ export function EventDetail({ event }: { event: Event }) {
       <div className="relative h-[300px] w-full overflow-hidden bg-media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={event.image.src}
+          src={deliveryUrl(event.image.src, 1600)}
+          srcSet={deliverySrcSet(event.image.src)}
           alt={event.image.alt}
           className="h-full w-full object-cover"
         />

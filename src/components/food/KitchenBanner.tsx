@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Icon, type IconName } from "@/components/flash/Icon";
 import type { ImageAsset } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
+import { deliverySrcSet, deliveryUrl } from "@/lib/media/url";
 
 /**
  * The banner.
@@ -33,7 +34,12 @@ export function KitchenBanner({
     <>
       <div className="relative h-[220px] w-full overflow-hidden bg-media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={image.src} alt={image.alt} className="h-full w-full object-cover" />
+        <img
+          src={deliveryUrl(image.src, 1600)}
+          srcSet={deliverySrcSet(image.src)}
+          alt={image.alt}
+          className="h-full w-full object-cover"
+        />
         <span className="absolute inset-0 bg-gradient-to-t from-black/82 via-black/42 to-black/32" />
 
         <Link

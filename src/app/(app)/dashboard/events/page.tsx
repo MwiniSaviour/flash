@@ -7,6 +7,7 @@ import { OfferEditor } from "@/components/dashboard/OfferEditor";
 import { PriceEditor } from "@/components/dashboard/PriceEditor";
 import { TicketQueue } from "@/components/dashboard/TicketQueue";
 import { Icon } from "@/components/flash/Icon";
+import { hasCloudinaryEnv } from "@/lib/env";
 import { EmptyState, StatusBadge } from "@/components/flash/ui";
 import { listBusinesses, listIncomingTickets, listMyEvents } from "@/lib/flash/repository";
 import { dayMonth, timeRange } from "@/lib/flash/format";
@@ -139,7 +140,7 @@ export default async function EventsConsolePage() {
         </ul>
 
         <div className="mt-3">
-          <AddEventForm />
+          <AddEventForm canUpload={hasCloudinaryEnv()} />
         </div>
       </section>
 

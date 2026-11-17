@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { PhotoUpload } from "@/components/flash/PhotoUpload";
 import { updateCover } from "@/lib/flash/actions";
 import { COVER_IMAGES } from "@/lib/flash/covers";
 import type { Restaurant } from "@/lib/flash/types";
@@ -14,7 +15,13 @@ import { cn } from "@/lib/utils";
  * The photograph a customer sees first. It leads the kitchen page, the card in
  * the food list and the poster, so changing it here changes all three.
  */
-export function CoverPicker({ kitchen }: { kitchen: Restaurant }) {
+export function CoverPicker({
+  kitchen,
+  canUpload = false,
+}: {
+  kitchen: Restaurant;
+  canUpload?: boolean;
+}) {
   const [cover, setCover] = useState(kitchen.image.src);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +91,18 @@ export function CoverPicker({ kitchen }: { kitchen: Restaurant }) {
           );
         })}
       </ul>
+
+      {canUpload ? (
+        <div className="mt-4 border-t border-line/70 pt-4">
+          <p className="mb-2.5 text-[12px] font-semibold text-muted">Or use your own photograph</p>
+          <PhotoUpload
+            kind="cover"
+            label="Upload a cover photo"
+            value={cover}
+            onChange={setCover}
+          />
+        </div>
+      ) : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button

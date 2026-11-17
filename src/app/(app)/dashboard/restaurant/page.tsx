@@ -10,7 +10,7 @@ import { PriceEditor } from "@/components/dashboard/PriceEditor";
 import { StorefrontPoster } from "@/components/dashboard/StorefrontPoster";
 import { Icon } from "@/components/flash/Icon";
 import { EmptyState } from "@/components/flash/ui";
-import { getEnv } from "@/lib/env";
+import { getEnv, hasCloudinaryEnv } from "@/lib/env";
 import { listBusinesses, listIncomingOrders, listMyKitchens } from "@/lib/flash/repository";
 
 export const metadata: Metadata = {
@@ -116,7 +116,7 @@ export default async function RestaurantConsolePage() {
         </ul>
 
         <div className="mt-3">
-          <AddDishForm restaurantId={kitchen.id} />
+          <AddDishForm restaurantId={kitchen.id} canUpload={hasCloudinaryEnv()} />
         </div>
       </section>
 
@@ -136,7 +136,7 @@ export default async function RestaurantConsolePage() {
           The photograph your customers see first, and the poster you print.
         </p>
         <div className="mt-3">
-          <CoverPicker kitchen={kitchen} />
+          <CoverPicker kitchen={kitchen} canUpload={hasCloudinaryEnv()} />
         </div>
         <div className="mt-5">
           <StorefrontPoster restaurant={kitchen} url={url} />

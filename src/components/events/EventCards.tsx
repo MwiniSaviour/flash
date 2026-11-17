@@ -4,6 +4,7 @@ import { Icon } from "@/components/flash/Icon";
 import { DateBadge, Tag } from "@/components/flash/ui";
 import { cedis, dateBadge, distance } from "@/lib/flash/format";
 import type { Event } from "@/lib/flash/types";
+import { deliverySrcSet, deliveryUrl } from "@/lib/media/url";
 
 /**
  * The upcoming-event row: artwork with the date chip on it, then the title,
@@ -20,7 +21,8 @@ export function EventListCard({ event }: { event: Event }) {
       <span className="relative block h-[98px] w-[88px] shrink-0 overflow-hidden rounded-[10px] bg-media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={event.image.src}
+          src={deliveryUrl(event.image.src, 800)}
+          srcSet={deliverySrcSet(event.image.src)}
           alt={event.image.alt}
           className="h-full w-full object-cover"
           loading="lazy"
@@ -72,7 +74,8 @@ export function EventMiniCard({ event }: { event: Event }) {
       <span className="relative block aspect-[4/5] w-full overflow-hidden rounded-[14px] bg-media">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={event.image.src}
+          src={deliveryUrl(event.image.src, 800)}
+          srcSet={deliverySrcSet(event.image.src)}
           alt={event.image.alt}
           className="h-full w-full object-cover"
           loading="lazy"

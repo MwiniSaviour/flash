@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { currentUserId } from "@/lib/auth/server";
+import { destroyImage } from "@/lib/media/cloudinary";
+import { isOwnedCloudinaryUrl, publicIdFromUrl } from "@/lib/media/url";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { COVER_IMAGES } from "./covers";
@@ -165,6 +167,8 @@ export async function publishMenuItem(input: {
   name: string;
   description: string;
   price: number;
+  imageSrc?: string;
+  imageAlt?: string;
 }): Promise<BusinessResult<{ id: string }>> {
   const name = input.name.trim();
   if (!name) return { ok: false, error: "Give the dish a name." };
@@ -174,6 +178,15 @@ export async function publishMenuItem(input: {
 
   const gate = await requireApproved("restaurant");
   if ("error" in gate) return { ok: false, error: gate.error };
+
+  if (input.imageSrc && !isOwnedCloudinaryUrl(input.imageSrc, gate.userId)) {
+    return { ok: false, error: "That photograph is not yours to use." };
+  }
+
+  const image = {
+    src: input.imageSrc ?? COVER_IMAGES[0].src,
+    alt: input.imageAlt ?? COVER_IMAGES[0].alt,
+  };
 
   const client = createAdminClient();
   if (!client) {
@@ -188,7 +201,7 @@ export async function publishMenuItem(input: {
         description: input.description.trim(),
         tagline: "Made for you tonight",
         price,
-        image: { src: COVER_IMAGES[0].src, alt: COVER_IMAGES[0].alt },
+        image,
         sizes: sizesFor(price),
         toppings: toppingsFor(kitchen.cuisine),
         popular: false,
@@ -224,13 +237,17 @@ export async function publishMenuItem(input: {
     description: input.description.trim(),
     tagline: "Made for you tonight",
     price,
-    image_src: COVER_IMAGES[0].src,
-    image_alt: COVER_IMAGES[0].alt,
+    image_src: image.src,
+    image_alt: image.alt,
     popular: false,
     vegetarian: false,
   });
 
-  if (error) return { ok: false, error: "We could not add that dish. Try again." };
+  if (error) {
+    const uploaded = input.imageSrc ? publicIdFromUrl(input.imageSrc) : null;
+    if (uploaded) await destroyImage(uploaded);
+    return { ok: false, error: "We could not add that dish. Try again." };
+  }
 
   // The dish comes with the two portions and the extras the kitchen offers.
   const { error: sizeError } = await client.from("menu_item_sizes").insert([
@@ -380,6 +397,8 @@ export async function publishEvent(input: {
   tierName: string;
   price: number;
   capacity: number;
+  imageSrc?: string;
+  imageAlt?: string;
 }): Promise<BusinessResult<{ id: string; slug: string }>> {
   const title = input.title.trim();
   if (!title) return { ok: false, error: "Give the event a name." };
@@ -393,6 +412,15 @@ export async function publishEvent(input: {
 
   const gate = await requireApproved("events");
   if ("error" in gate) return { ok: false, error: gate.error };
+
+  if (input.imageSrc && !isOwnedCloudinaryUrl(input.imageSrc, gate.userId)) {
+    return { ok: false, error: "That poster is not yours to use." };
+  }
+
+  const image = {
+    src: input.imageSrc ?? COVER_IMAGES[0].src,
+    alt: input.imageAlt ?? COVER_IMAGES[0].alt,
+  };
 
   const client = createAdminClient();
   if (!client) {
@@ -413,7 +441,7 @@ export async function publishEvent(input: {
       date: input.date,
       startTime: input.startTime,
       endTime: input.endTime,
-      image: { src: COVER_IMAGES[0].src, alt: COVER_IMAGES[0].alt },
+      image,
       categories: ["Live Show"],
       featured: false,
       trending: false,
@@ -461,8 +489,8 @@ export async function publishEvent(input: {
     event_date: input.date,
     start_time: input.startTime,
     end_time: input.endTime,
-    image_src: COVER_IMAGES[0].src,
-    image_alt: COVER_IMAGES[0].alt,
+    image_src: image.src,
+    image_alt: image.alt,
     categories: ["Live Show"],
     featured: false,
     trending: false,
@@ -474,7 +502,11 @@ export async function publishEvent(input: {
     discount_percent: 0,
   });
 
-  if (error) return { ok: false, error: "We could not publish that event. Try again." };
+  if (error) {
+    const uploaded = input.imageSrc ? publicIdFromUrl(input.imageSrc) : null;
+    if (uploaded) await destroyImage(uploaded);
+    return { ok: false, error: "We could not publish that event. Try again." };
+  }
 
   const { error: tierError } = await client.from("event_tiers").insert({
     id: tierId,

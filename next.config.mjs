@@ -47,7 +47,15 @@ const nextConfig = {
   images: {
     unoptimized: !imageOptimization,
     formats: ["image/avif", "image/webp"],
-    remotePatterns: [],
+    // Cloudinary already delivers f_auto/q_auto, so these are only for the
+    // cases where a component opts into next/image.
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
+    ],
   },
 
   typescript: { ignoreBuildErrors: false },

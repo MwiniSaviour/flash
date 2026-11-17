@@ -66,9 +66,15 @@ between the two.
 **The browser never talks to Postgres.** Every read and write goes through the
 Next.js server, which holds the only credentials in the system: the service-role
 client in `src/lib/supabase/admin.ts`, marked `server-only`. Row Level Security
-is deny-all for `anon` and `authenticated` — the service role is the only role
-that can touch a table, and the repository scopes every query to the signed-in
-customer.
+denies `anon` and `authenticated` any row (no policies), and the repository
+scopes every query to the signed-in customer.
+
+**Files live in Cloudinary, not Postgres and not `public/`.** `src/lib/media/`
+is the whole boundary: validate the bytes, upload through one signed server
+action, and build delivery URLs. An incoming transformation stores a compressed
+WebP master (`c_limit,w_2400,h_2400,q_auto:good`); delivery adds `f_auto,q_auto`
+and responsive widths. Clerk owns profile photos; the three uploaded product
+images are the kitchen cover, dish photos and event posters.
 
 **The writes are actions.** `src/lib/flash/actions.ts` holds the four mutations
 — book a ticket, place an order, request a ride, send a parcel. They re-read
@@ -98,9 +104,15 @@ the same story as the app:
 
 ```bash
 npm run db:seed     # regenerate supabase/seed.sql from src/lib/flash/data
-npm run db:schema    # mirror the latest migration into src/lib/supabase/schema.sql
-npm run db:check     # prove the seed still matches the migration
+npm run db:schema    # mirror every migration into src/lib/supabase/schema.sql
+npm run db:check     # prove the seed still matches all the migrations
+npm run media:check  # prove upload validation and delivery URL rules
 ```
+
+The VPS deployment (`ops/flash/`) runs Postgres and PostgREST in two containers
+and is applied with `bash /opt/flash/deploy.sh`. `ops/flash/proxy.mjs` restores
+Supabase's `/rest/v1` path so the app code is identical against a hosted
+project or the VPS.
 
 ```bash
 cp .env.example .env.local   # optional — without the keys the app runs on demo data
@@ -111,6 +123,8 @@ cp .env.example .env.local   # optional — without the keys the app runs on dem
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Live data instead of fixtures |
 | `SUPABASE_SERVICE_ROLE_KEY` | The server's database access. Without it the server still serves fixtures. |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Real sessions instead of the demo customer |
+| `CLERK_WEBHOOK_SECRET` | Verified Clerk → profile sync (`/api/webhooks/clerk`) |
+| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Photo uploads; without them the catalogue is used |
 
 ## Design system
 
