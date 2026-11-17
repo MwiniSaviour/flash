@@ -28,9 +28,24 @@ function clean(value: string | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+/**
+ * The public origin, used for canonical URLs, OpenGraph and the sitemap.
+ *
+ * Locally this is localhost unless NEXT_PUBLIC_SITE_URL is set. On Vercel the
+ * platform host is the origin when no production domain has been configured,
+ * so previews get their own canonical URLs instead of claiming localhost (or
+ * production) as their home.
+ */
 function readSiteUrl(): string {
   const configured = clean(process.env.NEXT_PUBLIC_SITE_URL);
-  return configured ? configured.replace(/\/+$/, "") : DEFAULT_SITE_URL;
+  if (configured) return configured.replace(/\/+$/, "");
+
+  const vercelHost =
+    process.env.VERCEL_ENV === "production"
+      ? clean(process.env.VERCEL_PROJECT_PRODUCTION_URL)
+      : clean(process.env.VERCEL_URL);
+
+  return vercelHost ? `https://${vercelHost}` : DEFAULT_SITE_URL;
 }
 
 let cached: FlashEnv | null = null;

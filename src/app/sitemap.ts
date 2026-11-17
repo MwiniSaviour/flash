@@ -11,7 +11,13 @@ export const revalidate = 3600;
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getEnv().siteUrl;
-  const [events, restaurants] = await Promise.all([listEvents(), listRestaurants()]);
+
+  // A paused database or an expired key must not fail the whole build: the
+  // static routes still describe the app, and ISR picks the live ones up later.
+  const [events, restaurants] = await Promise.all([
+    listEvents().catch(() => []),
+    listRestaurants().catch(() => []),
+  ]);
 
   const staticRoutes = ["", "/events", "/food", "/ride", "/bookings"].map((path) => ({
     url: `${base}${path}`,

@@ -1,0 +1,7 @@
+# The Capacitor app is a separate package with its own toolchain.
+apps/
+# Local review artefacts, not part of the deployment.
+.impeccable/
+ops/
+docs/
+*.log

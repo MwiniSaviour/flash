@@ -1,257 +1,84 @@
-# Deploying Prototype Radio to Vercel
+# Deploying Flash to Vercel
 
-The site is a **Next.js 16 App Router** app with **Payload CMS 3** embedded in the
-same deployment (`/admin`, `/api/*`) and **Postgres** behind it. That shape drives
-most of the choices below: one deployable, one database, one media bucket.
+Flash is a Next.js 16 App Router app. Every service screen reads through
+`src/lib/flash/repository.ts`: with no Supabase keys the app serves seeded demo
+data, with keys it reads Postgres. Clerk and Cloudinary mount the same way, so a
+deployment with no service keys is a fully working demo.
 
-Everything the platform needs is in the repo:
+## What is in the repo
 
 | File | Purpose |
 |---|---|
-| `vercel.json` | framework, install/build commands, function region |
-| `next.config.mjs` | headers, image optimizer, Termux guards (skipped on Vercel) |
-| `.vercelignore` | keeps the mobile app, uploads and local artefacts out of the build |
-| `.env.example` | every variable, with the production values documented |
-| `scripts/ci/vercel-build.mjs` | env validation → migrations → `next build` |
-| `scripts/ci/migrate.mjs` | `npm run migrate` / `migrate:status` wrapper |
+| `vercel.json` | framework detection, `npm ci` + `npm run build`, quiet GitHub checks |
+| `next.config.mjs` | headers, image optimisation, Vercel-aware settings |
+| `.vercelignore` | keeps the separate Capacitor app and local artefacts out of the build |
+| `.env.example` | every variable, documented |
+| `supabase/migrations/` | the schema, mirrored into `src/lib/supabase/schema.sql` |
 
----
+## First deployment
 
-## 1. What the deployment needs
+1. Vercel → **Add New → Project → Import Git Repository** → `MwiniSaviour/flash`.
+   Framework detection must pick **Next.js**; `vercel.json` pins install and build
+   commands. The build uses `--webpack` deliberately (Turbopack is unavailable on
+   the Termux dev host), and it works unchanged on Vercel.
+2. No environment variables are required for a demo deployment. Build and open
+   the deployment: Home, Events, Ride, Food, Track and Parcel all work on the
+   fixtures, with the demo customer in the header.
+3. To go live, set the variables below under **Settings → Environment Variables**
+   and redeploy.
 
-| Resource | Why | Recommendation |
+## Environment variables
+
+| Variable | Scope | Purpose |
 |---|---|---|
-| Postgres | Payload's database: articles, shows, events, users, settings | **Neon** (serverless driver model, branches per preview, generous free tier) or Supabase; Vercel Postgres is Neon under the hood |
-| Blob storage | Media uploads. The Vercel filesystem is read-only and does not persist between invocations | **Vercel Blob** — `@payloadcms/storage-vercel-blob` is already wired in |
-| Domain | Canonical URLs, sitemap, OpenGraph | any registrar; add it in Vercel → Domains |
+| `NEXT_PUBLIC_SITE_URL` | Production | Final origin, no trailing slash. Leave unset to use the Vercel host. |
+| `NEXT_PUBLIC_SUPABASE_URL` | All | Supabase project URL. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | All | Browser-safe Supabase key. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server only | Bypasses RLS; never exposed to the browser. |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | All | Clerk session provider. |
+| `CLERK_SECRET_KEY` | Server only | Clerk server session. |
+| `CLERK_WEBHOOK_SECRET` | Server only | Optional webhook verification. |
+| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | All | Public cloud name for uploads. |
+| `CLOUDINARY_API_KEY` | Server only | Upload credential. |
+| `CLOUDINARY_API_SECRET` | Server only | Upload credential. |
+| `CLOUDINARY_FOLDER` | All | Defaults to `flash`. |
 
-No other services are required. The live audio stream is deliberately not
-configured yet (`NEXT_PUBLIC_STREAM_URL` empty — see
-`docs/live-audio-backend-research.md`), and the player renders its
-"stream not configured" state.
+Every value is optional. A half-configured environment renders the fixtures and
+reports the inconsistency rather than throwing (`src/lib/env.ts`).
 
----
+## Database
 
-## 2. First deployment
+Apply `supabase/migrations/*.sql` to the Supabase project (in filename order),
+then load `supabase/seed.sql` for the demo content. The schema mirror and seed
+are generated — after changing a migration or fixture run:
 
-### 2.1 Import the repository
-
-Vercel → **Add New… → Project → Import Git Repository**. Framework detection
-must pick **Next.js**; `vercel.json` pins it anyway, along with:
-
-- install: `npm ci` (lockfile-exact, same as CI)
-- build: `npm run vercel-build`
-- region: `fra1`
-
-> **Do not change the build command to `next build`.** It skips the environment
-> validation and the migration step, and the two orderings produce different
-> failure modes (a 500 in production vs. a failed deployment you can read).
-
-### 2.2 Create the database
-
-Neon → new project → copy the **pooled** connection string.
-
-- Region: same as the functions — `eu-central-1` (Frankfurt) matches `fra1`.
-  A mismatch turns every query into a transatlantic round trip.
-- Host must contain `-pooler`. The direct host caps out at a few dozen
-  connections and every serverless instance opens its own pool.
-- Append `?sslmode=require` — hosted Postgres rejects unencrypted connections.
-
-```dotenv
-DATABASE_URL=postgresql://USER:PASSWORD@ep-xxx-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require
+```bash
+npm run db:schema
+npm run db:seed
+npm run db:check
 ```
 
-### 2.3 Create the Blob store
+`npm run db:check` proves the seed matches the migrations; it should stay green
+in CI. Schema changes are additive: add a new migration instead of editing one
+that a database has already run.
 
-Vercel → **Storage → Create → Blob** → connect it to this project.
-`BLOB_READ_WRITE_TOKEN` is injected automatically.
+## Rendering and previews
 
-`src/payload.config.ts` enables the storage plugin **only when that token is
-present**, and the plugin flips the `media` collection to
-`disableLocalStorage`. So:
+- Service screens are dynamic (`force-dynamic`) so a booking made now appears on
+  Bookings and Track immediately.
+- The sitemap is ISR (1h). If the database is unreachable at build time it falls
+  back to the static routes instead of failing the deployment.
+- Preview deployments carry `X-Robots-Tag: noindex` and use their own host for
+  canonical URLs when `NEXT_PUBLIC_SITE_URL` is production-only.
+- `next.config.mjs` sets `X-Content-Type-Options`, `Referrer-Policy`,
+  `Permissions-Policy` and HSTS on every route. The image optimizer is on on
+  Vercel (native `sharp`) and off on Termux (WASM-only build).
 
-- on Vercel → uploads go to Blob, and `public/media/` is never written;
-- locally → uploads still land in `public/media/`, so development works with no
-  cloud account.
-
-Image sizes (`thumbnail`, `card`, `hero`) are generated by `sharp` **before** the
-upload, exactly as they were written to disk before, so the front end's `srcset`
-is unchanged. Vercel's `sharp` prebuild is native; the Termux WASM workaround is
-not involved.
-
-### 2.4 Set environment variables
-
-Project → **Settings → Environment Variables**. Scope them per environment
-(Production / Preview / Development) — that scoping is the whole preview story.
-
-| Variable | Environments | Value |
-|---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | Production only | `https://your-domain.com` (no trailing slash) |
-| `NEXT_PUBLIC_SITE_NAME` | All | `Prototype Radio` |
-| `NEXT_PUBLIC_STREAM_URL` | All | leave empty until the stream is licensed |
-| `DATABASE_URL` | All | pooled Neon string, `?sslmode=require` |
-| `PAYLOAD_SECRET` | All | 64 hex chars (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
-| `CONTENT_SOURCE` | All | `payload` |
-| `BLOB_READ_WRITE_TOKEN` | All | injected by the Blob store |
-
-Deliberately **not** set: `DATABASE_POOL_MAX` (defaults to 3 per instance on
-Vercel), `PAYLOAD_SKIP_MIGRATE`, `NEXT_IMAGE_OPTIMIZATION`.
-
-Why `NEXT_PUBLIC_SITE_URL` is production-only: a preview that inherits it would
-emit canonical URLs and OpenGraph images pointing at production, and its admin
-bundle would post logins to the production origin. With the variable unset,
-`src/lib/constants.ts` and `payload.config.ts` fall back to
-`VERCEL_PROJECT_PRODUCTION_URL` and `VERCEL_URL` respectively, so previews are
-correct on their own host and still marked `noindex` (`next.config.mjs`, when
-`VERCEL_ENV=preview`).
-
-### 2.5 First deploy and first admin user
-
-The first build runs `payload migrate` against the empty database — the two
-migration sets in `src/migrations/` create the schema. Then:
-
-1. Open `https://<deployment>/admin`.
-2. Payload asks to create the first user on an empty `users` table; the account
-   you create is the admin.
-3. Optionally import the demo content (idempotent, safe to re-run):
-
-   ```bash
-   DATABASE_URL='postgresql://…-pooler…?sslmode=require' \
-   PAYLOAD_SECRET='…64 hex…' \
-   CONTENT_SOURCE=payload \
-   npm run seed
-   ```
-
-   Run it from a machine with the pooled (or direct) URL — it writes through the
-   Local API, so it must reach the same database the deployment uses.
-
-> **`CONTENT_SOURCE=local` in production is legal but unusual.** It renders the
-> fixtures in `src/data/` and ignores the CMS; the admin keeps working but its
-> edits do not appear. Choose it only for a design/demo deployment without a
-> database. The build prints which source it used.
-
-### 2.6 Domain and DNS
-
-1. Vercel → **Domains → Add** → enter the domain.
-2. At the registrar: `A` record for the apex → `76.76.21.21`, or `CNAME` for
-   `www` → `cname.vercel-dns.com` (Vercel shows the exact values; use those if
-   they differ).
-3. Wait for the certificate to be issued (usually < 1 min), then set
-   `NEXT_PUBLIC_SITE_URL` to the final origin and **redeploy** — it is inlined
-   into the build.
-4. Pick one canonical host (apex or `www`) and redirect the other in
-   **Settings → Domains**; do not let both serve 200s.
-
----
-
-## 3. How the pieces behave
-
-### Build
-
-`npm run vercel-build` →
-
-1. validate `CONTENT_SOURCE`, `DATABASE_URL`, `PAYLOAD_SECRET` (fail fast, with a
-   message that names the variable and the fix);
-2. `payload migrate` (skipped for `CONTENT_SOURCE=local`, or with
-   `PAYLOAD_SKIP_MIGRATE=1`);
-3. `next build --webpack`.
-
-`--webpack` is not an accident: `next.config.mjs` teaches the webpack resolver
-`extensionAlias` so Payload's `.js`-suffixed TypeScript imports resolve. Turbopack
-has no equivalent here, and it is also unavailable on the Termux dev host. One
-code path, both platforms.
-
-Static generation queries Postgres at build time (article pages are prerendered),
-which is why the database must be reachable **from the builder**, not just from
-the functions.
-
-### Rendering and caching
-
-- Article, category, show, podcast and static pages are ISR with
-  `revalidate = 3600` (`expireTime: 1y`): edits in the admin appear within the
-  hour, or immediately via the deploy hook / redeploy.
-- `/search`, `/admin/*`, `/api/*` and `/healthz` are dynamic.
-- `/healthz` is the probe to point uptime monitoring at. It reports
-  `{status:"ok"}` with the resolved content source, region and commit, and
-  returns **503** with `{status:"degraded"}` if the content backend throws — the
-  symptom of a paused Neon branch, a rotated password or an expired token.
-
-### Images
-
-- `next/image` with local paths from `public/assets/images` (75 files, ~11 MB).
-  On Vercel the optimizer is enabled (`sharp` is native) and serves AVIF/WebP;
-  locally it is disabled because Termux only resolves the WASM build.
-- `/assets/images/*` is sent with
-  `Cache-Control: public, max-age=86400, stale-while-revalidate=604800` — a day of
-  freshness so a replaced photo appears without a redeploy.
-- No `remotePatterns` are configured: media uploaded through the CMS is served
-  from Blob, and the front end resolves it through the document's `url` field.
-
-### Media uploads
-
-Payload → Blob, per §2.3. Deleting a document in the admin deletes the Blob
-object. If the token is ever removed from the project, uploads start failing
-loudly at the collection — they do not silently fall back to a read-only disk
-(except `public/media/` existing in a local checkout, which is git-ignored and
-excluded from the deploy by `.vercelignore`).
-
-### Headers
-
-`next.config.mjs` applies, for every route: `X-Content-Type-Options`,
-`Referrer-Policy: strict-origin-when-cross-origin`,
-`Permissions-Policy` (no camera/mic/geo/payment/usb), HSTS (2 years, preload),
-and `X-Robots-Tag: noindex` on preview deployments. `poweredByHeader` is off.
-
-There is **no CSP yet** on purpose. Next injects inline bootstrap scripts and
-Payload's admin ships a large inline bundle; a policy without a nonce pipeline
-would break the player or the admin. When adding one, add it here and test
-`/admin` (login, media upload) and `/` (player, drawer) before promoting.
-
----
-
-## 4. Previews and branches
-
-- Every branch gets a preview deployment. Because `NEXT_PUBLIC_SITE_URL` is
-  production-scoped, previews use their own host and are `noindex`.
-- Previews share the **production database** unless you point them elsewhere.
-  For previews that write content (editorial review), use a Neon branch: create
-  one per PR, set `DATABASE_URL` on the *Preview* environment, and let
-  `payload migrate` run against the branch.
-- `github.silent` in `vercel.json` keeps Vercel from posting a status comment on
-  every push; the deployment check itself still runs.
-
----
-
-## 5. Operating notes
-
-| Situation | What to do |
-|---|---|
-| Schema change | `npm run migrate:create` locally (commit the new file in `src/migrations/`), then deploy — the build applies it. Never edit an applied migration. |
-| Rollback | Vercel → Deployments → **Promote** an earlier build. Migrations are **not** rolled back; write them forward (additive columns, no drops in the same release). |
-| Rotating `PAYLOAD_SECRET` | Expected: all admin sessions are invalidated. Redeploy afterwards. |
-| Rotating the database password | Update `DATABASE_URL`, redeploy. `/healthz` is 503 until it is right. |
-| Logs | Vercel → Deployment → **Logs**. `console.error` from route handlers, including `/healthz`, appears there. |
-| Build runs out of memory | Unlikely on Vercel (the local caps in `next.config.mjs` are skipped there). If it happens, it is a leak in build-time data fetching, not the concurrency settings. |
-
-Local parity check before pushing:
+## Local parity check
 
 ```bash
 npm ci
-npm run check                 # tsc --noEmit && eslint .
-CONTENT_SOURCE=local npm run build
-CONTENT_SOURCE=local npm start   # http://localhost:3000 — /, /news, /admin, /healthz
+npm run check        # typecheck + lint
+npm run db:check
+npm run build        # or npm run start after building
 ```
-
----
-
-## 6. What is intentionally absent
-
-- **Secrets in the repo** — `.env*` is git-ignored except `.env.example`.
-- **`vercel.json` headers/redirects** — kept in `next.config.mjs` so `next start`
-  behaves the same as the platform.
-- **Dockerfile / `output: "standalone"`** — nothing else consumes the build.
-- **`experimental.cpus` / `staticGenerationMaxConcurrency` /
-  `images.unoptimized`** — Termux-only workarounds, now applied only when
-  `VERCEL` is unset.
-- **A second lockfile** — the Capacitor app has its own (`apps/mobile`) and is
-  excluded from this build.
