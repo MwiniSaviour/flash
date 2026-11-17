@@ -1,0 +1,33 @@
+/*
+ * Print stylesheet — a customer prints a pass at the gate, or a receipt for
+ * their records. The chrome around it is noise; the proof is the page.
+ */
+@media print {
+  body {
+    background: #ffffff;
+    color: var(--color-ink);
+  }
+
+  header,
+  footer,
+  nav,
+  .no-print,
+  button {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* The pass and the receipt print as one clean card, without the shadow. */
+  article {
+    break-inside: avoid;
+    border: 1px solid var(--color-line) !important;
+    box-shadow: none !important;
+  }
+
+  a[href^="http"]::after {
+    content: none;
+  }
+}

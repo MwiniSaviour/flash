@@ -1,0 +1,51 @@
+# Flash on the VPS.
+#
+# One Postgres for the app, plus PostgREST so the Next.js server can talk to it
+# the same way it talks to Supabase: PostgREST is the REST layer Supabase
+# exposes, and the app already speaks that protocol.
+#
+#   postgres  - the database the migration and the seed run against
+#   postgrest - the REST API the repository reads and writes through
+#
+# Nothing is exposed publicly: both bind to 127.0.0.1 and are reached over an
+# SSH tunnel while developing.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: flash-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: flash
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - flash-db-data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d flash"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rest:
+    image: postgrest/postgrest:v12.2.12
+    container_name: flash-rest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${PGRST_DB_PASSWORD}@db:5432/flash
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET}
+      PGRST_SERVER_PORT: 3000
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+    ports:
+      - "127.0.0.1:3001:3000"
+
+volumes:
+  flash-db-data:

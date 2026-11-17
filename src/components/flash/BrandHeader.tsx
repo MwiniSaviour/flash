@@ -1,0 +1,41 @@
+import Link from "next/link";
+
+import { FlashLogo } from "@/components/flash/FlashLogo";
+import { Icon } from "@/components/flash/Icon";
+import { Avatar } from "@/components/flash/ui";
+import type { FlashUser } from "@/lib/flash/types";
+
+/**
+ * The phone's brand header: the mark, search and the account.
+ *
+ * The account is deliberately not a tab — it lives behind the avatar here and
+ * at the foot of the desktop rail.
+ */
+export function BrandHeader({ user }: { user: FlashUser }) {
+  return (
+    <header className="flex items-center justify-between px-5 pt-3.5 pb-3.5 lg:hidden">
+      <Link href="/" aria-label="Flash — home">
+        <FlashLogo />
+      </Link>
+
+      <div className="flex items-center gap-2.5">
+        <Link
+          href="/search"
+          aria-label="Search events, venues, kitchens and rides"
+          className="grid h-9 w-9 place-items-center rounded-full text-[#1d2532] transition active:scale-95"
+        >
+          <Icon name="search" size={21} />
+        </Link>
+        <Link href="/profile" aria-label="Your profile" className="rounded-full active:scale-95">
+          <Avatar
+            src={user.avatarUrl}
+            alt={`${user.name}'s profile photo`}
+            name={user.name}
+            size={34}
+            className="ring-[1.5px] ring-white/80"
+          />
+        </Link>
+      </div>
+    </header>
+  );
+}

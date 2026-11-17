@@ -1,0 +1,332 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-15T00:00:00.000Z",
+  "title": "Design System: Flash",
+  "extensions": {
+    "colorMeta": {
+      "signal-orange": {
+        "role": "primary",
+        "displayName": "Signal Orange",
+        "canonical": "#fc5303",
+        "tonalRamp": ["#3d1200", "#5c1c00", "#7a2600", "#993100", "#b73c02", "#d64a02", "#fc5303", "#ff8a4d"]
+      },
+      "deep-signal": {
+        "role": "primary",
+        "displayName": "Deep Signal",
+        "canonical": "#d63f08",
+        "tonalRamp": ["#3a1000", "#571b00", "#742500", "#913000", "#ae3b03", "#c33c08", "#d63f08", "#ec7a52"]
+      },
+      "ink-orange": {
+        "role": "primary",
+        "displayName": "Ink Orange",
+        "canonical": "#c33c08",
+        "tonalRamp": ["#330e00", "#4d1800", "#682100", "#832b02", "#9e3504", "#c33c08", "#d24a0b", "#e57043"]
+      },
+      "warm-blush": {
+        "role": "secondary",
+        "displayName": "Warm Blush",
+        "canonical": "#fdeadf",
+        "tonalRamp": ["#3a1a10", "#55271a", "#713525", "#8d442f", "#a95539", "#c56949", "#e39d85", "#fdeadf"]
+      },
+      "warm-paper": {
+        "role": "neutral",
+        "displayName": "Warm Paper",
+        "canonical": "#f7f5f1",
+        "tonalRamp": ["#2a2823", "#47443c", "#656156", "#847f71", "#a49e8e", "#c5bfb0", "#e6e1d6", "#f7f5f1"]
+      },
+      "pressed-paper": {
+        "role": "neutral",
+        "displayName": "Pressed Paper",
+        "canonical": "#f1eee7",
+        "tonalRamp": ["#26241f", "#423f38", "#5e5a50", "#7b7669", "#989283", "#b6b0a2", "#dcd7cb", "#f1eee7"]
+      },
+      "plain-white": {
+        "role": "neutral",
+        "displayName": "Plain White",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#1b1a18", "#373531", "#54514c", "#726e67", "#918d85", "#b0aca3", "#e8e6e1", "#ffffff"]
+      },
+      "soft-black": {
+        "role": "neutral",
+        "displayName": "Soft Black",
+        "canonical": "#14120f",
+        "tonalRamp": ["#14120f", "#2a2723", "#413d36", "#595449", "#726c5e", "#8c8574", "#a69e8b", "#c0b8a4"]
+      },
+      "warm-grey": {
+        "role": "neutral",
+        "displayName": "Warm Grey",
+        "canonical": "#6c665f",
+        "tonalRamp": ["#171512", "#2e2b26", "#46423b", "#5e5950", "#6c665f", "#8d867d", "#afa89e", "#d1cbc1"]
+      },
+      "light-warm-grey": {
+        "role": "neutral",
+        "displayName": "Light Warm Grey",
+        "canonical": "#8d867d",
+        "tonalRamp": ["#171512", "#2e2b26", "#46423b", "#5e5950", "#6c665f", "#8d867d", "#afa89e", "#d1cbc1"]
+      },
+      "signal-navy": {
+        "role": "neutral",
+        "displayName": "Signal Navy",
+        "canonical": "#3c4657",
+        "tonalRamp": ["#0b0e13", "#161b23", "#212732", "#2c3441", "#3c4657", "#5b6578", "#7c8698", "#a5adbb"]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e4e0d7",
+        "tonalRamp": ["#26241f", "#423f38", "#5e5a50", "#7b7669", "#989283", "#b6b0a2", "#dcd7cb", "#e4e0d7"]
+      },
+      "night": {
+        "role": "neutral",
+        "displayName": "Night",
+        "canonical": "#0b0b0d",
+        "tonalRamp": ["#0b0b0d", "#1f1f22", "#333338", "#48484e", "#5e5e65", "#7a7a82", "#9b9ba3", "#c2c2c9"]
+      },
+      "green": {
+        "role": "secondary",
+        "displayName": "Green",
+        "canonical": "#1c8a44",
+        "tonalRamp": ["#04240f", "#073a1d", "#0a512b", "#0d6738", "#107d3e", "#1c8a44", "#4fae71", "#7fd2a0"]
+      },
+      "deep-green": {
+        "role": "secondary",
+        "displayName": "Deep Green",
+        "canonical": "#116b39",
+        "tonalRamp": ["#031c0c", "#073019", "#0a4523", "#0d592c", "#116b39", "#2e8d57", "#5cb080", "#9ad2b1"]
+      },
+      "mint-wash": {
+        "role": "secondary",
+        "displayName": "Mint Wash",
+        "canonical": "#e4f5e9",
+        "tonalRamp": ["#0a2713", "#134425", "#1c6137", "#267e49", "#3a9b5b", "#6bb886", "#a3d5b4", "#e4f5e9"]
+      },
+      "amber": {
+        "role": "secondary",
+        "displayName": "Amber",
+        "canonical": "#b5590a",
+        "tonalRamp": ["#2e1702", "#482303", "#633005", "#7d3e07", "#984b09", "#b5590a", "#d18b4d", "#e8bb8d"]
+      },
+      "red": {
+        "role": "secondary",
+        "displayName": "Red",
+        "canonical": "#c0272d",
+        "tonalRamp": ["#30070a", "#480c10", "#601116", "#78161d", "#901b21", "#c0272d", "#d56368", "#e69ea1"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Screen titles and the event title over its photograph. One per screen."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings — Upcoming Events, Trending Now, Choose a ride."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card titles and list row titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Descriptions and supporting copy at 13px."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, chips, segmented controls and the See all action. Uppercase is reserved for 10px badges."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card",
+        "value": "0 1px 2px rgb(23 26 31 / 0.04), 0 10px 24px -16px rgb(23 26 31 / 0.22)",
+        "purpose": "Every white card and list row on the paper ground."
+      },
+      {
+        "name": "raised",
+        "value": "0 2px 6px rgb(23 26 31 / 0.06), 0 18px 40px -22px rgb(23 26 31 / 0.28)",
+        "purpose": "Media panels and confirmation panels — the heaviest objects on the screen."
+      },
+      {
+        "name": "tabbar",
+        "value": "0 -1px 0 rgb(23 26 31 / 0.06), 0 -12px 30px -18px rgb(23 26 31 / 0.18)",
+        "purpose": "The fixed bottom navigation and the sticky action bar."
+      },
+      {
+        "name": "brand",
+        "value": "0 8px 18px -10px rgb(252 83 3 / 0.85)",
+        "purpose": "The orange glow under a primary button, an active chip and the raised ride button."
+      },
+      {
+        "name": "brand-lift",
+        "value": "0 12px 26px -12px rgb(252 83 3 / 0.6)",
+        "purpose": "The round media action inside a hero panel."
+      }
+    ],
+    "motion": [
+      {
+        "name": "eq",
+        "value": "eq 1.1s ease-in-out infinite",
+        "purpose": "The pulse strip's staggered equalizer loop. motion-safe only."
+      },
+      {
+        "name": "rise",
+        "value": "rise 260ms cubic-bezier(0.22, 1, 0.36, 1) both",
+        "purpose": "The single entrance moment, used when a booking is confirmed."
+      },
+      {
+        "name": "fade",
+        "value": "fade 200ms ease-out both",
+        "purpose": "Inline notices, such as the filter count."
+      },
+      {
+        "name": "carousel",
+        "value": "6500ms",
+        "purpose": "The home hero's slide interval. Suspended while the reader touches the rail and under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action a screen wants taken. Deep Signal with a brand glow.",
+      "html": "<button class=\"ds-btn-primary\">Get tickets</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 20px; border: 0; border-radius: 11px; background: #d63f08; color: #ffffff; font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; box-shadow: 0 8px 18px -10px rgb(252 83 3 / 0.85); transition: background-color 160ms ease, transform 160ms ease; } .ds-btn-primary:hover { background: #c13907; } .ds-btn-primary:active { background: #a83205; transform: scale(0.99); } .ds-btn-primary:focus-visible { outline: 2px solid #fc5303; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A quieter alternative: white with a hairline border and black type.",
+      "html": "<button class=\"ds-btn-secondary\">Back to the event</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; height: 46px; padding: 0 18px; border: 1px solid #e4e0d7; border-radius: 11px; background: #ffffff; color: #14120f; font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; font-size: 14px; font-weight: 600; transition: background-color 160ms ease, border-color 160ms ease; } .ds-btn-secondary:hover { background: #f1eee7; border-color: #d3cec3; } .ds-btn-secondary:focus-visible { outline: 2px solid #fc5303; outline-offset: 2px; }"
+    },
+    {
+      "name": "Action Pill",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The two big moves on the ride and track screens — full pills, not rectangles.",
+      "html": "<a class=\"ds-pill\" href=\"#\"><span class=\"ds-pill-dot\"></span>Order food</a>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 999px; background: #d63f08; color: #ffffff; font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; font-size: 13.5px; font-weight: 700; text-decoration: none; box-shadow: 0 8px 18px -10px rgb(252 83 3 / 0.85); transition: background-color 160ms ease; } .ds-pill:hover { background: #c13907; } .ds-pill-dot { width: 6px; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.9); } .ds-pill:focus-visible { outline: 2px solid #fc5303; outline-offset: 2px; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip-active",
+      "description": "Category filters. The selected chip fills and carries the brand glow.",
+      "html": "<button class=\"ds-chip ds-chip-on\">All</button>",
+      "css": ".ds-chip { height: 32px; padding: 0 12px; margin-right: 6px; border: 1px solid #e4e0d7; border-radius: 9px; background: #ffffff; color: #3c4657; font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; font-size: 12px; font-weight: 600; transition: background-color 160ms ease, color 160ms ease; } .ds-chip:hover { border-color: #d3cec3; } .ds-chip-on { border-color: transparent; background: #d63f08; color: #ffffff; box-shadow: 0 8px 18px -10px rgb(252 83 3 / 0.85); } .ds-chip:focus-visible { outline: 2px solid #fc5303; outline-offset: 2px; }"
+    },
+    {
+      "name": "List Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A white sheet on the paper ground: hairline border, soft offset shadow, 14px radius.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-thumb\"></div><div class=\"ds-card-body\"><strong>Sunset Live Sessions</strong><span>Labadi Beach · 1.4 km</span><em>from GHC120</em></div></div>",
+      "css": ".ds-card { display: flex; gap: 12px; padding: 10px; border: 1px solid #e4e0d7; border-radius: 14px; background: #ffffff; box-shadow: 0 1px 2px rgb(23 26 31 / 0.04), 0 10px 24px -16px rgb(23 26 31 / 0.22); font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; transition: border-color 160ms ease; } .ds-card:hover { border-color: #d3cec3; } .ds-card-thumb { width: 88px; height: 98px; border-radius: 10px; background: #0b0b0d; flex: 0 0 auto; } .ds-card-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; } .ds-card-body strong { font-size: 15.5px; font-weight: 600; letter-spacing: -0.015em; color: #14120f; } .ds-card-body span { font-size: 12.5px; color: #6c665f; } .ds-card-body em { font-style: normal; font-size: 12px; font-weight: 600; color: #c33c08; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Search and address fields: white, hairline border, the border is the only focus treatment.",
+      "html": "<label class=\"ds-field\"><span>Search</span><input class=\"ds-field-input\" placeholder=\"Search events, venues or artists\" /></label>",
+      "css": ".ds-field { display: block; } .ds-field > span { display: block; margin-bottom: 6px; font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; font-size: 12px; font-weight: 600; color: #6c665f; } .ds-field-input { width: 100%; height: 46px; padding: 0 12px; border: 1px solid #e4e0d7; border-radius: 12px; background: #ffffff; color: #14120f; font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; font-size: 16px; transition: border-color 160ms ease; } .ds-field-input::placeholder { color: #6c665f; } .ds-field-input:focus { outline: none; border-color: rgba(252, 83, 3, 0.5); }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "custom",
+      "refersTo": "chip-active",
+      "description": "Status is never colour alone: every badge carries a glyph and a word.",
+      "html": "<span class=\"ds-badge\"><svg viewBox=\"0 0 24 24\" width=\"11\" height=\"11\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m5 12.8 4.2 4.2L19 7.2\"/></svg>Confirmed</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: #e4f5e9; color: #116b39; font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; font-size: 12px; font-weight: 600; line-height: 1; }"
+    },
+    {
+      "name": "Tab Bar Item",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "The phone's bottom bar. Active takes Signal Orange and a heavier stroke.",
+      "html": "<a class=\"ds-tab ds-tab-on\" href=\"#\"><svg viewBox=\"0 0 24 24\" width=\"21\" height=\"21\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z\"/></svg><span>Home</span></a>",
+      "css": ".ds-tab { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 4px; border-radius: 12px; color: #3c4657; font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif; font-size: 10.5px; font-weight: 500; text-decoration: none; } .ds-tab-on { color: #fc5303; font-weight: 600; } .ds-tab:focus-visible { outline: 2px solid #fc5303; outline-offset: 2px; }"
+    },
+    {
+      "name": "Ride Button",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "The raised centre of the phone's bar: the action the app exists for.",
+      "html": "<a class=\"ds-ride\" href=\"#\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3.6 16.9v-3.2l1.8-4.5a2.7 2.7 0 0 1 2.5-1.6h8.2a2.7 2.7 0 0 1 2.5 1.6l1.8 4.5v3.2\"/><path d=\"M3.6 13.8h16.8\"/><circle cx=\"7.1\" cy=\"16.9\" r=\"1.85\"/><circle cx=\"16.9\" cy=\"16.9\" r=\"1.85\"/></svg></a>",
+      "css": ".ds-ride { display: grid; place-items: center; width: 54px; height: 54px; margin-top: -16px; border-radius: 999px; background: #d63f08; color: #ffffff; box-shadow: 0 12px 26px -12px rgb(252 83 3 / 0.6); ring: 5px solid #f7f5f1; outline: 5px solid #f7f5f1; transition: transform 160ms ease; } .ds-ride:hover { background: #c13907; } .ds-ride:active { transform: scale(0.95); } .ds-ride:focus-visible { outline: 2px solid #fc5303; outline-offset: 3px; }"
+    },
+    {
+      "name": "Pulse Strip",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "The brand's only graphic and the system's only animation: a staggered equalizer of brand bars.",
+      "html": "<span class=\"ds-pulse\"><i style=\"height:44%;animation-delay:0ms\"></i><i style=\"height:72%;animation-delay:85ms\"></i><i style=\"height:100%;animation-delay:170ms\"></i><i style=\"height:58%;animation-delay:255ms\"></i><i style=\"height:86%;animation-delay:340ms\"></i></span>",
+      "css": ".ds-pulse { display: inline-flex; align-items: flex-end; gap: 2.5px; height: 15px; } .ds-pulse i { display: block; width: 3px; border-radius: 999px; background: #fc5303; transform-origin: bottom; animation: ds-eq 1.1s ease-in-out infinite; } @keyframes ds-eq { 0%, 100% { transform: scaleY(0.42); } 50% { transform: scaleY(1); } } @media (prefers-reduced-motion: reduce) { .ds-pulse i { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Warm Signal",
+    "overview": "Flash looks like a piece of good printed paper with one live signal running through it. The ground is warm off-white, the cards are plain white sheets on top of it, the type is black and confident, and the only colour in the whole system is a single broadcast orange. That orange is not decoration: it marks the one thing that is happening right now.\n\nThe inherited reference already knew this: one hot orange on warm paper, white date chips, photographic panels with a black scrim, a five-bar waveform as the only graphic. Flash keeps that language and points it at three urban services instead of a radio schedule. The pulse mark survives as the brand's one graphic — five rounded bars, now animated, now the signal that a ticket, a ride or a meal is on its way.\n\nThe system is deliberately small. There is one typeface, one accent, one card treatment and one shadow vocabulary. The density is phone-first and generous: 20px gutters, 14px cards, hairline borders, and touch targets that are never smaller than 44px. The desktop is not a stretched phone — it is a re-composition into a left navigation rail, a central column and a right rail, the idiom of a social app.",
+    "keyCharacteristics": [
+      "Warm paper ground, white sheets on top of it, one hot orange for anything live.",
+      "The five-bar pulse: the brand's only graphic, and the only animated element.",
+      "Photography carries the emotion; the type stays black and the chrome stays quiet.",
+      "Status is never colour alone — every state carries an icon and a word.",
+      "Every surface that shows a price says, once, that the price is demo data."
+    ],
+    "rules": [
+      {
+        "name": "The One Signal Rule",
+        "body": "Signal Orange appears on the thing that is live — the active tab, the primary button, the route, the pulse — and almost nowhere else. When everything is orange, nothing is.",
+        "section": "colors"
+      },
+      {
+        "name": "The Deep Signal Rule",
+        "body": "Any orange fill that carries white text uses Deep Signal (#d63f08), never Signal Orange. The vivid orange is for graphics.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Every word in the product is Inter. A second typeface is a new brand decision, not a styling choice.",
+        "section": "typography"
+      },
+      {
+        "name": "The Heavy Head Rule",
+        "body": "Headings carry their own weight. There are no eyebrows or kickers above a heading in Flash.",
+        "section": "typography"
+      },
+      {
+        "name": "The Scrim Rule",
+        "body": "Photography never carries text without a scrim.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use Deep Signal (#d63f08) for any orange fill that carries white text, and Ink Orange (#c33c08) for orange text on paper.",
+      "Do keep exactly one animated element on a screen, and make it the pulse.",
+      "Do put an icon and a word on every status — confirmed, pending, cancelled, on the way.",
+      "Do use one photographic panel per screen at full bleed, with a scrim, and let the rest of the page stay flat and quiet.",
+      "Do keep touch targets at 44px or larger, and the ride button at 54px.",
+      "Do let the desktop re-compose: rail, column, right rail — never a stretched phone frame.",
+      "Do say once, quietly, that prices and ratings are demo data on every screen that shows them."
+    ],
+    "donts": [
+      "Don't use Signal Orange (#fc5303) as a background behind small white text; it is 3.3:1 and fails AA.",
+      "Don't put a kicker or eyebrow above a heading.",
+      "Don't use a hard offset shadow, a glass panel, or gradient text.",
+      "Don't use two typefaces, or a second accent colour.",
+      "Don't clip a card at the edge of the desktop column — use the grid.",
+      "Don't show a rating, price or availability figure without saying it is demo data.",
+      "Don't fabricate a satellite map, a real receipt or a real rating count."
+    ]
+  }
+}
