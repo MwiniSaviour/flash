@@ -53,7 +53,7 @@ export function ActivityChart({
               />
             </div>
             {index % Math.max(1, Math.round(series.length / 6)) === 0 ? (
-              <span className="mt-1.5 truncate text-[9px] text-muted-soft">{point.label}</span>
+              <span className="mt-1.5 truncate text-[10px] text-muted-soft">{point.label}</span>
             ) : null}
           </div>
         ))}

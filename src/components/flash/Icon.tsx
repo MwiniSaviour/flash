@@ -129,6 +129,7 @@ export type IconName =
   | "send"
   | "menu"
   | "more"
+  | "flash"
   | "dashboard"
   | "store";
 
@@ -192,6 +193,7 @@ const ICONS: Record<IconName, LucideIcon> = {
   send: Send,
   menu: Menu,
   more: Ellipsis,
+  flash: Zap,
   dashboard: LayoutGrid,
   store: Store,
 };

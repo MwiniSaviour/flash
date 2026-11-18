@@ -12,12 +12,18 @@ export type PlatformSettings = {
   payoutHoldHours: number;
 };
 
-export const DEMO_SETTINGS: PlatformSettings = {
-  goodsCommissionBps: 300,
-  selfDeliveryGoodsCommissionBps: 400,
-  deliveryCommissionBps: 300,
-  payoutHoldHours: 48,
+const settingsHost = globalThis as typeof globalThis & {
+  __flashDemoSettings?: PlatformSettings;
 };
+
+export const DEMO_SETTINGS: PlatformSettings =
+  settingsHost.__flashDemoSettings ??
+  (settingsHost.__flashDemoSettings = {
+    goodsCommissionBps: 300,
+    selfDeliveryGoodsCommissionBps: 400,
+    deliveryCommissionBps: 300,
+    payoutHoldHours: 48,
+  });
 
 export type CommissionInput = {
   itemsPesewas: number;
