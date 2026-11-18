@@ -1,0 +1,56 @@
+"use client";
+
+import { useState, useTransition } from "react";
+
+import { Icon } from "@/components/flash/Icon";
+import { confirmDeliveryAction } from "@/lib/flash/actions";
+
+/**
+ * The customer's confirmation.
+ *
+ * The driver is only paid after the customer says the order arrived, so this
+ * button is the release gate for the held delivery fee and the seller's net.
+ */
+export function ConfirmDeliveryButton({ orderId }: { orderId: string }) {
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  if (done) {
+    return (
+      <p className="mt-3 flex items-center gap-1.5 rounded-[12px] bg-success-soft px-3 py-2.5 text-[13px] font-semibold text-success-ink">
+        <Icon name="check" size={15} />
+        Delivery confirmed — the rider has been paid.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        disabled={isPending}
+        onClick={() =>
+          startTransition(async () => {
+            setError(null);
+            const result = await confirmDeliveryAction({ orderId });
+            if (!result.ok) {
+              setError(result.error);
+              return;
+            }
+            setDone(true);
+          })
+        }
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[14px] font-bold text-white transition hover:bg-brand-solid-hover disabled:opacity-60"
+      >
+        <Icon name="check" size={16} />
+        {isPending ? "Confirming…" : "I have received my order"}
+      </button>
+      {error ? (
+        <p role="alert" className="mt-1.5 text-[12px] text-danger-ink">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}

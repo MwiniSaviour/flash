@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BookingCode } from "@/components/flash/BookingCode";
+import { ConfirmDeliveryButton } from "@/components/flash/ConfirmDeliveryButton";
 import { Icon } from "@/components/flash/Icon";
 import { PassActions } from "@/components/flash/PassActions";
 import { Avatar, DemoNote, StatusBadge } from "@/components/flash/ui";
@@ -28,6 +29,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   if (!order?.receipt) notFound();
 
   const receipt = order.receipt;
+  const awaitingConfirmation = order.status === "on the way";
 
   return (
     <div className="px-5 pb-6 pt-3">
@@ -137,7 +139,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             />
           </div>
         </div>
-      </article>
+        {awaitingConfirmation ? <ConfirmDeliveryButton orderId={order.id} /> : null}
+
+</article>
 
       <DemoNote />
 

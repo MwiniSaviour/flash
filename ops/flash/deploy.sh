@@ -14,7 +14,9 @@ set -euo pipefail
 
 cd /opt/flash
 
-MIGRATIONS=(20261116115441_init.sql 20261117013000_ride_passengers.sql 20261117013500_parcel_quantity.sql)
+# Migrations are applied in filename order. The list is read from the files so
+# a new migration can never be forgotten here.
+mapfile -t MIGRATIONS < <(find /opt/flash -maxdepth 1 -name '*.sql' -printf '%f\n' | sort)
 
 if [[ "${1:-}" == "--fresh" ]]; then
   echo "rebuilding the database from nothing"

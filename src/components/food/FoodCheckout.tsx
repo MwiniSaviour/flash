@@ -46,6 +46,7 @@ export function FoodCheckout({ businessAccount = false }: { businessAccount?: bo
         restaurantId: cart.restaurantId ?? "",
         fulfilment,
         address: fulfilment === "delivery" ? address : "",
+        paymentMethod: method === "cash" ? "cash" : "online",
         lines: cart.lines.map((line) => ({
           menuItemId: line.menuItemId,
           size: line.size,
@@ -56,6 +57,11 @@ export function FoodCheckout({ businessAccount = false }: { businessAccount?: bo
 
       if (!result.ok) {
         setError(result.error);
+        return;
+      }
+
+      if (result.data.checkoutUrl) {
+        window.location.href = result.data.checkoutUrl;
         return;
       }
 

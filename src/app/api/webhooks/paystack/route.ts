@@ -4,6 +4,7 @@ import { getEnv } from "@/lib/env";
 import { fulfilPayment } from "@/lib/payments/service";
 import {
   paystackConfigured,
+  paystackKey,
   verifyWebhookSignature,
   type PaystackWebhookPayload,
 } from "@/lib/payments/paystack";
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
   const raw = await request.arrayBuffer();
   const signature = request.headers.get("x-paystack-signature") ?? "";
 
-  if (!verifyWebhookSignature(raw, signature)) {
+  if (!verifyWebhookSignature(raw, signature, paystackKey())) {
     return NextResponse.json({ error: "Invalid signature." }, { status: 401 });
   }
 

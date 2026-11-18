@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AccountRow, NotificationToggle } from "@/components/flash/Account";
 import { Icon } from "@/components/flash/Icon";
 import { Avatar } from "@/components/flash/ui";
+import { requireAdmin } from "@/lib/admin/auth";
 import { getCurrentUser, listBusinesses } from "@/lib/flash/repository";
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ const STATS = [
 export default async function ProfilePage() {
   const [user, businesses] = await Promise.all([getCurrentUser(), listBusinesses()]);
   const business = businesses[0];
+  const admin = Boolean(await requireAdmin());
 
   return (
     <div className="pb-5">
@@ -64,6 +66,7 @@ export default async function ProfilePage() {
           <AccountRow icon="bell" label="Notifications" badge={2} href="/profile" />
           <AccountRow icon="banknote" label="Payment methods" href="/profile" />
           <AccountRow icon="settings" label="Settings" href="/profile" />
+          {admin ? <AccountRow icon="dashboard" label="Admin console" href="/admin" /> : null}
           <AccountRow icon="help" label="Help & Support" href="/profile" />
         </div>
       </section>
@@ -128,6 +131,26 @@ export default async function ProfilePage() {
           </div>
         </div>
       </section>
+
+      {admin ? (
+        <section className="mt-5 px-5">
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 rounded-[16px] border border-line/90 bg-surface p-3.5 transition hover:border-line-strong"
+          >
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-brand-soft text-brand-ink">
+              <Icon name="settings" size={19} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-bold text-ink">Platform admin</span>
+              <span className="mt-0.5 block text-[12.5px] text-muted">
+                Commission rates, approvals and payouts
+              </span>
+            </span>
+            <Icon name="chevron-right" size={16} className="text-muted-soft" />
+          </Link>
+        </section>
+      ) : null}
 
       <section className="mt-5 px-5">
         <div className="flex items-start gap-3 rounded-[16px] border border-line/90 bg-surface p-3.5">

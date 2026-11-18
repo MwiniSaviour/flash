@@ -13,7 +13,8 @@
     "db:seed": "node scripts/generate-seed.mjs",
     "db:schema": "node scripts/generate-schema.mjs",
     "db:check": "node scripts/check-sql.mjs",
-    "media:check": "node scripts/check-media.mjs"
+    "media:check": "node scripts/check-media.mjs",
+    "payments:check": "node scripts/check-payments.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.10.0",

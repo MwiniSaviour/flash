@@ -6,7 +6,7 @@ import { currentClerkIdentity, currentUserId } from "@/lib/auth/server";
 import { destroyImage } from "@/lib/media/cloudinary";
 import { isOwnedCloudinaryUrl, publicIdFromUrl } from "@/lib/media/url";
 import { paystackConfigured } from "@/lib/payments/paystack";
-import { recordCashCommission, startCheckout } from "@/lib/payments/service";
+import { confirmDelivery, recordCashCommission, startCheckout } from "@/lib/payments/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { findCover } from "./covers";
@@ -734,4 +734,20 @@ export async function sendParcel(input: {
       demo: false,
     },
   };
+}
+
+/** The customer confirms delivery; this is what releases the driver payout. */
+export async function confirmDeliveryAction(input: {
+  orderId: string;
+}): Promise<ActionResult<{ confirmed: boolean }>> {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "Sign in to confirm a delivery." };
+
+  const result = await confirmDelivery({ orderId: input.orderId, userId });
+  if (!result.ok) return { ok: false, error: result.error ?? "We could not confirm that delivery." };
+
+  revalidatePath("/track");
+  revalidatePath("/orders");
+
+  return { ok: true, data: { confirmed: true } };
 }
