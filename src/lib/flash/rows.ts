@@ -66,6 +66,9 @@ export interface TicketTierRow {
   price: number;
   perks: string[];
   available: number;
+  discount_percent: number;
+  discount_starts_at: string | null;
+  discount_ends_at: string | null;
 }
 
 export interface EventWithTiersRow extends EventRow {
@@ -115,6 +118,10 @@ export interface MenuItemRow {
   image_alt: string;
   popular: boolean;
   vegetarian: boolean;
+  tags: string[];
+  discount_percent: number;
+  discount_starts_at: string | null;
+  discount_ends_at: string | null;
 }
 
 export interface MenuItemSizeRow {

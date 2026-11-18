@@ -19,6 +19,9 @@ import {
   Clock,
   Compass,
   Crown,
+  Download,
+  Ellipsis,
+  Filter,
   GlassWater,
   Heart,
   House,
@@ -78,6 +81,7 @@ export type IconName =
   | "profile"
   | "search"
   | "filter"
+  | "download"
   | "chevron-right"
   | "chevron-left"
   | "chevron-down"
@@ -124,6 +128,7 @@ export type IconName =
   | "timer"
   | "send"
   | "menu"
+  | "more"
   | "dashboard"
   | "store";
 
@@ -138,7 +143,8 @@ const ICONS: Record<IconName, LucideIcon> = {
   track: Package,
   profile: User,
   search: Search,
-  filter: SlidersHorizontal,
+  filter: Filter,
+  download: Download,
   "chevron-right": ChevronRight,
   "chevron-left": ChevronLeft,
   "chevron-down": ChevronDown,
@@ -185,6 +191,7 @@ const ICONS: Record<IconName, LucideIcon> = {
   timer: Timer,
   send: Send,
   menu: Menu,
+  more: Ellipsis,
   dashboard: LayoutGrid,
   store: Store,
 };

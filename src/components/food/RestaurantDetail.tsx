@@ -10,7 +10,12 @@ import { Fact, KitchenBanner } from "@/components/food/KitchenBanner";
 import { MenuItemCard } from "@/components/food/MenuItemCards";
 import { useCart } from "@/lib/cart";
 import { cedis, distance, minutes } from "@/lib/flash/format";
-import { deliveryQuote } from "@/lib/flash/pricing";
+import {
+  activeDiscountPercent,
+  deliveryQuote,
+  discountLabel,
+  priceAfterDiscount,
+} from "@/lib/flash/pricing";
 import type { Restaurant } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
 
@@ -71,7 +76,6 @@ export function RestaurantDetail({ restaurant }: { restaurant: Restaurant }) {
       distanceKm: restaurant.distanceKm,
       etaMinutes: restaurant.etaMinutes,
       neighbourhood: restaurant.neighbourhood,
-      discountPercent: restaurant.discount?.percent ?? 0,
     });
     setAdded(itemId);
     setTimeout(() => setAdded(null), 1200);
@@ -83,7 +87,7 @@ export function RestaurantDetail({ restaurant }: { restaurant: Restaurant }) {
         image={restaurant.image}
         title={restaurant.name}
         subtitle={restaurant.tagline}
-        badge={restaurant.discount?.label ?? restaurant.badge}
+        badge={restaurant.badge}
         backHref="/food"
         backLabel="Back to food"
         facts={[
@@ -148,6 +152,7 @@ export function RestaurantDetail({ restaurant }: { restaurant: Restaurant }) {
           <ul className="mt-3 divide-y divide-line/70 px-5">
             {menu.map((item) => {
               const inCart = cartForThisKitchen.find((line) => line.menuItemId === item.id);
+              const percent = activeDiscountPercent(item);
 
               return (
                 <li key={item.id} className="flex items-start gap-3 py-3.5">
@@ -173,14 +178,24 @@ export function RestaurantDetail({ restaurant }: { restaurant: Restaurant }) {
                         </span>
                       ) : null}
                       {item.vegetarian ? <Tag>Veg</Tag> : null}
+                      {percent > 0 ? (
+                        <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-brand-ink">
+                          {discountLabel(percent)}
+                        </span>
+                      ) : null}
                     </span>
                     <span className="mt-1 block text-[12.5px] leading-snug text-muted">
                       {item.description}
                     </span>
                     <span className="mt-1.5 flex items-center gap-2">
                       <span className="text-[13px] font-bold tracking-[-0.01em] text-ink">
-                        {cedis(item.price)}
+                        {cedis(percent > 0 ? priceAfterDiscount(item.price, item) : item.price)}
                       </span>
+                      {percent > 0 ? (
+                        <span className="text-[11.5px] text-muted line-through">
+                          {cedis(item.price)}
+                        </span>
+                      ) : null}
                       {inCart ? (
                         <span className="text-[11.5px] font-semibold text-brand-ink">
                           {inCart.quantity} in bag

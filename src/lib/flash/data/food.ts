@@ -13,6 +13,8 @@ import type {
   Restaurant,
 } from "@/lib/flash/types";
 
+import { demoStore } from "./demo-store";
+
 /** A menu line before the portions, the extras and the tagline are attached. */
 type MenuItemSeed = Omit<
   Restaurant["menu"][number],
@@ -135,6 +137,10 @@ const seeds: RestaurantSeed[] = [
         },
         popular: true,
         vegetarian: false,
+        tags: ["Bestseller", "Smoky"],
+        discountPercent: 10,
+        discountStartsAt: "2026-11-01",
+        discountEndsAt: "2026-11-30",
       },
       {
         id: "mi-muni-waakye",
@@ -770,7 +776,7 @@ const TAGLINES_BY_CUISINE: Record<Cuisine, string[]> = {
  * The kitchens, with every dish carrying the portions it comes in and the
  * extras that can be added to it.
  */
-export const restaurants: Restaurant[] = seeds.map((restaurant, index) => ({
+export const restaurants: Restaurant[] = demoStore.restaurants ?? (demoStore.restaurants = seeds.map((restaurant, index) => ({
   ...restaurant,
   menu: restaurant.menu.map((item, itemIndex) => {
     const taglines = TAGLINES_BY_CUISINE[restaurant.cuisine];
@@ -782,4 +788,4 @@ export const restaurants: Restaurant[] = seeds.map((restaurant, index) => ({
       tagline: taglines[(index + itemIndex) % taglines.length],
     };
   }),
-}));
+})));

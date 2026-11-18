@@ -238,6 +238,9 @@ const tierRows = events.flatMap((event) =>
     price: tier.price,
     perks: tier.perks,
     available: tier.available,
+    discount_percent: tier.discountPercent ?? 0,
+    discount_starts_at: tier.discountStartsAt ?? null,
+    discount_ends_at: tier.discountEndsAt ?? null,
   })),
 );
 
@@ -325,6 +328,10 @@ const menuRows = restaurants.flatMap((restaurant) =>
     image_alt: item.image.alt,
     popular: item.popular,
     vegetarian: item.vegetarian,
+    tags: item.tags ?? [],
+    discount_percent: item.discountPercent ?? 0,
+    discount_starts_at: item.discountStartsAt ?? null,
+    discount_ends_at: item.discountEndsAt ?? null,
   })),
 );
 
@@ -682,8 +689,15 @@ const statements = [
   ),
   insert(
     "event_tiers",
-    ["id", "event_id", "name", "description", "price", "perks", "available"],
-    tierRows.map((row) => [t(row.id), t(row.event_id), t(row.name), t(row.description), n(row.price), arr(row.perks), n(row.available)]),
+    [
+      "id", "event_id", "name", "description", "price", "perks", "available",
+      "discount_percent", "discount_starts_at", "discount_ends_at",
+    ],
+    tierRows.map((row) => [
+      t(row.id), t(row.event_id), t(row.name), t(row.description), n(row.price),
+      arr(row.perks), n(row.available), n(row.discount_percent), d(row.discount_starts_at),
+      d(row.discount_ends_at),
+    ]),
     "id",
   ),
   insert(
@@ -712,10 +726,14 @@ const statements = [
   ),
   insert(
     "menu_items",
-    ["id", "restaurant_id", "name", "description", "tagline", "price", "image_src", "image_alt", "popular", "vegetarian"],
+    [
+      "id", "restaurant_id", "name", "description", "tagline", "price", "image_src", "image_alt",
+      "popular", "vegetarian", "tags", "discount_percent", "discount_starts_at", "discount_ends_at",
+    ],
     menuRows.map((row) => [
       t(row.id), t(row.restaurant_id), t(row.name), t(row.description), t(row.tagline), n(row.price),
-      t(row.image_src), t(row.image_alt), b(row.popular), b(row.vegetarian),
+      t(row.image_src), t(row.image_alt), b(row.popular), b(row.vegetarian), arr(row.tags),
+      n(row.discount_percent), d(row.discount_starts_at), d(row.discount_ends_at),
     ]),
     "id",
   ),

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ConsoleShell } from "@/components/dashboard/ConsoleShell";
+import { ConsoleTopbar } from "@/components/dashboard/ConsoleTopbar";
 import { Icon } from "@/components/flash/Icon";
 import { EmptyState } from "@/components/flash/ui";
 import { consoleHref, isConsoleBusiness } from "@/lib/flash/console";
@@ -43,6 +44,7 @@ export default async function DashboardPage() {
 
   return (
     <ConsoleShell>
+      <ConsoleTopbar name="Your business" />
       <div className="pb-8">
         <header>
           <p className="text-[12.5px] font-medium text-muted">Your business</p>

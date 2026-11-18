@@ -1,4 +1,12 @@
-import type { Fulfilment } from "./types";
+import { DEMO_TODAY } from "./format";
+import type { Fulfilment, MenuItem, TicketTier } from "./types";
+
+type Discountable = Pick<
+  MenuItem & TicketTier,
+  "discountPercent" | "discountStartsAt" | "discountEndsAt"
+>;
+
+export type DiscountState = "none" | "scheduled" | "active" | "expired";
 
 /**
  * What an order costs to get there.
@@ -42,9 +50,54 @@ export function discountOn(subtotal: number, percent: number): number {
   return Math.round((subtotal * percent) / 100);
 }
 
-/** The label a kitchen's offer carries. */
+/** The label a discount carries. */
 export function discountLabel(percent: number): string {
   return `${percent}% off`;
+}
+
+/**
+ * Where a product's discount stands on a given day.
+ *
+ * A discount with no window is active as soon as it has a percent; a start
+ * date in the future schedules it and an end date in the past expires it.
+ * The caller passes the day so the console and the storefront agree on "today".
+ */
+export function discountState(item: Discountable, today: string = DEMO_TODAY): DiscountState {
+  const percent = item.discountPercent ?? 0;
+  if (percent <= 0) return "none";
+  if (item.discountStartsAt && item.discountStartsAt > today) return "scheduled";
+  if (item.discountEndsAt && item.discountEndsAt < today) return "expired";
+  return "active";
+}
+
+/** The percentage a product actually gives today, before any rounding. */
+export function activeDiscountPercent(
+  item: Discountable,
+  today: string = DEMO_TODAY,
+): number {
+  return discountState(item, today) === "active" ? (item.discountPercent ?? 0) : 0;
+}
+
+/** A price with the product's active discount taken off, in whole cedis. */
+export function priceAfterDiscount(
+  price: number,
+  item: Discountable,
+  today: string = DEMO_TODAY,
+): number {
+  return price - discountOn(price, activeDiscountPercent(item, today));
+}
+
+/** A short human label for a discount's schedule. */
+export function discountWindow(
+  item: Discountable,
+  today: string = DEMO_TODAY,
+): string {
+  const state = discountState(item, today);
+  if (state === "none") return "No discount";
+  if (state === "scheduled") return `Starts ${item.discountStartsAt}`;
+  if (state === "expired") return `Ended ${item.discountEndsAt}`;
+  if (item.discountEndsAt) return `Until ${item.discountEndsAt}`;
+  return "No expiry";
 }
 
 /** How the order reaches the customer, in the words the screen uses. */

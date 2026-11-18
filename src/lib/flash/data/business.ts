@@ -9,10 +9,12 @@
 
 import type { Business, Order, Ticket } from "@/lib/flash/types";
 
+import { demoStore } from "./demo-store";
+
 export const DEMO_USER_ID = "usr-saviour-mwini";
 
 /** The businesses the demo account runs. */
-export const businesses: Business[] = [
+export const businesses: Business[] = demoStore.businesses ?? (demoStore.businesses = [
   {
     id: "biz-auntie-muni",
     userId: DEMO_USER_ID,
@@ -39,10 +41,10 @@ export const businesses: Business[] = [
     createdAt: "2026-08-19T14:30:00.000Z",
     decidedAt: "2026-08-21T08:05:00.000Z",
   },
-];
+]);
 
 /** The orders waiting on the demo kitchen. */
-export const incomingOrders: Order[] = [
+export const incomingOrders: Order[] = demoStore.orders ?? (demoStore.orders = [
   {
     id: "ord-8801",
     restaurantId: "rst-auntie-muni",
@@ -101,10 +103,10 @@ export const incomingOrders: Order[] = [
     },
     reference: "FLS-8802-5512",
   },
-];
+]);
 
 /** The tickets waiting on the demo promoter's event. */
-export const incomingTickets: Ticket[] = [
+export const incomingTickets: Ticket[] = demoStore.tickets ?? (demoStore.tickets = [
   {
     id: "tkt-uv-kofi",
     eventId: "evt-urban-vibes-festival",
@@ -135,4 +137,5 @@ export const incomingTickets: Ticket[] = [
     reference: "FLS-8803-1140",
     purchasedAt: "2026-11-16T07:40:00.000Z",
   },
-];
+]);
+

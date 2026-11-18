@@ -19,6 +19,8 @@ export type FlashEnv = {
   readonly cloudinaryApiKey: string | null;
   readonly cloudinaryApiSecret: string | null;
   readonly cloudinaryFolder: string;
+  readonly paystackSecretKey: string | null;
+  readonly paystackWebhookSecret: string | null;
 };
 
 const DEFAULT_SITE_URL = "http://localhost:3000";
@@ -66,6 +68,8 @@ export function getEnv(): FlashEnv {
     cloudinaryApiKey: clean(process.env.CLOUDINARY_API_KEY),
     cloudinaryApiSecret: clean(process.env.CLOUDINARY_API_SECRET),
     cloudinaryFolder: clean(process.env.CLOUDINARY_FOLDER) ?? "flash",
+    paystackSecretKey: clean(process.env.PAYSTACK_SECRET_KEY),
+    paystackWebhookSecret: clean(process.env.PAYSTACK_WEBHOOK_SECRET),
   });
 
   return cached;
@@ -93,6 +97,11 @@ export function hasClerkEnv(): boolean {
 export function hasCloudinaryEnv(): boolean {
   const env = getEnv();
   return Boolean(env.cloudinaryCloudName && env.cloudinaryApiKey && env.cloudinaryApiSecret);
+}
+
+/** True when Paystack can take live payments. */
+export function hasPaystackEnv(): boolean {
+  return Boolean(getEnv().paystackSecretKey?.startsWith("sk_"));
 }
 
 /**

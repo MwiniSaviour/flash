@@ -109,6 +109,9 @@ export function toEvent(row: EventRecord): Event {
       price: tier.price,
       perks: tier.perks,
       available: tier.available,
+      discountPercent: tier.discount_percent ?? 0,
+      discountStartsAt: tier.discount_starts_at ?? undefined,
+      discountEndsAt: tier.discount_ends_at ?? undefined,
     })),
     going: row.going,
     capacity: row.capacity,
@@ -144,6 +147,10 @@ export function toRestaurant(row: RestaurantRecord): Restaurant {
       popular: item.popular,
       vegetarian: item.vegetarian,
       tagline: item.tagline,
+      tags: item.tags ?? [],
+      discountPercent: item.discount_percent ?? 0,
+      discountStartsAt: item.discount_starts_at ?? undefined,
+      discountEndsAt: item.discount_ends_at ?? undefined,
       sizes: [...(item.sizes ?? [])]
         .sort((a, b) => a.position - b.position)
         .map((size) => ({ id: size.id, name: size.name, price: size.price })),
@@ -157,6 +164,7 @@ export function toRestaurant(row: RestaurantRecord): Restaurant {
 function toTicket(row: TicketRow): Ticket {
   return {
     id: row.id,
+    userId: row.user_id,
     eventId: row.event_id,
     tierId: row.tier_id ?? "",
     tierName: row.tier_name,
@@ -196,6 +204,7 @@ function toOrder(row: OrderWithLinesRow): Order {
 
   return {
     id: row.id,
+    userId: row.user_id,
     restaurantId: row.restaurant_id,
     number: row.number,
     fulfilment: (row.fulfilment as Fulfilment) ?? "delivery",
@@ -907,6 +916,136 @@ export async function listIncomingTickets(eventIds: string[]): Promise<Ticket[]>
 
   if (error) throw error;
   return ((data ?? []) as TicketRow[]).map(toTicket);
+}
+
+/** A person who has bought from one of the account's businesses. */
+export type ConsoleCustomer = {
+  id: string;
+  name: string;
+  email: string;
+  orders: number;
+  tickets: number;
+  spend: number;
+};
+
+/** The demo people behind the seeded orders and tickets. */
+const DEMO_CUSTOMERS = [
+  { id: "usr-kofi-mensah", name: "Kofi Mensah", email: "kofi@example.gh" },
+  { id: "usr-efua-ansah", name: "Efua Ansah", email: "efua@example.gh" },
+  { id: "usr-ama-boateng", name: "Ama Boateng", email: "ama@example.gh" },
+  { id: "usr-yaw-opoku", name: "Yaw Opoku", email: "yaw@example.gh" },
+  { id: "usr-naa-dzifa", name: "Naa Dzifa", email: "naa@example.gh" },
+];
+
+/**
+ * The customers of one business, aggregated from the orders or tickets that
+ * belong to its venues. The service role bypasses RLS, so the venue ids are
+ * already resolved from the owned business before this read runs.
+ */
+export async function listCustomers(
+  businessId: string,
+  kind: "restaurant" | "events",
+): Promise<ConsoleCustomer[]> {
+  const client = createAdminClient();
+
+  if (!client) {
+    const kitchen = restaurants.find((entry) => entry.businessId === businessId);
+    const ownedEvents = events.filter((entry) => entry.businessId === businessId);
+    const totals = new Map<string, ConsoleCustomer>();
+
+    const add = (index: number, orders: number, tickets: number, spend: number) => {
+      const person = DEMO_CUSTOMERS[index % DEMO_CUSTOMERS.length];
+      const row = totals.get(person.id) ?? { ...person, orders: 0, tickets: 0, spend: 0 };
+      row.orders += orders;
+      row.tickets += tickets;
+      row.spend += spend;
+      totals.set(person.id, row);
+    };
+
+    if (kind === "restaurant" && kitchen) {
+      incomingOrders
+        .filter((order) => order.restaurantId === kitchen.id)
+        .forEach((order, index) => add(index, 1, 0, order.subtotal - order.discount));
+    } else {
+      incomingTickets
+        .filter((ticket) => ownedEvents.some((entry) => entry.id === ticket.eventId))
+        .forEach((ticket, index) => {
+          const event = ownedEvents.find((entry) => entry.id === ticket.eventId);
+          const tier = event?.tiers.find((entry) => entry.id === ticket.tierId);
+          add(index, 0, ticket.quantity, (tier?.price ?? 0) * ticket.quantity);
+        });
+    }
+
+    return [...totals.values()];
+  }
+
+  const readPurchases = async () => {
+    if (kind === "restaurant") {
+      const kitchen = await listKitchen(businessId);
+      if (!kitchen) return [];
+      const result = await client
+        .from("orders")
+        .select("user_id, subtotal, discount")
+        .eq("restaurant_id", kitchen.id);
+      if (result.error) throw result.error;
+      return result.data ?? [];
+    }
+
+    const eventIds = (await listEventsForBusiness(businessId)).map((entry) => entry.id);
+    if (!eventIds.length) return [];
+    const result = await client
+      .from("tickets")
+      .select("user_id, quantity, tier_id")
+      .in("event_id", eventIds);
+    if (result.error) throw result.error;
+    return result.data ?? [];
+  };
+
+  type PurchaseRow = {
+    user_id: string;
+    subtotal?: number;
+    discount?: number;
+    quantity?: number;
+    tier_id?: string | null;
+  };
+  const purchases = (await readPurchases()) as PurchaseRow[];
+  const ids = [...new Set(purchases.map((row) => row.user_id).filter(Boolean))];
+  if (!ids.length) return [];
+
+  const { data: profiles, error: profileError } = await client
+    .from("profiles")
+    .select("id, name, email")
+    .in("id", ids);
+
+  if (profileError) throw profileError;
+
+  const byId = new Map((profiles ?? []).map((row) => [row.id, row]));
+  const totals = new Map<string, ConsoleCustomer>();
+
+  for (const row of purchases) {
+    const profile = byId.get(row.user_id as string);
+    if (!profile) continue;
+
+    const entry = totals.get(profile.id) ?? {
+      id: profile.id,
+      name: profile.name,
+      email: profile.email,
+      orders: 0,
+      tickets: 0,
+      spend: 0,
+    };
+
+    if (kind === "restaurant") {
+      entry.orders += 1;
+      entry.spend += Number(row.subtotal ?? 0) - Number(row.discount ?? 0);
+    } else {
+      entry.tickets += Number(row.quantity ?? 0);
+      entry.spend += Number(row.quantity ?? 0);
+    }
+    totals.set(profile.id, entry);
+  }
+
+  return [...totals.values()];
 }
 
 /* -------------------------------------------------------------------------- */

@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 
-import { currentUserId } from "@/lib/auth/server";
+import { currentClerkIdentity, currentUserId } from "@/lib/auth/server";
 import { destroyImage } from "@/lib/media/cloudinary";
 import { isOwnedCloudinaryUrl, publicIdFromUrl } from "@/lib/media/url";
+import { paystackConfigured } from "@/lib/payments/paystack";
+import { recordCashCommission, startCheckout } from "@/lib/payments/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { findCover } from "./covers";
@@ -17,7 +19,7 @@ import {
   type ParcelSize,
 } from "./data/parcels";
 import { ensureProfile } from "./profile";
-import { deliveryQuote, discountOn } from "./pricing";
+import { activeDiscountPercent, deliveryQuote, discountOn } from "./pricing";
 import { isBusinessAccount } from "./repository";
 import type { Fulfilment, MenuItem } from "./types";
 /**
@@ -42,6 +44,7 @@ export type TicketBooking = {
   reference: string;
   total: number;
   demo: boolean;
+  checkoutUrl?: string | null;
 };
 
 export type OrderPlaced = {
@@ -51,6 +54,7 @@ export type OrderPlaced = {
   total: number;
   etaMinutes: number;
   demo: boolean;
+  checkoutUrl?: string | null;
 };
 
 export type RideRequested = {
@@ -107,6 +111,7 @@ export async function bookTicket(input: {
   eventId: string;
   tierId: string;
   quantity: number;
+  paymentMethod?: "online" | "cash";
 }): Promise<ActionResult<TicketBooking>> {
   const quantity = clampQuantity(input.quantity);
   const client = createAdminClient();
@@ -163,6 +168,35 @@ export async function bookTicket(input: {
 
   if (error) return { ok: false, error: "We could not hold that ticket. Try again." };
 
+  const total = tier.price * quantity;
+  const identity = await currentClerkIdentity();
+
+  if (paystackConfigured()) {
+    if (input.paymentMethod === "cash") {
+      await recordCashCommission({
+        userId,
+        itemsCedis: total,
+        deliveryFeeCedis: 0,
+        selfDelivery: false,
+        ticketId: id,
+      });
+    } else {
+      const checkout = await startCheckout({
+        kind: "ticket",
+        userId,
+        email: identity?.email ?? "",
+        itemsCedis: total,
+        deliveryFeeCedis: 0,
+        selfDelivery: false,
+        ticketId: id,
+      });
+      return {
+        ok: true,
+        data: { id, reference, total, demo: false, checkoutUrl: checkout.checkoutUrl },
+      };
+    }
+  }
+
   revalidatePath("/bookings");
   revalidatePath("/tickets");
 
@@ -180,6 +214,7 @@ export async function placeOrder(input: {
   restaurantId: string;
   fulfilment: Fulfilment;
   address: string;
+  paymentMethod?: "online" | "cash";
   lines: {
     menuItemId: string;
     size: string;
@@ -228,13 +263,17 @@ export async function placeOrder(input: {
         .map((id) => item.toppings.find((topping) => topping.id === id))
         .filter((topping): topping is MenuItem["toppings"][number] => Boolean(topping));
 
+      const listPrice =
+        (size?.price ?? item.price) +
+        toppings.reduce((total, topping) => total + topping.price, 0);
+      const percent = activeDiscountPercent(item);
+
       return {
         name: item.name,
         size: size?.name ?? "",
         toppings: toppings.map((topping) => topping.name),
-        price:
-          (size?.price ?? item.price) +
-          toppings.reduce((total, topping) => total + topping.price, 0),
+        price: listPrice - discountOn(listPrice, percent),
+        discount: discountOn(listPrice, percent),
         quantity: line.quantity,
       };
     });
@@ -244,10 +283,10 @@ export async function placeOrder(input: {
     }
 
     const subtotal = priced.reduce(
-      (total, line) => total + line!.price * line!.quantity,
+      (total, line) => total + (line!.price + line!.discount) * line!.quantity,
       0,
     );
-    const discount = discountOn(subtotal, restaurant.discount?.percent ?? 0);
+    const discount = priced.reduce((total, line) => total + line!.discount * line!.quantity, 0);
     const deliveryFee = deliveryQuote(restaurant, fulfilment);
 
     return {
@@ -280,7 +319,9 @@ export async function placeOrder(input: {
   const ids = lines.map((line) => line.menuItemId);
   const { data: items, error: itemsError } = await client
     .from("menu_items")
-    .select("id, restaurant_id, name, price, menu_item_sizes(*), menu_item_toppings(*)")
+    .select(
+      "id, restaurant_id, name, price, discount_percent, discount_starts_at, discount_ends_at, menu_item_sizes(*), menu_item_toppings(*)",
+    )
     .in("id", ids);
 
   if (itemsError) throw itemsError;
@@ -299,14 +340,22 @@ export async function placeOrder(input: {
         Boolean(topping),
       );
 
+    const listPrice =
+      (size?.price ?? item.price) +
+      extras.reduce((total, topping) => total + topping.price, 0);
+    const percent = activeDiscountPercent({
+      discountPercent: item.discount_percent ?? 0,
+      discountStartsAt: item.discount_starts_at ?? undefined,
+      discountEndsAt: item.discount_ends_at ?? undefined,
+    });
+
     return {
       menu_item_id: item.id,
       name: item.name,
       size: size?.name ?? "",
       toppings: extras.map((topping) => topping.name),
-      price:
-        (size?.price ?? item.price) +
-        extras.reduce((total, topping) => total + topping.price, 0),
+      price: listPrice - discountOn(listPrice, percent),
+      discount: discountOn(listPrice, percent),
       quantity: line.quantity,
     };
   });
@@ -325,8 +374,8 @@ export async function placeOrder(input: {
     price: line!.price,
   }));
 
-  const subtotal = orderLines.reduce(
-    (total, line) => total + line.price * line.quantity,
+  const subtotal = priced.reduce(
+    (total, line) => total + (line!.price + line!.discount) * line!.quantity,
     0,
   );
 
@@ -334,7 +383,7 @@ export async function placeOrder(input: {
     { deliveryFee: restaurant.delivery_fee, distanceKm: restaurant.distance_km },
     fulfilment,
   );
-  const discount = discountOn(subtotal, restaurant.discount_percent ?? 0);
+  const discount = priced.reduce((total, line) => total + line!.discount * line!.quantity, 0);
 
   const id = mintId("ord");
   const reference = mintReference();
@@ -347,6 +396,7 @@ export async function placeOrder(input: {
     rider_id: null,
     number,
     fulfilment,
+    self_delivery: fulfilment !== "delivery",
     status: "preparing",
     subtotal,
     discount,
@@ -360,6 +410,45 @@ export async function placeOrder(input: {
 
   if (error) return { ok: false, error: "We could not place that order. Try again." };
 
+  const total = subtotal - discount + deliveryFee;
+
+  if (paystackConfigured()) {
+    const selfDelivery = fulfilment !== "delivery";
+
+    if (input.paymentMethod === "cash") {
+      await recordCashCommission({
+        userId,
+        itemsCedis: subtotal - discount,
+        deliveryFeeCedis: deliveryFee,
+        selfDelivery,
+        orderId: id,
+      });
+    } else {
+      const identity = await currentClerkIdentity();
+      const checkout = await startCheckout({
+        kind: "order",
+        userId,
+        email: identity?.email ?? "",
+        itemsCedis: subtotal - discount,
+        deliveryFeeCedis: deliveryFee,
+        selfDelivery,
+        orderId: id,
+      });
+      return {
+        ok: true,
+        data: {
+          id,
+          reference,
+          number,
+          total,
+          etaMinutes: restaurant.eta_minutes,
+          demo: false,
+          checkoutUrl: checkout.checkoutUrl,
+        },
+      };
+    }
+  }
+
   revalidatePath("/bookings");
   revalidatePath("/track");
   revalidatePath("/orders");
@@ -370,7 +459,7 @@ export async function placeOrder(input: {
       id,
       reference,
       number,
-      total: subtotal - discount + deliveryFee,
+      total,
       etaMinutes: restaurant.eta_minutes,
       demo: false,
     },

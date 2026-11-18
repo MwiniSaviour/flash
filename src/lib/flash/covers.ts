@@ -48,7 +48,48 @@ export const COVER_IMAGES: { src: string; alt: string }[] = [
   },
 ];
 
+/** The posters a promoter can pick, catalogued in docs/assets-provenance.md. */
+export const EVENT_COVERS: { src: string; alt: string }[] = [
+  {
+    src: "/assets/images/event-urban-vibes.jpg",
+    alt: "Festival-goers in front of an illuminated main stage",
+  },
+  {
+    src: "/assets/images/event-concert-crowd.jpg",
+    alt: "A crowd singing along at a live concert",
+  },
+  {
+    src: "/assets/images/event-sunset-live.jpg",
+    alt: "A crowd with hands raised in front of a lit stage at sunset",
+  },
+  {
+    src: "/assets/images/event-afrobeats-zone.jpg",
+    alt: "A performer on stage under warm lights",
+  },
+  {
+    src: "/assets/images/event-comedy-night.jpg",
+    alt: "A comedian on stage holding a microphone",
+  },
+  {
+    src: "/assets/images/event-wellness.jpg",
+    alt: "A group stretching together in a bright studio",
+  },
+  {
+    src: "/assets/images/event-football.jpg",
+    alt: "A football match under floodlights",
+  },
+  {
+    src: "/assets/images/event-highlife-night.jpg",
+    alt: "Dancers at a highlife night under warm lights",
+  },
+];
+
 /** The cover a kitchen is allowed to pick, with the alt text that goes with it. */
 export function findCover(src: string): { src: string; alt: string } | undefined {
   return COVER_IMAGES.find((cover) => cover.src === src);
+}
+
+/** The poster a promoter is allowed to pick. */
+export function findEventCover(src: string): { src: string; alt: string } | undefined {
+  return EVENT_COVERS.find((cover) => cover.src === src);
 }

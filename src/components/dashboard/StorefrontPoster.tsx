@@ -38,11 +38,6 @@ export async function StorefrontPoster({
         />
         <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-        {restaurant.discount ? (
-          <span className="absolute left-5 top-5 rounded-full bg-brand-solid px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white">
-            {restaurant.discount.label}
-          </span>
-        ) : null}
       </div>
 
       <div className="flex flex-1 flex-col px-6 pb-6 pt-5">

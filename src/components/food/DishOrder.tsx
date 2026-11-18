@@ -8,6 +8,7 @@ import { DemoNote, Tag } from "@/components/flash/ui";
 import { Fact, KitchenBanner } from "@/components/food/KitchenBanner";
 import { configuredPrice, useCart } from "@/lib/cart";
 import { cedis, minutes } from "@/lib/flash/format";
+import { activeDiscountPercent, discountLabel, discountOn } from "@/lib/flash/pricing";
 import type { MenuItem, Restaurant } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +34,9 @@ export function DishOrder({
   const [added, setAdded] = useState(false);
 
   const size = item.sizes.find((entry) => entry.id === sizeId) ?? item.sizes[0];
+  const discountPercent = activeDiscountPercent(item);
   const total = configuredPrice(item, { sizeId, toppingIds }) * quantity;
+  const netTotal = total - discountOn(total, discountPercent);
 
   function toggleTopping(id: string) {
     setToppingIds((current) =>
@@ -51,7 +54,6 @@ export function DishOrder({
         distanceKm: restaurant.distanceKm,
         etaMinutes: restaurant.etaMinutes,
         neighbourhood: restaurant.neighbourhood,
-        discountPercent: restaurant.discount?.percent ?? 0,
       },
       { sizeId, toppingIds },
     );
@@ -65,12 +67,12 @@ export function DishOrder({
         image={item.image}
         title={item.name}
         subtitle={item.tagline}
-        badge={restaurant.discount?.label}
+        badge={discountPercent > 0 ? discountLabel(discountPercent) : undefined}
         backHref={`/food/${restaurant.slug}`}
         backLabel="Back to the kitchen"
         facts={[
           <span key="price" className="font-bold text-ink">
-            {cedis(size?.price ?? item.price)}
+            {cedis((size?.price ?? item.price) - discountOn(size?.price ?? item.price, discountPercent))}
           </span>,
           <span key="size" className="flex items-center gap-1.5">
             <Fact icon="bowl" />
@@ -226,7 +228,7 @@ export function DishOrder({
           className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed lg:max-w-[320px]"
         >
           <Icon name={added ? "check" : "bag"} size={16} />
-          {added ? "In your bag" : `Add to cart · ${cedis(total)}`}
+          {added ? "In your bag" : `Add to cart · ${cedis(netTotal)}`}
         </button>
       </StickyAction>
     </div>

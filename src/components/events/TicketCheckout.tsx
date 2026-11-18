@@ -45,10 +45,16 @@ export function TicketCheckout({
         eventId: event.id,
         tierId: tier?.id ?? "",
         quantity,
+        paymentMethod: method === "cash" ? "cash" : "online",
       });
 
       if (!result.ok) {
         setError(result.error);
+        return;
+      }
+
+      if (result.data.checkoutUrl) {
+        window.location.href = result.data.checkoutUrl;
         return;
       }
 

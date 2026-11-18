@@ -39,6 +39,12 @@ export interface TicketTier {
   perks: string[];
   /** Units left in this tier. */
   available: number;
+  /** Percentage off this tier. Zero means no discount. */
+  discountPercent?: number;
+  /** First day the discount applies; no value means immediately. */
+  discountStartsAt?: string;
+  /** Last day the discount applies; no value means no expiry. */
+  discountEndsAt?: string;
 }
 
 export interface Event {
@@ -79,6 +85,7 @@ export type TicketStatus = "confirmed" | "pending" | "used";
 
 export interface Ticket {
   id: string;
+  userId?: string;
   eventId: string;
   tierId: string;
   tierName: string;
@@ -129,6 +136,14 @@ export interface MenuItem {
   toppings: MenuItemTopping[];
   /** The line under the dish's name — appetite, not information. */
   tagline: string;
+  /** Short searchable labels the kitchen uses for the dish. */
+  tags?: string[];
+  /** Percentage off this dish. Zero means no discount. */
+  discountPercent?: number;
+  /** First day the discount applies; no value means immediately. */
+  discountStartsAt?: string;
+  /** Last day the discount applies; no value means no expiry. */
+  discountEndsAt?: string;
 }
 
 /** How an order reaches the customer. */
@@ -243,6 +258,7 @@ export interface OrderLine {
 
 export interface Order {
   id: string;
+  userId?: string;
   restaurantId: string;
   /** The number the customer reads out — the order number. */
   number: string;

@@ -11,7 +11,7 @@ import {
 } from "react";
 
 import type { ImageAsset, MenuItem } from "@/lib/flash/types";
-import { discountOn } from "@/lib/flash/pricing";
+import { activeDiscountPercent, discountOn } from "@/lib/flash/pricing";
 
 /**
  * The food cart.
@@ -31,8 +31,6 @@ export interface CartRestaurant {
   distanceKm: number;
   etaMinutes: number;
   neighbourhood: string;
-  /** What the kitchen takes off the food this week. */
-  discountPercent: number;
 }
 
 /** A dish as it was configured: this portion, these extras. */
@@ -46,8 +44,12 @@ export interface CartLine {
   lineId: string;
   menuItemId: string;
   name: string;
-  /** The unit price with the portion and the extras on top. */
+  /** The unit price before this dish's discount. */
+  listPrice: number;
+  /** The unit price after this dish's discount. */
   price: number;
+  /** The discount applied to this dish when it was added. */
+  discountPercent: number;
   quantity: number;
   /** The kitchen this dish comes from. */
   restaurant: CartRestaurant;
@@ -77,7 +79,7 @@ interface CartValue {
 
 const CartContext = createContext<CartValue | null>(null);
 
-const STORAGE_KEY = "flash-cart-v3";
+const STORAGE_KEY = "flash-cart-v4";
 
 /** What a configured dish costs: the portion, plus the extras. */
 export function configuredPrice(item: MenuItem, options?: CartOptions): number {
@@ -132,6 +134,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .map((id) => item.toppings.find((topping) => topping.id === id))
         .filter((topping): topping is MenuItem["toppings"][number] => Boolean(topping));
 
+      const listPrice = configuredPrice(item, options);
+      const discountPercent = activeDiscountPercent(item);
+      const price = listPrice - discountOn(listPrice, discountPercent);
+
       setLines((current) => {
         const existing = current.find((line) => line.lineId === lineId);
 
@@ -149,7 +155,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
             lineId,
             menuItemId: item.id,
             name: item.name,
-            price: configuredPrice(item, options),
+            listPrice,
+            price,
+            discountPercent,
             quantity: 1,
             restaurant,
             size: size?.name ?? "",
@@ -182,7 +190,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const first = lines[0];
     const mixed = lines.some((line) => line.restaurant.id !== first?.restaurant.id);
     const restaurant = mixed || !first ? null : first.restaurant;
-    const subtotal = lines.reduce((total, line) => total + line.price * line.quantity, 0);
+    const subtotal = lines.reduce((total, line) => total + line.listPrice * line.quantity, 0);
+    const discount = lines.reduce(
+      (total, line) => total + discountOn(line.listPrice, line.discountPercent) * line.quantity,
+      0,
+    );
 
     return {
       lines,
@@ -191,7 +203,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       restaurantName: restaurant?.name ?? null,
       count: lines.reduce((total, line) => total + line.quantity, 0),
       subtotal,
-      discount: restaurant ? discountOn(subtotal, restaurant.discountPercent) : 0,
+      discount,
       add,
       setQuantity,
       remove,

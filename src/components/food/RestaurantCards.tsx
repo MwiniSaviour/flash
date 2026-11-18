@@ -36,11 +36,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
           <Rating value={restaurant.rating} count={restaurant.ratingCount} />
         </span>
 
-        {restaurant.discount ? (
-          <span className="absolute right-2 top-2 whitespace-nowrap rounded-full bg-brand-solid px-2 py-1 text-[10px] font-bold uppercase tracking-[0.06em] text-white">
-            {restaurant.discount.label}
-          </span>
-        ) : restaurant.badge ? (
+        {restaurant.badge ? (
           <span className="absolute right-2 top-2 whitespace-nowrap rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.06em] text-brand-ink shadow-[0_2px_8px_rgb(20_18_15/0.18)]">
             {restaurant.badge}
           </span>

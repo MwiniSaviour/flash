@@ -11,28 +11,33 @@ import type { Business } from "./types";
 export type ConsoleKind = "restaurant" | "events";
 
 export type ConsoleSection = {
-  id: string;
+  /** The path under the business console. Empty is the overview. */
+  path: string;
   label: string;
   icon: IconName;
 };
 
-/** The sections of each console, in the order the manager works through them. */
+/** Each section is a real route, so the browser's back button and URLs work. */
 export const CONSOLE_SECTIONS: Record<ConsoleKind, ConsoleSection[]> = {
   restaurant: [
-    { id: "orders", label: "Orders", icon: "receipt" },
-    { id: "menu", label: "What you cook", icon: "bowl" },
-    { id: "offer", label: "This week's offer", icon: "lightning" },
-    { id: "storefront", label: "Your storefront", icon: "store" },
+    { path: "", label: "Overview", icon: "home" },
+    { path: "orders", label: "Orders", icon: "receipt" },
+    { path: "dishes", label: "Dishes", icon: "bowl" },
+    { path: "customers", label: "Customers", icon: "user" },
+    { path: "storefront", label: "Storefront", icon: "store" },
   ],
   events: [
-    { id: "tickets", label: "Tickets", icon: "ticket" },
-    { id: "events", label: "Your events", icon: "calendar" },
+    { path: "", label: "Overview", icon: "home" },
+    { path: "tickets", label: "Tickets", icon: "ticket" },
+    { path: "events", label: "Events", icon: "calendar" },
+    { path: "ticket-types", label: "Ticket types", icon: "ticket-stub" },
+    { path: "attendees", label: "Attendees", icon: "user" },
   ],
 };
 
 export const CONSOLE_LABEL: Record<ConsoleKind, string> = {
-  restaurant: "Your kitchen",
-  events: "Your events",
+  restaurant: "Kitchen console",
+  events: "Events console",
 };
 
 /** A business that has a console at all. Drivers do not. */
@@ -42,7 +47,8 @@ export function isConsoleBusiness(
   return business.kind === "restaurant" || business.kind === "events";
 }
 
-/** Every business a console URL can name. */
-export function consoleHref(kind: ConsoleKind, businessId: string): string {
-  return `/dashboard/${kind}/${businessId}`;
+/** The URL of one console section. */
+export function consoleHref(kind: ConsoleKind, businessId: string, section = ""): string {
+  const base = `/dashboard/${kind}/${businessId}`;
+  return section ? `${base}/${section}` : base;
 }

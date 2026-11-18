@@ -12,8 +12,9 @@
 import type { Event } from "@/lib/flash/types";
 
 import { DEMO_USER_ID } from "./business.ts";
+import { demoStore } from "./demo-store";
 
-export const events: Event[] = [
+export const events: Event[] = demoStore.events ?? (demoStore.events = [
   {
     id: "evt-sunset-live-sessions",
     slug: "sunset-live-sessions",
@@ -216,6 +217,9 @@ export const events: Event[] = [
         price: 150,
         perks: ["Both stages", "Food market", "Design fair"],
         available: 940,
+        discountPercent: 15,
+        discountStartsAt: "2026-11-01",
+        discountEndsAt: "2026-11-30",
       },
       {
         id: "tier-urban-vip",
@@ -397,4 +401,5 @@ export const events: Event[] = [
     going: 640,
     capacity: 700,
   },
-];
+]);
+

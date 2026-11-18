@@ -253,14 +253,7 @@ export function FoodCheckout({ businessAccount = false }: { businessAccount?: bo
           </div>
           {cart.discount > 0 ? (
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted">
-                Discount
-                <span className="ml-1.5 rounded-full bg-brand-soft px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-brand-ink">
-                  {cart.restaurant?.discountPercent
-                    ? `${cart.restaurant.discountPercent}% off`
-                    : null}
-                </span>
-              </dt>
+              <dt className="text-muted">Dish discounts</dt>
               <dd className="font-semibold text-brand-ink">−{cedis(cart.discount)}</dd>
             </div>
           ) : null}

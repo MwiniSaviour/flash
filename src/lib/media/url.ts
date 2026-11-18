@@ -37,6 +37,19 @@ export function publicIdFromUrl(src: string): string | null {
 }
 
 /**
+ * A catalogue photograph or a Cloudinary asset the caller uploaded.
+ *
+ * Product forms always send a photograph, even when the owner picks one from
+ * the fixed catalogue. Only Cloudinary assets need an ownership check; a local
+ * catalogue path is public by design and cannot point at another account.
+ */
+export function isAllowedImageUrl(src: string | undefined, userId: string): boolean {
+  if (!src) return true;
+  if (src.startsWith("/assets/images/")) return true;
+  return isOwnedCloudinaryUrl(src, userId);
+}
+
+/**
  * Accepts only a Cloudinary URL inside the caller's own folder.
  *
  * A browser sends this value back with a database write; without this check a

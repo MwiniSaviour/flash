@@ -1,16 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 import { Icon, type IconName } from "@/components/flash/Icon";
 import { Sheet } from "@/components/flash/Sheet";
-import { CONSOLE_LABEL, CONSOLE_SECTIONS, type ConsoleKind } from "@/lib/flash/console";
+import {
+  CONSOLE_LABEL,
+  CONSOLE_SECTIONS,
+  consoleHref,
+  type ConsoleKind,
+} from "@/lib/flash/console";
 import type { Business } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
 
 import { BusinessSwitcher } from "./BusinessSwitcher";
-import { useConsoleScrollSpy } from "./useConsoleScrollSpy";
 
 const ROW =
   "flex w-full items-center gap-3 rounded-[13px] px-2.5 py-2.5 text-left transition-colors hover:bg-surface-2/60 active:bg-surface-2";
@@ -43,48 +48,29 @@ function RowBody({
 /**
  * The phone's console drawer.
  *
- * The hamburger lives in the page header, which stays server-rendered. The
- * drawer reads the same section map and the same scroll-spy hook as the
- * desktop sidebar, so the two navigations never disagree about what exists.
+ * The hamburger lives in the sticky top bar, so it stays in view while the
+ * manager scrolls. Every item is a link to a real route — the same sections
+ * the desktop sidebar shows, in the same order.
  */
 export function ConsoleMobileNav({
   kind,
+  businessId,
   businesses,
   currentId,
 }: {
   kind: ConsoleKind;
+  businessId: string;
   businesses: Business[];
   currentId: string;
 }) {
   const [open, setOpen] = useState(false);
-  const pendingSection = useRef<string | null>(null);
-  const active = useConsoleScrollSpy(kind);
+  const pathname = usePathname();
+  const close = () => setOpen(false);
 
-  const close = useCallback(() => setOpen(false), []);
-
-  useEffect(() => {
-    if (open) return;
-
-    const target = pendingSection.current;
-    if (!target) return;
-    pendingSection.current = null;
-
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const behavior: ScrollBehavior = reduceMotion ? "auto" : "smooth";
-
-    if (target === "top") {
-      window.scrollTo({ top: 0, behavior });
-    } else {
-      document.getElementById(target)?.scrollIntoView({ behavior, block: "start" });
-    }
-  }, [open]);
-
-  const goToSection = (id: string) => {
-    pendingSection.current = id;
-    setOpen(false);
-  };
-
-  const sections = CONSOLE_SECTIONS[kind];
+  const isActive = (path: string) =>
+    path
+      ? pathname.startsWith(consoleHref(kind, businessId, path))
+      : pathname === consoleHref(kind, businessId);
 
   return (
     <>
@@ -94,31 +80,29 @@ export function ConsoleMobileNav({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-line bg-surface text-ink transition active:scale-95 lg:hidden"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line text-ink transition active:scale-95 lg:hidden"
       >
-        <Icon name="menu" size={20} />
+        <Icon name="menu" size={19} />
       </button>
 
       {open ? (
         <Sheet title={CONSOLE_LABEL[kind]} onClose={close}>
           <nav aria-label="Console sections" className="pb-2">
             <div className="space-y-0.5">
-              <button type="button" onClick={() => goToSection("top")} className={ROW}>
-                <RowBody icon="home" label="Overview" active={active === null} />
-              </button>
-              {sections.map((section) => (
-                <button
-                  key={section.id}
-                  type="button"
-                  onClick={() => goToSection(section.id)}
+              {CONSOLE_SECTIONS[kind].map((section) => (
+                <Link
+                  key={section.path}
+                  href={consoleHref(kind, businessId, section.path)}
+                  onClick={close}
+                  aria-current={isActive(section.path) ? "page" : undefined}
                   className={ROW}
                 >
                   <RowBody
                     icon={section.icon}
                     label={section.label}
-                    active={active === section.id}
+                    active={isActive(section.path)}
                   />
-                </button>
+                </Link>
               ))}
             </div>
 
@@ -128,17 +112,6 @@ export function ConsoleMobileNav({
               onNavigate={close}
               className="mt-3 border-t border-line/80 pt-3"
             />
-
-            <div className="my-2 border-t border-line/80" aria-hidden="true" />
-
-            <div className="space-y-0.5">
-              <Link href="/dashboard" onClick={close} className={ROW}>
-                <RowBody icon="dashboard" label="Your dashboard" />
-              </Link>
-              <Link href="/profile" onClick={close} className={ROW}>
-                <RowBody icon="user" label="Your account" />
-              </Link>
-            </div>
           </nav>
         </Sheet>
       ) : null}
