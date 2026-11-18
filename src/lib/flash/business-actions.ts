@@ -11,8 +11,8 @@ import { COVER_IMAGES } from "./covers";
 import { businesses, incomingOrders, incomingTickets } from "./data/business";
 import { events } from "./data/events";
 import { restaurants, sizesFor, toppingsFor } from "./data/food";
-import { getApprovedBusiness } from "./repository";
-import type { Business, BusinessKind, BusinessStatus } from "./types";
+import { getApprovedBusiness, getOwnedBusiness } from "./repository";
+import type { Business, BusinessKind, BusinessStatus, Restaurant } from "./types";
 
 /**
  * The business actions.
@@ -48,6 +48,10 @@ const KIND_LABEL: Record<BusinessKind, string> = {
   driver: "a driver",
 };
 
+function slugify(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 /* -------------------------------------------------------------------------- */
 /* Applying                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -82,6 +86,28 @@ export async function applyForBusiness(
     };
 
     businesses.push(business);
+
+    // A kitchen needs a storefront row before its console is useful.
+    if (input.kind === "restaurant") {
+      const venue: Restaurant = {
+        id: `rst_demo_${Date.now()}`,
+        slug: `${slugify(name) || "kitchen"}-${Date.now().toString().slice(-4)}`,
+        name,
+        tagline: "",
+        cuisine: "Ghanaian",
+        neighbourhood: input.neighbourhood.trim(),
+        rating: 0,
+        ratingCount: 0,
+        deliveryFee: 0,
+        etaMinutes: 30,
+        distanceKm: 0,
+        image: COVER_IMAGES[0],
+        ownerId: userId,
+        businessId: business.id,
+        menu: [],
+      };
+      restaurants.push(venue);
+    }
 
     revalidatePath("/profile");
     revalidateConsole(input.kind);
@@ -126,8 +152,33 @@ export async function applyForBusiness(
 
   if (error) return { ok: false, error: "We could not send your application. Try again." };
 
+  if (input.kind === "restaurant") {
+    const { error: venueError } = await client.from("restaurants").insert({
+      id: `rst_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`,
+      slug: `${slugify(name) || "kitchen"}-${Date.now().toString().slice(-5)}`,
+      name,
+      tagline: "",
+      cuisine: "Ghanaian",
+      neighbourhood: input.neighbourhood.trim(),
+      rating: 0,
+      rating_count: 0,
+      delivery_fee: 0,
+      eta_minutes: 30,
+      distance_km: 0,
+      owner_user_id: userId,
+      business_id: id,
+      image_src: COVER_IMAGES[0].src,
+      image_alt: COVER_IMAGES[0].alt,
+    });
+
+    if (venueError) {
+      await client.from("businesses").delete().eq("id", id);
+      return { ok: false, error: "We could not finish setting up your kitchen. Try again." };
+    }
+  }
+
   revalidatePath("/profile");
-  revalidateConsole(input.kind);
+  revalidateConsole(input.kind, id);
 
   return { ok: true, data: { id, status: "pending" } };
 }
@@ -143,12 +194,20 @@ export async function applyForBusiness(
  */
 async function requireApproved(
   kind: BusinessKind,
+  businessId?: string,
 ): Promise<{ userId: string; business: Business } | { error: string }> {
   const userId = await currentUserId();
   if (!userId) return { error: "Sign in to manage your business." };
 
-  const business = await getApprovedBusiness(kind);
+  const business =
+    businessId && (kind === "restaurant" || kind === "events")
+      ? await getOwnedBusiness(businessId, kind)
+      : await getApprovedBusiness(kind);
+
   if (!business) {
+    return { error: "That business is not yours to manage." };
+  }
+  if (business.status !== "approved") {
     return {
       error: "Your application is not approved yet, so you cannot publish yet.",
     };
@@ -164,6 +223,7 @@ async function requireApproved(
 /** Post a dish on the kitchen's menu. */
 export async function publishMenuItem(input: {
   restaurantId: string;
+  businessId: string;
   name: string;
   description: string;
   price: number;
@@ -176,7 +236,7 @@ export async function publishMenuItem(input: {
     return { ok: false, error: "Set a price for the dish." };
   }
 
-  const gate = await requireApproved("restaurant");
+  const gate = await requireApproved("restaurant", input.businessId);
   if ("error" in gate) return { ok: false, error: gate.error };
 
   if (input.imageSrc && !isOwnedCloudinaryUrl(input.imageSrc, gate.userId)) {
@@ -192,38 +252,40 @@ export async function publishMenuItem(input: {
   if (!client) {
     const id = `mi_demo_${Date.now()}`;
     const price = Math.round(input.price);
-    const kitchen = restaurants.find((entry) => entry.id === input.restaurantId);
+    const kitchen = restaurants.find(
+      (entry) => entry.id === input.restaurantId && entry.businessId === gate.business.id,
+    );
 
-    if (kitchen) {
-      kitchen.menu.push({
-        id,
-        name,
-        description: input.description.trim(),
-        tagline: "Made for you tonight",
-        price,
-        image,
-        sizes: sizesFor(price),
-        toppings: toppingsFor(kitchen.cuisine),
-        popular: false,
-        vegetarian: false,
-      });
-    }
+    if (!kitchen) return { ok: false, error: "That kitchen is not yours to change." };
 
-    revalidateConsole("restaurant");
-    revalidatePath(`/food/${input.restaurantId}`);
+    kitchen.menu.push({
+      id,
+      name,
+      description: input.description.trim(),
+      tagline: "Made for you tonight",
+      price,
+      image,
+      sizes: sizesFor(price),
+      toppings: toppingsFor(kitchen.cuisine),
+      popular: false,
+      vegetarian: false,
+    });
+
+    revalidateConsole("restaurant", gate.business.id);
+    revalidatePath(`/food/${kitchen.slug}`);
 
     return { ok: true, data: { id }, demo: true };
   }
 
   const { data: kitchen, error: kitchenError } = await client
     .from("restaurants")
-    .select("id, owner_user_id")
+    .select("id, slug, owner_user_id, business_id")
     .eq("id", input.restaurantId)
     .maybeSingle();
 
   if (kitchenError) throw kitchenError;
   if (!kitchen) return { ok: false, error: "That kitchen is no longer here." };
-  if (kitchen.owner_user_id !== gate.userId) {
+  if (kitchen.owner_user_id !== gate.userId || kitchen.business_id !== gate.business.id) {
     return { ok: false, error: "That kitchen is not yours to change." };
   }
 
@@ -257,8 +319,8 @@ export async function publishMenuItem(input: {
 
   if (sizeError) return { ok: false, error: "We could not set that dish's portions." };
 
-  revalidateConsole("restaurant");
-  revalidatePath(`/food/${input.restaurantId}`);
+  revalidateConsole("restaurant", gate.business.id);
+  revalidatePath(`/food/${kitchen.slug}`);
 
   return { ok: true, data: { id } };
 }
@@ -388,6 +450,7 @@ export async function setRestaurantDiscount(input: {
 
 /** Post an event with its first ticket tier. */
 export async function publishEvent(input: {
+  businessId: string;
   title: string;
   venue: string;
   neighbourhood: string;
@@ -410,7 +473,7 @@ export async function publishEvent(input: {
     return { ok: false, error: "Set a price for the tickets." };
   }
 
-  const gate = await requireApproved("events");
+  const gate = await requireApproved("events", input.businessId);
   if ("error" in gate) return { ok: false, error: gate.error };
 
   if (input.imageSrc && !isOwnedCloudinaryUrl(input.imageSrc, gate.userId)) {
@@ -425,7 +488,7 @@ export async function publishEvent(input: {
   const client = createAdminClient();
   if (!client) {
     const id = `evt_demo_${Date.now()}`;
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const slug = slugify(title);
     const price = Math.round(input.price);
 
     events.push({
@@ -450,6 +513,7 @@ export async function publishEvent(input: {
       going: 0,
       capacity: Math.max(0, Math.round(input.capacity)),
       ownerId: gate.userId,
+      businessId: gate.business.id,
       tiers: [
         {
           id: `${id}-ga`,
@@ -462,15 +526,13 @@ export async function publishEvent(input: {
       ],
     });
 
-    revalidateConsole("events");
+    revalidateConsole("events", gate.business.id);
     revalidatePath("/events");
 
     return { ok: true, data: { id, slug }, demo: true };
   }
 
-  const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${Date.now()
-    .toString()
-    .slice(-5)}`;
+  const slug = `${slugify(title)}-${Date.now().toString().slice(-5)}`;
 
   const eventId = `evt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
   const tierId = `tier_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
@@ -499,6 +561,7 @@ export async function publishEvent(input: {
     going: 0,
     capacity: Math.max(0, Math.round(input.capacity)),
     owner_user_id: gate.userId,
+    business_id: gate.business.id,
     discount_percent: 0,
   });
 
@@ -520,7 +583,7 @@ export async function publishEvent(input: {
 
   if (tierError) return { ok: false, error: "We could not set that event's tickets." };
 
-  revalidateConsole("events");
+  revalidateConsole("events", gate.business.id);
   revalidatePath("/events");
 
   return { ok: true, data: { id: eventId, slug } };
@@ -781,9 +844,11 @@ export async function confirmTicket(input: {
  * hub and the console that owns the change - otherwise the manager would
  * press "Accept the order" and still see it waiting.
  */
-function revalidateConsole(kind: BusinessKind): void {
+function revalidateConsole(kind: BusinessKind, businessId?: string): void {
+  const base = kind === "events" ? "/dashboard/events" : "/dashboard/restaurant";
   revalidatePath("/dashboard");
-  revalidatePath(kind === "events" ? "/dashboard/events" : "/dashboard/restaurant");
+  revalidatePath(base);
+  if (businessId) revalidatePath(`${base}/${businessId}`);
 }
 
 async function ownedKitchen(

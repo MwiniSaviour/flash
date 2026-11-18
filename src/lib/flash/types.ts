@@ -67,6 +67,8 @@ export interface Event {
   discount?: { label: string; percent: number };
   /** The account that promotes it, when the platform knows one. */
   ownerId?: string;
+  /** The business that runs the event, when the platform knows one. */
+  businessId?: string;
   tiers: TicketTier[];
   /** People going, and the room's capacity. */
   going: number;
@@ -180,6 +182,8 @@ export interface Restaurant {
   discount?: { label: string; percent: number };
   /** The account that runs the kitchen, when there is one. */
   ownerId?: string;
+  /** The business that runs the kitchen, when there is one. */
+  businessId?: string;
   menu: MenuItem[];
 }
 

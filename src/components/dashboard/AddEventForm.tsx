@@ -13,7 +13,13 @@ import { publishEvent } from "@/lib/flash/business-actions";
  * when it is, and what a ticket costs. A poster can be uploaded when
  * Cloudinary is connected; otherwise the catalogue supplies one.
  */
-export function AddEventForm({ canUpload = false }: { canUpload?: boolean }) {
+export function AddEventForm({
+  businessId,
+  canUpload = false,
+}: {
+  businessId: string;
+  canUpload?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [venue, setVenue] = useState("");
@@ -34,6 +40,7 @@ export function AddEventForm({ canUpload = false }: { canUpload?: boolean }) {
 
     startTransition(async () => {
       const result = await publishEvent({
+        businessId,
         title,
         venue,
         neighbourhood,

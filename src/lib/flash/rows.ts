@@ -54,6 +54,7 @@ export interface EventRow {
   going: number;
   capacity: number;
   owner_user_id: string | null;
+  business_id: string | null;
   discount_percent: number;
 }
 
@@ -98,6 +99,7 @@ export interface RestaurantRow {
   badge: string | null;
   discount_percent: number;
   owner_user_id: string | null;
+  business_id: string | null;
   image_src: string;
   image_alt: string;
 }

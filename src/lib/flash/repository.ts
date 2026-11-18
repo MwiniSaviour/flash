@@ -101,6 +101,7 @@ export function toEvent(row: EventRecord): Event {
     discount: row.discount_percent
       ? { label: discountLabel(row.discount_percent), percent: row.discount_percent }
       : undefined,
+    businessId: row.business_id ?? undefined,
     tiers: row.tiers.map((tier) => ({
       id: tier.id,
       name: tier.name,
@@ -132,6 +133,7 @@ export function toRestaurant(row: RestaurantRecord): Restaurant {
       ? { label: discountLabel(row.discount_percent), percent: row.discount_percent }
       : undefined,
     ownerId: row.owner_user_id ?? undefined,
+    businessId: row.business_id ?? undefined,
     image: { src: row.image_src, alt: row.image_alt },
     menu: row.menu.map((item) => ({
       id: item.id,
@@ -715,6 +717,32 @@ export async function listMyKitchens(): Promise<Restaurant[]> {
   );
 }
 
+/**
+ * The one kitchen a business runs, when it has one.
+ *
+ * The console opens for a business even before its venue exists, so callers
+ * treat a missing row as "finish setup", not as a foreign business.
+ */
+export async function listKitchen(businessId: string): Promise<Restaurant | undefined> {
+  const client = createAdminClient();
+  if (!client) {
+    return restaurants.find((restaurant) => restaurant.businessId === businessId);
+  }
+
+  const userId = await currentUserId();
+  if (!userId) return undefined;
+
+  const { data, error } = await client
+    .from("restaurants")
+    .select("*, menu_items(*, menu_item_sizes(*), menu_item_toppings(*))")
+    .eq("business_id", businessId)
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? toRestaurant(toRestaurantRecord(data as RestaurantWithMenuRow)) : undefined;
+}
+
 /* -------------------------------------------------------------------------- */
 /* The business side                                                           */
 /* -------------------------------------------------------------------------- */
@@ -751,6 +779,21 @@ export async function listBusinesses(): Promise<Business[]> {
 
   if (error) throw error;
   return ((data ?? []) as BusinessRow[]).map(toBusiness);
+}
+
+/**
+ * One owned business by id and kind.
+ *
+ * Routes and actions share this gate. `listBusinesses()` already scopes its
+ * result to the signed-in customer, so a business of another account — or of
+ * the wrong kind — simply is not here and the caller treats it as missing.
+ */
+export async function getOwnedBusiness(
+  businessId: string,
+  kind: "restaurant" | "events",
+): Promise<Business | undefined> {
+  const businesses = await listBusinesses();
+  return businesses.find((business) => business.id === businessId && business.kind === kind);
 }
 
 /** The approved business of a kind, when the account has one. */
@@ -797,6 +840,28 @@ export async function listMyEvents(): Promise<Event[]> {
   const { data, error } = await client
     .from("events")
     .select("*, event_tiers(*)")
+    .eq("owner_user_id", userId)
+    .order("event_date", { ascending: true });
+
+  if (error) throw error;
+
+  return ((data ?? []) as EventWithTiersRow[]).map((row) =>
+    toEvent({ ...row, tiers: row.event_tiers ?? [] }),
+  );
+}
+
+/** The events one business promotes, not the whole account's. */
+export async function listEventsForBusiness(businessId: string): Promise<Event[]> {
+  const client = createAdminClient();
+  if (!client) return events.filter((event) => event.businessId === businessId);
+
+  const userId = await currentUserId();
+  if (!userId) return [];
+
+  const { data, error } = await client
+    .from("events")
+    .select("*, event_tiers(*)")
+    .eq("business_id", businessId)
     .eq("owner_user_id", userId)
     .order("event_date", { ascending: true });
 

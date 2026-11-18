@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { AddDishForm } from "@/components/dashboard/AddDishForm";
 import { ApprovalNotice } from "@/components/dashboard/ApprovalNotice";
+import { ConsoleHeader } from "@/components/dashboard/ConsoleHeader";
+import { ConsoleShell } from "@/components/dashboard/ConsoleShell";
 import { CoverPicker } from "@/components/dashboard/CoverPicker";
 import { OfferEditor } from "@/components/dashboard/OfferEditor";
 import { OrderQueue } from "@/components/dashboard/OrderQueue";
 import { PriceEditor } from "@/components/dashboard/PriceEditor";
 import { StorefrontPoster } from "@/components/dashboard/StorefrontPoster";
-import { Icon } from "@/components/flash/Icon";
 import { EmptyState } from "@/components/flash/ui";
 import { getEnv, hasCloudinaryEnv } from "@/lib/env";
-import { listBusinesses, listIncomingOrders, listMyKitchens } from "@/lib/flash/repository";
+import {
+  getOwnedBusiness,
+  listBusinesses,
+  listIncomingOrders,
+  listKitchen,
+} from "@/lib/flash/repository";
 
 export const metadata: Metadata = {
   title: "Your kitchen",
@@ -19,26 +25,36 @@ export const metadata: Metadata = {
 };
 
 /**
- * The kitchen console.
+ * One kitchen's console.
  *
- * A kitchen manager opens this between services, so the screen answers in
- * order: what needs a decision, what you cook and what it costs, what is on
- * offer this week, and how the storefront looks.
+ * The business id in the URL is the gate: the resolver only returns a business
+ * the signed-in customer owns, and every read below starts from that id. Two
+ * kitchens on one account therefore see two different consoles.
  */
-export default async function RestaurantConsolePage() {
-  const [kitchens, businesses] = await Promise.all([listMyKitchens(), listBusinesses()]);
-  const kitchen = kitchens[0];
-  const business = businesses.find((entry) => entry.kind === "restaurant");
+export default async function RestaurantConsolePage({
+  params,
+}: {
+  params: Promise<{ businessId: string }>;
+}) {
+  const { businessId } = await params;
+  const [business, businesses] = await Promise.all([
+    getOwnedBusiness(businessId, "restaurant"),
+    listBusinesses(),
+  ]);
+
+  if (!business) notFound();
+
+  const kitchen = await listKitchen(businessId);
 
   if (!kitchen) {
     return (
-      <div className="px-5 pt-8">
+      <ConsoleShell kind="restaurant" businesses={businesses} currentId={business.id}>
         <EmptyState
-          message="No kitchen is attached to this account yet."
-          action="Apply to run a kitchen"
-          href="/business/apply"
+          message="This kitchen does not have a storefront yet. Finish setting it up to see its menu and orders."
+          action="Back to your dashboard"
+          href="/dashboard"
         />
-      </div>
+      </ConsoleShell>
     );
   }
 
@@ -46,28 +62,21 @@ export default async function RestaurantConsolePage() {
   const url = `${getEnv().siteUrl}/food/${kitchen.slug}`;
 
   return (
-    <div className="pb-8">
-      <header className="px-5 pt-4">
-        <p className="text-[12.5px] font-medium text-muted">Your kitchen</p>
-        <h1 className="mt-0.5 text-[27px] font-bold leading-[1.1] tracking-[-0.03em] text-ink">
-          {kitchen.name}
-        </h1>
-        <Link
-          href={`/food/${kitchen.slug}`}
-          className="mt-2 inline-flex items-center gap-1 text-[13.5px] font-bold text-brand-ink transition-colors hover:text-brand"
-        >
-          See your storefront
-          <Icon name="chevron-right" size={13} />
-        </Link>
-      </header>
+    <ConsoleShell kind="restaurant" businesses={businesses} currentId={business.id}>
+      <ConsoleHeader
+        kind="restaurant"
+        title={kitchen.name}
+        linkHref={`/food/${kitchen.slug}`}
+        linkLabel="See your storefront"
+        businesses={businesses}
+        currentId={business.id}
+      />
 
-      {business ? (
-        <div className="mt-5 px-5">
-          <ApprovalNotice business={business} />
-        </div>
-      ) : null}
+      <div className="mt-5">
+        <ApprovalNotice business={business} />
+      </div>
 
-      <section className="mt-6 px-5">
+      <section id="orders" className="mt-6 scroll-mt-5">
         <h2 className="text-[16px] font-bold tracking-[-0.015em] text-ink">Orders</h2>
         <p className="mt-1 text-[13px] leading-snug text-muted">
           What came in. Accept the ones waiting for a yes, close the ones that are done.
@@ -77,7 +86,7 @@ export default async function RestaurantConsolePage() {
         </div>
       </section>
 
-      <section className="mt-7 px-5">
+      <section id="menu" className="mt-7 scroll-mt-5">
         <h2 className="text-[16px] font-bold tracking-[-0.015em] text-ink">What you cook</h2>
         <p className="mt-1 text-[13px] leading-snug text-muted">
           Your menu, and what each dish costs. Change a price and it changes everywhere.
@@ -116,11 +125,15 @@ export default async function RestaurantConsolePage() {
         </ul>
 
         <div className="mt-3">
-          <AddDishForm restaurantId={kitchen.id} canUpload={hasCloudinaryEnv()} />
+          <AddDishForm
+            restaurantId={kitchen.id}
+            businessId={business.id}
+            canUpload={hasCloudinaryEnv()}
+          />
         </div>
       </section>
 
-      <section className="mt-7 px-5">
+      <section id="offer" className="mt-7 scroll-mt-5">
         <h2 className="text-[16px] font-bold tracking-[-0.015em] text-ink">This week&rsquo;s offer</h2>
         <p className="mt-1 text-[13px] leading-snug text-muted">
           One number, and it comes off every order.
@@ -130,7 +143,7 @@ export default async function RestaurantConsolePage() {
         </div>
       </section>
 
-      <section className="mt-7 px-5">
+      <section id="storefront" className="mt-7 scroll-mt-5 pb-8">
         <h2 className="text-[16px] font-bold tracking-[-0.015em] text-ink">Your storefront</h2>
         <p className="mt-1 text-[13px] leading-snug text-muted">
           The photograph your customers see first, and the poster you print.
@@ -142,6 +155,6 @@ export default async function RestaurantConsolePage() {
           <StorefrontPoster restaurant={kitchen} url={url} />
         </div>
       </section>
-    </div>
+    </ConsoleShell>
   );
 }

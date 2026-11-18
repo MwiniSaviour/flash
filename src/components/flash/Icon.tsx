@@ -23,7 +23,9 @@ import {
   Heart,
   House,
   Info,
+  LayoutGrid,
   MapPin,
+  Menu,
   Minus,
   Music,
   Navigation,
@@ -41,6 +43,7 @@ import {
   SlidersHorizontal,
   Soup,
   Star,
+  Store,
   Ticket,
   TicketCheck,
   Timer,
@@ -119,7 +122,10 @@ export type IconName =
   | "truck"
   | "qr"
   | "timer"
-  | "send";
+  | "send"
+  | "menu"
+  | "dashboard"
+  | "store";
 
 const ICONS: Record<IconName, LucideIcon> = {
   home: House,
@@ -178,6 +184,9 @@ const ICONS: Record<IconName, LucideIcon> = {
   qr: QrCode,
   timer: Timer,
   send: Send,
+  menu: Menu,
+  dashboard: LayoutGrid,
+  store: Store,
 };
 
 /** Glyphs that take a solid fill when the design calls for an active state. */

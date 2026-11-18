@@ -118,6 +118,7 @@ const seeds: RestaurantSeed[] = [
     badge: "Trending",
     discount: { label: "10% off", percent: 10 },
     ownerId: "usr-saviour-mwini",
+    businessId: "biz-auntie-muni",
     image: {
       src: "/assets/images/dish-fried-rice.jpg",
       alt: "Fried rice with chicken, sweetcorn and spring onion on a square plate",

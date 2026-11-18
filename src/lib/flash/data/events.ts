@@ -207,6 +207,7 @@ export const events: Event[] = [
     priceFrom: 150,
     discount: { label: "10% off", percent: 10 },
     ownerId: DEMO_USER_ID,
+    businessId: "biz-urban-vibes",
     tiers: [
       {
         id: "tier-urban-ga",

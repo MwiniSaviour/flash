@@ -15,9 +15,11 @@ import { publishMenuItem } from "@/lib/flash/business-actions";
  */
 export function AddDishForm({
   restaurantId,
+  businessId,
   canUpload = false,
 }: {
   restaurantId: string;
+  businessId: string;
   canUpload?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -35,6 +37,7 @@ export function AddDishForm({
     startTransition(async () => {
       const result = await publishMenuItem({
         restaurantId,
+        businessId,
         name,
         description,
         price: Number(price),

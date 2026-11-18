@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { AddEventForm } from "@/components/dashboard/AddEventForm";
 import { ApprovalNotice } from "@/components/dashboard/ApprovalNotice";
+import { ConsoleHeader } from "@/components/dashboard/ConsoleHeader";
+import { ConsoleShell } from "@/components/dashboard/ConsoleShell";
 import { OfferEditor } from "@/components/dashboard/OfferEditor";
 import { PriceEditor } from "@/components/dashboard/PriceEditor";
 import { TicketQueue } from "@/components/dashboard/TicketQueue";
-import { Icon } from "@/components/flash/Icon";
-import { hasCloudinaryEnv } from "@/lib/env";
 import { EmptyState, StatusBadge } from "@/components/flash/ui";
-import { listBusinesses, listIncomingTickets, listMyEvents } from "@/lib/flash/repository";
+import { hasCloudinaryEnv } from "@/lib/env";
 import { dayMonth, timeRange } from "@/lib/flash/format";
+import {
+  getOwnedBusiness,
+  listBusinesses,
+  listEventsForBusiness,
+  listIncomingTickets,
+} from "@/lib/flash/repository";
 
 export const metadata: Metadata = {
   title: "Your events",
@@ -18,54 +24,57 @@ export const metadata: Metadata = {
 };
 
 /**
- * The events console.
+ * One events company's console.
  *
- * A promoter opens this between announcements, so the screen answers in
- * order: who has bought a ticket and is waiting for a yes, what you have
- * coming up and what it costs, and what is on offer this week.
+ * The business id in the URL picks the company; every event and ticket below is
+ * read through that id. Another company on the same account has its own page.
  */
-export default async function EventsConsolePage() {
-  const [events, businesses] = await Promise.all([listMyEvents(), listBusinesses()]);
+export default async function EventsConsolePage({
+  params,
+}: {
+  params: Promise<{ businessId: string }>;
+}) {
+  const { businessId } = await params;
+  const [business, businesses] = await Promise.all([
+    getOwnedBusiness(businessId, "events"),
+    listBusinesses(),
+  ]);
+
+  if (!business) notFound();
+
+  const events = await listEventsForBusiness(businessId);
   const event = events[0];
-  const business = businesses.find((entry) => entry.kind === "events");
 
   if (!event) {
     return (
-      <div className="px-5 pt-8">
+      <ConsoleShell kind="events" businesses={businesses} currentId={business.id}>
         <EmptyState
-          message="You have not posted an event yet. Post one and the tickets start selling."
-          action="Post an event"
-          href="/dashboard/events"
+          message="This company has not posted an event yet. Post one and the tickets start selling."
+          action="Back to your dashboard"
+          href="/dashboard"
         />
-      </div>
+      </ConsoleShell>
     );
   }
 
   const tickets = await listIncomingTickets(events.map((entry) => entry.id));
 
   return (
-    <div className="pb-8">
-      <header className="px-5 pt-4">
-        <p className="text-[12.5px] font-medium text-muted">Your events</p>
-        <h1 className="mt-0.5 text-[27px] font-bold leading-[1.1] tracking-[-0.03em] text-ink">
-          {event.title}
-        </h1>
-        <Link
-          href={`/events/${event.slug}`}
-          className="mt-2 inline-flex items-center gap-1 text-[13.5px] font-bold text-brand-ink transition-colors hover:text-brand"
-        >
-          See your event page
-          <Icon name="chevron-right" size={13} />
-        </Link>
-      </header>
+    <ConsoleShell kind="events" businesses={businesses} currentId={business.id}>
+      <ConsoleHeader
+        kind="events"
+        title={event.title}
+        linkHref={`/events/${event.slug}`}
+        linkLabel="See your event page"
+        businesses={businesses}
+        currentId={business.id}
+      />
 
-      {business ? (
-        <div className="mt-5 px-5">
-          <ApprovalNotice business={business} />
-        </div>
-      ) : null}
+      <div className="mt-5">
+        <ApprovalNotice business={business} />
+      </div>
 
-      <section className="mt-6 px-5">
+      <section id="tickets" className="mt-6 scroll-mt-5">
         <h2 className="text-[16px] font-bold tracking-[-0.015em] text-ink">Tickets</h2>
         <p className="mt-1 text-[13px] leading-snug text-muted">
           Sold tickets, waiting for a yes. A ticket is not a booking until you confirm it.
@@ -75,7 +84,7 @@ export default async function EventsConsolePage() {
         </div>
       </section>
 
-      <section className="mt-7 px-5">
+      <section id="events" className="mt-7 scroll-mt-5 pb-8">
         <h2 className="text-[16px] font-bold tracking-[-0.015em] text-ink">Your events</h2>
         <p className="mt-1 text-[13px] leading-snug text-muted">
           What is coming up and what a ticket costs.
@@ -140,12 +149,10 @@ export default async function EventsConsolePage() {
         </ul>
 
         <div className="mt-3">
-          <AddEventForm canUpload={hasCloudinaryEnv()} />
+          <AddEventForm businessId={business.id} canUpload={hasCloudinaryEnv()} />
         </div>
-      </section>
 
-      <section className="mt-7 px-5">
-        <div className="flex items-center gap-2 rounded-[14px] border border-line/90 bg-surface px-3.5 py-3">
+        <div className="mt-7 flex items-center gap-2 rounded-[14px] border border-line/90 bg-surface px-3.5 py-3">
           <StatusBadge tone="success" icon="check">
             Published
           </StatusBadge>
@@ -154,6 +161,6 @@ export default async function EventsConsolePage() {
           </span>
         </div>
       </section>
-    </div>
+    </ConsoleShell>
   );
 }

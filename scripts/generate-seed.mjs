@@ -225,6 +225,7 @@ const eventRows = events.map((event) => ({
   going: event.going,
   capacity: event.capacity,
   owner_user_id: event.id === "evt-urban-vibes-festival" ? DEMO_USER : null,
+  business_id: event.businessId ?? null,
   discount_percent: event.id === "evt-urban-vibes-festival" ? 10 : 0,
 }));
 
@@ -307,6 +308,7 @@ const restaurantRows = restaurants.map((restaurant) => ({
   badge: restaurant.badge ?? null,
   discount_percent: restaurant.discount?.percent ?? 0,
   owner_user_id: restaurant.ownerId ?? null,
+  business_id: restaurant.businessId ?? null,
   image_src: restaurant.image.src,
   image_alt: restaurant.image.alt,
 }));
@@ -667,14 +669,14 @@ const statements = [
       "id", "slug", "title", "subtitle", "description", "venue", "neighbourhood", "city",
       "distance_km", "event_date", "start_time", "end_time", "image_src", "image_alt",
       "categories", "featured", "trending", "live", "price_from", "going", "capacity",
-      "owner_user_id", "discount_percent",
+      "owner_user_id", "business_id", "discount_percent",
     ],
     eventRows.map((row) => [
       t(row.id), t(row.slug), t(row.title), t(row.subtitle), t(row.description), t(row.venue),
       t(row.neighbourhood), t(row.city), n(row.distance_km), d(row.event_date), tm(row.start_time),
       tm(row.end_time), t(row.image_src), t(row.image_alt), arr(row.categories), b(row.featured),
       b(row.trending), b(row.live), n(row.price_from), n(row.going), n(row.capacity),
-      t(row.owner_user_id), n(row.discount_percent),
+      t(row.owner_user_id), t(row.business_id), n(row.discount_percent),
     ]),
     "id",
   ),
@@ -698,13 +700,13 @@ const statements = [
     [
       "id", "slug", "name", "tagline", "cuisine", "neighbourhood", "rating", "rating_count",
       "delivery_fee", "eta_minutes", "distance_km", "badge", "discount_percent", "owner_user_id",
-      "image_src", "image_alt",
+      "business_id", "image_src", "image_alt",
     ],
     restaurantRows.map((row) => [
       t(row.id), t(row.slug), t(row.name), t(row.tagline), t(row.cuisine), t(row.neighbourhood),
       n(row.rating), n(row.rating_count), n(row.delivery_fee), n(row.eta_minutes),
       n(row.distance_km), t(row.badge), n(row.discount_percent), t(row.owner_user_id),
-      t(row.image_src), t(row.image_alt),
+      t(row.business_id), t(row.image_src), t(row.image_alt),
     ]),
     "id",
   ),
