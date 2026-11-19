@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { Icon } from "@/components/flash/Icon";
 import { DateBadge, Tag } from "@/components/flash/ui";
-import { cedis, dateBadge, distance, timeRange } from "@/lib/flash/format";
+import { dateBadge, distance, timeRange , priceLabel } from "@/lib/flash/format";
 import type { Event } from "@/lib/flash/types";
 
 /**
@@ -89,7 +89,7 @@ export function FeaturedEventCard({
               </span>
               <span className="mt-2.5 flex items-center justify-between gap-3">
                 <span className="text-[12px] font-medium leading-none text-brand">
-                  from <span className="text-[15px] font-bold">{cedis(event.priceFrom)}</span>
+                  from <span className="text-[15px] font-bold">{priceLabel(event.priceFrom)}</span>
                 </span>
                 <span className="inline-flex h-[38px] items-center rounded-[11px] bg-brand-solid px-4 text-[13.5px] font-bold text-white shadow-brand">
                   Get Tickets

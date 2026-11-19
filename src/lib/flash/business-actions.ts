@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
-import { currentUserId } from "@/lib/auth/server";
+import { currentClerkIdentity, currentUserId } from "@/lib/auth/server";
 import { destroyImage } from "@/lib/media/cloudinary";
 import { isAllowedImageUrl, publicIdFromUrl } from "@/lib/media/url";
+import { startCommissionCheckout } from "@/lib/payments/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { COVER_IMAGES, EVENT_COVERS } from "./covers";
@@ -1273,6 +1274,7 @@ export async function updateTicketTier(input: {
   name: string;
   price: number;
   available: number;
+  salesClosed?: boolean;
 } & DiscountInput): Promise<BusinessResult<{ id: string }>> {
   const name = input.name.trim();
   if (!name) return { ok: false, error: "Give the ticket a name." };
@@ -1299,6 +1301,7 @@ export async function updateTicketTier(input: {
     tier.name = name;
     tier.price = Math.round(input.price);
     tier.available = Math.max(0, Math.round(input.available));
+    tier.salesClosed = input.salesClosed ?? false;
     tier.discountPercent = discount.percent;
     tier.discountStartsAt = discount.starts ?? undefined;
     tier.discountEndsAt = discount.ends ?? undefined;
@@ -1325,6 +1328,7 @@ export async function updateTicketTier(input: {
       name,
       price: Math.round(input.price),
       available: Math.max(0, Math.round(input.available)),
+      sales_closed: input.salesClosed ?? false,
       ...discountColumns(discount),
     })
     .eq("id", input.tierId);
@@ -1373,6 +1377,78 @@ export async function deleteTicketTier(input: {
 
   revalidateConsole("events", gate.business.id);
   return { ok: true, data: { id: input.tierId } };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Sold-out requests and commission                                           */
+/* -------------------------------------------------------------------------- */
+
+/** Resolve a sold-out request from the planner's console. */
+export async function decideTicketRequest(input: {
+  requestId: string;
+  status: "fulfilled" | "declined";
+}): Promise<BusinessResult<{ status: string }>> {
+  const gate = await requireApproved("events");
+  if ("error" in gate) return { ok: false, error: gate.error };
+
+  const client = createAdminClient();
+  if (!client) return { ok: true, data: { status: input.status }, demo: true };
+
+  const { data: request } = await client
+    .from("ticket_requests")
+    .select("id, events!inner(owner_user_id, business_id)")
+    .eq("id", input.requestId)
+    .maybeSingle();
+
+  const owner = Array.isArray(request?.events) ? request?.events[0] : request?.events;
+  if (!owner || owner.owner_user_id !== gate.userId) {
+    return { ok: false, error: "That request is not yours to decide." };
+  }
+
+  const { error } = await client
+    .from("ticket_requests")
+    .update({ status: input.status, decided_at: new Date().toISOString() })
+    .eq("id", input.requestId);
+
+  if (error) return { ok: false, error: "We could not save that decision." };
+
+  revalidateConsole("events", gate.business.id);
+  return { ok: true, data: { status: input.status } };
+}
+
+/** Starts a Paystack charge for the commission owed by this planner. */
+export async function payCommission(input: {
+  paymentId: string;
+  businessId: string;
+}): Promise<BusinessResult<{ checkoutUrl: string | null }>> {
+  const gate = await requireApproved("events", input.businessId);
+  if ("error" in gate) return { ok: false, error: gate.error };
+
+  const client = createAdminClient();
+  if (!client) return { ok: false, error: "No database is connected." };
+
+  const { data: charge } = await client
+    .from("payments")
+    .select("id, payer_user_id, status")
+    .eq("id", input.paymentId)
+    .maybeSingle();
+
+  if (!charge || charge.payer_user_id !== gate.userId) {
+    return { ok: false, error: "That charge does not belong to your business." };
+  }
+  if (charge.status === "success") {
+    return { ok: false, error: "That commission is already settled." };
+  }
+
+  const identity = await currentClerkIdentity();
+  const result = await startCommissionCheckout({
+    paymentId: input.paymentId,
+    email: identity?.email ?? "",
+  });
+
+  if (!result.ok) return { ok: false, error: result.error ?? "Payment could not start." };
+
+  return { ok: true, data: { checkoutUrl: result.checkoutUrl } };
 }
 
 /* -------------------------------------------------------------------------- */

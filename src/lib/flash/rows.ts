@@ -66,6 +66,7 @@ export interface TicketTierRow {
   price: number;
   perks: string[];
   available: number;
+  sales_closed: boolean;
   discount_percent: number;
   discount_starts_at: string | null;
   discount_ends_at: string | null;
@@ -85,6 +86,7 @@ export interface TicketRow {
   status: string;
   reference: string;
   purchased_at: string;
+  unit_price_pesewas: number;
 }
 
 export interface RestaurantRow {
@@ -281,4 +283,19 @@ export interface RideClassRow {
   price: number;
   perk: string;
   position: number;
+}
+
+export interface TicketRequestRow {
+  id: string;
+  event_id: string;
+  tier_id: string;
+  user_id: string | null;
+  name: string;
+  phone: string;
+  email: string;
+  quantity: number;
+  status: string;
+  note: string;
+  created_at: string;
+  decided_at: string | null;
 }

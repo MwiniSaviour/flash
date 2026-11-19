@@ -39,6 +39,8 @@ export interface TicketTier {
   perks: string[];
   /** Units left in this tier. */
   available: number;
+  /** Planner has closed sales on this tier. */
+  salesClosed?: boolean;
   /** Percentage off this tier. Zero means no discount. */
   discountPercent?: number;
   /** First day the discount applies; no value means immediately. */
@@ -94,6 +96,28 @@ export interface Ticket {
   /** Order reference printed on the ticket. */
   reference: string;
   purchasedAt: ISODate;
+  /** What was charged per attendee at booking time; zero for free events. */
+  unitPricePesewas?: number;
+}
+
+export type TicketRequestStatus = "pending" | "fulfilled" | "declined";
+
+/** A request from somebody who wanted a ticket after a tier sold out. */
+export interface TicketRequest {
+  id: string;
+  eventId: string;
+  tierId: string;
+  userId?: string | null;
+  name: string;
+  phone: string;
+  email: string;
+  quantity: number;
+  status: TicketRequestStatus;
+  note: string;
+  createdAt: ISODate;
+  decidedAt?: ISODate | null;
+  eventTitle?: string;
+  tierName?: string;
 }
 
 export type Cuisine =

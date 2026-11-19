@@ -13,6 +13,7 @@ export const ADMIN_GROUPS: { label: string; sections: AdminSection[] }[] = [
       { path: "", label: "Overview", icon: "dashboard" },
       { path: "approvals", label: "Approvals", icon: "check-circle" },
       { path: "payments", label: "Payments", icon: "banknote" },
+      { path: "requests", label: "Ticket requests", icon: "ticket" },
     ],
   },
   {

@@ -49,6 +49,11 @@ export function cedis(amount: number) {
   return `GHC${amount}`;
 }
 
+/** Free events read "Free" rather than GHC0. */
+export function priceLabel(amount: number) {
+  return amount <= 0 ? "Free" : cedis(amount);
+}
+
 /** "6.2 km" — one decimal below 10 km, whole numbers above. */
 export function distance(km: number) {
   return `${Number.isInteger(km) ? km : km.toFixed(1)} km`;

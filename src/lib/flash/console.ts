@@ -32,6 +32,7 @@ export const CONSOLE_SECTIONS: Record<ConsoleKind, ConsoleSection[]> = {
     { path: "events", label: "Events", icon: "calendar" },
     { path: "ticket-types", label: "Ticket types", icon: "ticket-stub" },
     { path: "attendees", label: "Attendees", icon: "user" },
+    { path: "requests", label: "Requests", icon: "bell" },
   ],
 };
 

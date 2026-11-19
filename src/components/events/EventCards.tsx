@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { Icon } from "@/components/flash/Icon";
 import { DateBadge, Tag } from "@/components/flash/ui";
-import { cedis, dateBadge, distance } from "@/lib/flash/format";
+import { dateBadge, distance , priceLabel } from "@/lib/flash/format";
 import type { Event } from "@/lib/flash/types";
 import { deliverySrcSet, deliveryUrl } from "@/lib/media/url";
 
@@ -49,7 +49,7 @@ export function EventListCard({ event }: { event: Event }) {
 
         <span className="mt-2 flex items-center justify-between gap-2">
           <span className="text-[12px] font-medium leading-none text-brand-ink">
-            from <span className="text-[14px] font-bold">{cedis(event.priceFrom)}</span>
+            from <span className="text-[14px] font-bold">{priceLabel(event.priceFrom)}</span>
           </span>
           <Icon name="chevron-right" size={17} className="shrink-0 text-muted-soft" />
         </span>
@@ -91,7 +91,7 @@ export function EventMiniCard({ event }: { event: Event }) {
         {event.venue} · {distance(event.distanceKm)}
       </span>
       <span className="mt-0.5 block text-[11.5px] font-semibold leading-snug text-brand-ink">
-        from {cedis(event.priceFrom)}
+        from {priceLabel(event.priceFrom)}
       </span>
     </Link>
   );

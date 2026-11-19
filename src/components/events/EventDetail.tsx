@@ -5,7 +5,8 @@ import { useState } from "react";
 
 import { Icon } from "@/components/flash/Icon";
 import { StickyAction } from "@/components/flash/StickyAction";
-import { Tag } from "@/components/flash/ui";import { cedis, dayMonth, distance, timeRange } from "@/lib/flash/format";
+import { Tag } from "@/components/flash/ui";import { dayMonth, distance, priceLabel, timeRange } from "@/lib/flash/format";
+import { SoldOutRequest } from "@/components/events/SoldOutRequest";
 import type { Event } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
 import { deliverySrcSet, deliveryUrl } from "@/lib/media/url";
@@ -22,6 +23,7 @@ export function EventDetail({ event }: { event: Event }) {
 
   const tier = event.tiers.find((item) => item.id === tierId) ?? event.tiers[0];
   const total = tier ? tier.price * quantity : 0;
+  const isSoldOut = Boolean(tier && (tier.available <= 0 || tier.salesClosed));
 
   return (
     <div className="pb-28">
@@ -125,14 +127,14 @@ export function EventDetail({ event }: { event: Event }) {
                       <span className="flex items-center justify-between gap-2">
                         <span className="text-[14.5px] font-semibold text-ink">{item.name}</span>
                         <span className="shrink-0 text-[14px] font-bold text-ink">
-                          {cedis(item.price)}
+                          {priceLabel(item.price)}
                         </span>
                       </span>
                       <span className="mt-1 block text-[12.5px] leading-snug text-muted">
                         {item.description}
                       </span>
                       <span className="mt-1.5 block text-[11.5px] text-muted-soft">
-                        {soldOut ? "Sold out" : `${item.available} left`}
+                        {soldOut || item.salesClosed ? "Sold out" : `${item.available} left`}
                       </span>
                     </span>
                   </button>
@@ -177,15 +179,23 @@ export function EventDetail({ event }: { event: Event }) {
           <p className="text-[11.5px] text-muted">
             {tier ? tier.name : "General Admission"} × {quantity}
           </p>
-          <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">{cedis(total)}</p>
+          <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">{priceLabel(total)}</p>
         </div>
-        <Link
-          href={`/events/${event.slug}/checkout?tier=${tier?.id ?? ""}&qty=${quantity}`}
-          className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed lg:max-w-[320px]"
-        >
-          Get tickets
-          <Icon name="arrow-right" size={16} />
-        </Link>
+        {isSoldOut ? (
+          <SoldOutRequest
+            eventId={event.id}
+            tierId={tier?.id ?? ""}
+            tierName={tier?.name ?? "General Admission"}
+          />
+        ) : (
+          <Link
+            href={`/events/${event.slug}/checkout?tier=${tier?.id ?? ""}&qty=${quantity}`}
+            className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed lg:max-w-[320px]"
+          >
+            Get tickets
+            <Icon name="arrow-right" size={16} />
+          </Link>
+        )}
       </StickyAction>
     </div>
   );

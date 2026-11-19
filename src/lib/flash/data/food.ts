@@ -13,7 +13,7 @@ import type {
   Restaurant,
 } from "@/lib/flash/types";
 
-import { demoStore } from "./demo-store";
+import { demoStore } from "./demo-store.ts";
 
 /** A menu line before the portions, the extras and the tagline are attached. */
 type MenuItemSeed = Omit<

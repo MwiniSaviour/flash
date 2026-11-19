@@ -14,7 +14,8 @@
     "db:schema": "node scripts/generate-schema.mjs",
     "db:check": "node scripts/check-sql.mjs",
     "media:check": "node scripts/check-media.mjs",
-    "payments:check": "node scripts/check-payments.mjs"
+    "payments:check": "node scripts/check-payments.mjs",
+    "events:check": "node scripts/check-events.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.10.0",

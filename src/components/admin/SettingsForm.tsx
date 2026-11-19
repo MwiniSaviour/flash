@@ -14,6 +14,9 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
   );
   const [delivery, setDelivery] = useState(String(initial.deliveryCommissionBps / 100));
   const [hold, setHold] = useState(String(initial.payoutHoldHours));
+  const [freeFee, setFreeFee] = useState(
+    String((initial.freeEventAttendeeFeePesewas ?? 100) / 100),
+  );
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -28,6 +31,7 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
         selfDeliveryGoodsCommissionBps: Number(selfDelivery) * 100,
         deliveryCommissionBps: Number(delivery) * 100,
         payoutHoldHours: Number(hold),
+        freeEventAttendeeFeePesewas: Number(freeFee) * 100,
       });
 
       if (!result.ok) {
@@ -42,6 +46,12 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
 
   const fields = [
     { label: "On what is sold", value: goods, set: setGoods, detail: "Items and tickets" },
+    {
+      label: "Free event attendee",
+      value: freeFee,
+      set: setFreeFee,
+      detail: "Flat fee per attendee, paid by the planner",
+    },
     {
       label: "Seller delivers it",
       value: selfDelivery,
@@ -68,7 +78,9 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
                 aria-label={field.label}
                 className="min-w-0 flex-1 bg-transparent text-right text-[14px] font-bold text-ink focus:outline-none"
               />
-              <span className="text-[12px] font-semibold text-muted">%</span>
+              <span className="text-[12px] font-semibold text-muted">
+                {field.label === "Free event attendee" ? "GHS" : "%"}
+              </span>
             </span>
           </label>
         ))}

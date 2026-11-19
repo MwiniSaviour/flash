@@ -9,7 +9,7 @@
 
 import type { Business, Order, Ticket } from "@/lib/flash/types";
 
-import { demoStore } from "./demo-store";
+import { demoStore } from "./demo-store.ts";
 
 export const DEMO_USER_ID = "usr-saviour-mwini";
 

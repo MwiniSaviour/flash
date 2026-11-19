@@ -10,6 +10,8 @@ export type PlatformSettings = {
   selfDeliveryGoodsCommissionBps: number;
   deliveryCommissionBps: number;
   payoutHoldHours: number;
+  /** Flat fee per attendee of a free event, in pesewas. */
+  freeEventAttendeeFeePesewas: number;
 };
 
 const settingsHost = globalThis as typeof globalThis & {
@@ -23,6 +25,7 @@ export const DEMO_SETTINGS: PlatformSettings =
     selfDeliveryGoodsCommissionBps: 400,
     deliveryCommissionBps: 300,
     payoutHoldHours: 48,
+    freeEventAttendeeFeePesewas: 100,
   });
 
 export type CommissionInput = {
@@ -64,5 +67,29 @@ export function computeCommission(input: CommissionInput): Commission {
     sellerNetPesewas: items - goodsPesewas,
     driverPesewas: input.selfDelivery ? 0 : delivery,
     totalChargedPesewas: items + delivery,
+  };
+}
+
+/**
+ * Ticket commission. A free tier costs the attendee nothing: the planner owes
+ * a flat fee per attendee. A paid tier keeps the percentage model.
+ */
+export function computeTicketCommission(input: {
+  unitPricePesewas: number;
+  quantity: number;
+  settings: PlatformSettings;
+}): { commissionPesewas: number; amountDuePesewas: number } {
+  const quantity = Math.max(0, Math.round(input.quantity));
+  const unit = Math.max(0, Math.round(input.unitPricePesewas));
+
+  if (unit === 0) {
+    const fee = Math.max(0, Math.round(input.settings.freeEventAttendeeFeePesewas));
+    return { commissionPesewas: quantity * fee, amountDuePesewas: 0 };
+  }
+
+  const items = unit * quantity;
+  return {
+    commissionPesewas: bps(items, input.settings.goodsCommissionBps),
+    amountDuePesewas: items,
   };
 }

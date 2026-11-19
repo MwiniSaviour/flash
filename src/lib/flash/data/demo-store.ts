@@ -1,4 +1,4 @@
-import type { Business, Event, Order, Restaurant, Ticket } from "@/lib/flash/types";
+import type { Business, Event, Order, Restaurant, Ticket, TicketRequest } from "@/lib/flash/types";
 
 /**
  * Shared demo data.
@@ -16,6 +16,7 @@ export type DemoStore = {
   businesses: Business[] | null;
   orders: Order[] | null;
   tickets: Ticket[] | null;
+  ticketRequests: TicketRequest[] | null;
 };
 
 const host = globalThis as typeof globalThis & { __flashDemoStore?: DemoStore };
@@ -28,4 +29,5 @@ export const demoStore: DemoStore =
     businesses: null,
     orders: null,
     tickets: null,
+    ticketRequests: null,
   });

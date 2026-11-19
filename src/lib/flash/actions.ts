@@ -18,6 +18,7 @@ import { getEnv } from "@/lib/env";
 import { destroyImage } from "@/lib/media/cloudinary";
 import { isOwnedCloudinaryUrl, publicIdFromUrl } from "@/lib/media/url";
 import { paystackConfigured } from "@/lib/payments/paystack";
+import { computeTicketCommission, platformSettings } from "@/lib/payments/commission";
 import { confirmDelivery, recordCashCommission, startCheckout } from "@/lib/payments/service";
 import { createAdminClient, type AdminClient } from "@/lib/supabase/admin";
 
@@ -284,38 +285,70 @@ export async function bookTicket(input: {
 
   const { data: tier, error: tierError } = await client
     .from("event_tiers")
-    .select("id, name, price, event_id, available")
+    .select("id, name, price, event_id, available, sales_closed, events(owner_user_id)")
     .eq("id", input.tierId)
     .maybeSingle();
 
   if (tierError) throw tierError;
   if (!tier) return { ok: false, error: "That ticket is no longer available." };
-  if (tier.available < quantity) {
-    return { ok: false, error: `Only ${tier.available} ${tier.name} tickets are left.` };
+  if (tier.sales_closed || tier.available < quantity) {
+    return { ok: false, error: "Ticket sales for this tier are closed." };
   }
 
   const id = mintId("tkt");
   const reference = mintReference();
-
-  // No payment provider is connected, so a new ticket is reserved — not paid.
-  const { error } = await client.from("tickets").insert({
-    id,
-    user_id: userId,
-    event_id: tier.event_id,
-    tier_id: tier.id,
-    tier_name: tier.name,
+  const unitPricePesewas = Math.max(0, Math.round(tier.price * 100));
+  const isFree = unitPricePesewas === 0;
+  const settings = await platformSettings();
+  const ticketCommission = computeTicketCommission({
+    unitPricePesewas,
     quantity,
-    status: "pending",
-    reference,
-    purchased_at: new Date().toISOString(),
+    settings,
   });
 
-  if (error) return { ok: false, error: "We could not hold that ticket. Try again." };
+  // One locked write checks capacity, moves the counters and inserts the ticket.
+  const { error: reserveError } = await client.rpc("reserve_ticket", {
+    p_tier_id: tier.id,
+    p_user_id: userId,
+    p_ticket_id: id,
+    p_reference: reference,
+    p_quantity: quantity,
+    p_unit_price_pesewas: unitPricePesewas,
+    p_commission_pesewas: ticketCommission.commissionPesewas,
+    p_status: isFree ? "confirmed" : "pending",
+  });
+
+  if (reserveError) {
+    const message = reserveError.message ?? "We could not hold those tickets.";
+    return { ok: false, error: message };
+  }
+
+  if (isFree) {
+    // No charge to the attendee. The planner owes a flat per-attendee fee and
+    // settles it from the planner console through Paystack.
+    const eventOwner =
+      (tier.events as unknown as { owner_user_id: string | null } | null)?.owner_user_id ?? userId;
+
+    const { error: dueError } = await client.from("payments").insert({
+      id: mintId("due"),
+      user_id: userId,
+      payer_user_id: eventOwner,
+      kind: "ticket",
+      reference: mintReference(),
+      provider: "paystack",
+      status: "pending",
+      amount_pesewas: ticketCommission.commissionPesewas,
+      commission_pesewas: ticketCommission.commissionPesewas,
+      ticket_id: id,
+    });
+
+    if (dueError) throw dueError;
+  }
 
   const total = tier.price * quantity;
   const identity = await currentClerkIdentity();
 
-  if (paystackConfigured()) {
+  if (!isFree && paystackConfigured()) {
     if (input.paymentMethod === "cash") {
       await recordCashCommission({
         userId,
@@ -334,6 +367,12 @@ export async function bookTicket(input: {
         selfDelivery: false,
         ticketId: id,
       });
+
+      if (!checkout.checkoutUrl) {
+        await client.rpc("release_ticket", { p_ticket_id: id });
+        return { ok: false, error: "We could not start the payment." };
+      }
+
       return {
         ok: true,
         data: { id, reference, total, demo: false, checkoutUrl: checkout.checkoutUrl },
@@ -346,8 +385,63 @@ export async function bookTicket(input: {
 
   return {
     ok: true,
-    data: { id, reference, total: tier.price * quantity, demo: false },
+    data: { id, reference, total, demo: false },
   };
+}
+
+/** A request to be told when a sold-out tier opens up again. */
+export async function requestTickets(input: {
+  eventId: string;
+  tierId: string;
+  name: string;
+  phone: string;
+  email: string;
+  quantity: number;
+  note?: string;
+}): Promise<ActionResult<{ id: string }>> {
+  const name = input.name.trim();
+  if (!name) return { ok: false, error: "Tell us who wants the ticket." };
+
+  const quantity = clampQuantity(input.quantity);
+  const client = createAdminClient();
+  const userId = await currentUserId();
+
+  if (!client) {
+    return { ok: true, data: { id: mintId("treq") }, demo: true };
+  }
+
+  const { data: existing } = userId
+    ? await client
+        .from("ticket_requests")
+        .select("id")
+        .eq("tier_id", input.tierId)
+        .eq("user_id", userId)
+        .eq("status", "pending")
+        .maybeSingle()
+    : { data: null };
+
+  if (existing) {
+    return { ok: false, error: "You already have a request in for this tier." };
+  }
+
+  const id = mintId("treq");
+  const { error } = await client.from("ticket_requests").insert({
+    id,
+    event_id: input.eventId,
+    tier_id: input.tierId,
+    user_id: userId,
+    name,
+    phone: input.phone.trim(),
+    email: input.email.trim(),
+    quantity,
+    note: input.note?.trim() ?? "",
+    status: "pending",
+  });
+
+  if (error) return { ok: false, error: "We could not save your request. Try again." };
+
+  revalidatePath("/admin/requests");
+  return { ok: true, data: { id } };
 }
 
 /* -------------------------------------------------------------------------- */

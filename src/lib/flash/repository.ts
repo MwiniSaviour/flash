@@ -1,3 +1,29 @@
+
+/** Demo sold-out requests are held with the other mutable fixtures. */
+function demoTicketRequests(): TicketRequest[] {
+  if (!demoStore.ticketRequests) {
+    demoStore.ticketRequests = [
+      {
+        id: "treq-demo-1",
+        eventId: "evt-urban-vibes-festival",
+        tierId: "tier-urban-vip",
+        userId: DEMO_USER_ID,
+        name: "Ama Owusu",
+        phone: "+233 24 555 0101",
+        email: "ama@example.gh",
+        quantity: 2,
+        status: "pending",
+        note: "Two seats together if possible.",
+        createdAt: "2026-11-18T09:20:00.000Z",
+        decidedAt: null,
+        eventTitle: "Urban Vibes Festival",
+        tierName: "VIP Experience",
+      },
+    ];
+  }
+  return demoStore.ticketRequests;
+}
+
 /**
  * The data seam.
  *
@@ -24,7 +50,9 @@ import { getEnv } from "@/lib/env";
 import { releaseDriverPayoutForDispatch } from "@/lib/payments/service";
 import { createAdminClient, type AdminClient } from "@/lib/supabase/admin";
 
+import { accountStore } from "./account-store";
 import { activeOrder, bookings, tickets, user } from "./data/account";
+import { demoStore } from "./data/demo-store";
 import { businesses, incomingOrders, incomingTickets } from "./data/business";
 import { events } from "./data/events";
 import { DEMO_USER_ID } from "./data/business";
@@ -57,6 +85,7 @@ import type {
   RideQuote,
   SavedPlace,
   Ticket,
+  TicketRequest,
   TicketStatus,
 } from "./types";
 import type {
@@ -74,6 +103,7 @@ import type {
   RideWithRiderRow,
   SavedPlaceRow,
   TicketRow,
+  TicketRequestRow,
   TicketTierRow,
 } from "./rows";
 
@@ -120,6 +150,7 @@ export function toEvent(row: EventRecord): Event {
       price: tier.price,
       perks: tier.perks,
       available: tier.available,
+      salesClosed: tier.sales_closed,
       discountPercent: tier.discount_percent ?? 0,
       discountStartsAt: tier.discount_starts_at ?? undefined,
       discountEndsAt: tier.discount_ends_at ?? undefined,
@@ -183,6 +214,7 @@ function toTicket(row: TicketRow): Ticket {
     status: row.status as TicketStatus,
     reference: row.reference,
     purchasedAt: row.purchased_at,
+    unitPricePesewas: row.unit_price_pesewas,
   };
 }
 
@@ -751,7 +783,7 @@ export async function getRideQuote(): Promise<RideQuote> {
 
 export async function getSavedPlaces(): Promise<SavedPlace[]> {
   const client = createAdminClient();
-  if (!client) return savedPlaces;
+  if (!client) return accountStore.savedPlaces ?? savedPlaces;
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -780,6 +812,83 @@ export async function listTickets(): Promise<Ticket[]> {
   return liveTickets(client, userId);
 }
 
+/**
+ * Sold-out requests. With no database, demo requests come from the in-memory
+ * store so planner and admin screens have something to show.
+ */
+export async function listTicketRequests(eventIds?: string[]): Promise<TicketRequest[]> {
+  const client = createAdminClient();
+  if (!client) return demoTicketRequests();
+
+  let query = client
+    .from("ticket_requests")
+    .select("*, events(title), event_tiers(name)")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (eventIds?.length) query = query.in("event_id", eventIds);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return ((data ?? []) as (TicketRequestRow & {
+    events: { title: string } | null;
+    event_tiers: { name: string } | null;
+  })[]).map((row) => ({
+    id: row.id,
+    eventId: row.event_id,
+    tierId: row.tier_id,
+    userId: row.user_id,
+    name: row.name,
+    phone: row.phone,
+    email: row.email,
+    quantity: row.quantity,
+    status: row.status as TicketRequest["status"],
+    note: row.note,
+    createdAt: row.created_at,
+    decidedAt: row.decided_at,
+    eventTitle: row.events?.title,
+    tierName: row.event_tiers?.name,
+  }));
+}
+
+/** The signed-in customer's payment history, newest first. */
+export async function listUserPayments(): Promise<
+  {
+    id: string;
+    reference: string;
+    kind: string;
+    provider: string;
+    status: string;
+    amount: number;
+    createdAt: string;
+  }[]
+> {
+  const client = createAdminClient();
+  if (!client) return [];
+
+  const userId = await currentUserId();
+  if (!userId) return [];
+
+  const { data, error } = await client
+    .from("payments")
+    .select("id, reference, kind, provider, status, amount_pesewas, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    reference: row.reference,
+    kind: row.kind,
+    provider: row.provider,
+    status: row.status,
+    amount: row.amount_pesewas / 100,
+    createdAt: row.created_at,
+  }));
+}
+
 export async function listBookings(): Promise<Booking[]> {
   const client = createAdminClient();
   if (!client) return bookings;
@@ -803,7 +912,7 @@ export async function getActiveOrder(): Promise<Order | undefined> {
 
 export async function getCurrentUser(): Promise<FlashUser> {
   const client = createAdminClient();
-  if (!client) return user;
+  if (!client) return { ...user, ...(accountStore.profile ?? {}) };
 
   const userId = await currentUserId();
   if (!userId) return user;

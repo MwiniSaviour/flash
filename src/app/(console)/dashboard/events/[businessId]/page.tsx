@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 
 import { ApprovalNotice } from "@/components/dashboard/ApprovalNotice";
+import { CommissionDue } from "@/components/dashboard/CommissionDue";
 import { ConsoleHeader } from "@/components/dashboard/ConsoleHeader";
 import { ConsoleSectionLinks } from "@/components/dashboard/ConsoleSectionLinks";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { EmptyState } from "@/components/flash/ui";
 import { cedis } from "@/lib/flash/format";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getOwnedBusiness,
   listCustomers,
@@ -41,9 +43,25 @@ export default async function EventsOverviewPage({
     );
   }
 
-  const [tickets, customers] = await Promise.all([
+  const [tickets, customers, dueCharges] = await Promise.all([
     listIncomingTickets(events.map((entry) => entry.id)),
     listCustomers(businessId, "events"),
+    (async () => {
+      const client = createAdminClient();
+      if (!client) return [];
+      const { data } = await client
+        .from("payments")
+        .select("id, amount_pesewas, reference, ticket_id")
+        .eq("payer_user_id", business.userId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return (data ?? []).map((row) => ({
+        id: row.id,
+        amountPesewas: Number(row.amount_pesewas),
+        label: row.reference,
+      }));
+    })(),
   ]);
 
   const ticketsSold = tickets.reduce((total, ticket) => total + ticket.quantity, 0);
@@ -59,6 +77,8 @@ export default async function EventsOverviewPage({
   return (
     <>
       <ConsoleHeader title="Overview" description="Where this company stands right now." />
+
+      <CommissionDue businessId={businessId} charges={dueCharges} />
 
       <KpiCards
         cards={[

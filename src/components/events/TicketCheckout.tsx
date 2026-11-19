@@ -7,7 +7,7 @@ import { Icon } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
 import { DateBadge } from "@/components/flash/ui";
 import { bookTicket } from "@/lib/flash/actions";
-import { cedis, dateBadge, distance } from "@/lib/flash/format";
+import { cedis, dateBadge, distance, priceLabel } from "@/lib/flash/format";
 import type { Event } from "@/lib/flash/types";
 
 /**
@@ -36,6 +36,7 @@ export function TicketCheckout({
   const badge = dateBadge(event.date);
   const subtotal = tier ? tier.price * quantity : 0;
   const total = subtotal;
+  const isFree = total === 0;
 
   function confirm() {
     setError(null);
@@ -89,7 +90,7 @@ export function TicketCheckout({
           </div>
 
           <p className="mt-3 text-[13px] font-semibold text-brand-ink">
-            Total {cedis(booked.total)}
+            Total {priceLabel(booked.total)}
           </p>
 
           {booked.demo ? (
@@ -161,18 +162,26 @@ export function TicketCheckout({
             <dt className="text-muted">
               {tier?.name} × {quantity}
             </dt>
-            <dd className="font-semibold text-ink">{cedis(subtotal)}</dd>
+            <dd className="font-semibold text-ink">{priceLabel(subtotal)}</dd>
           </div>
           <div className="mt-1 flex items-center justify-between gap-3 border-t border-line/80 pt-2.5">
             <dt className="font-bold text-ink">Total</dt>
-            <dd className="text-[17px] font-bold tracking-[-0.02em] text-ink">{cedis(total)}</dd>
+            <dd className="text-[17px] font-bold tracking-[-0.02em] text-ink">{priceLabel(total)}</dd>
           </div>
         </dl>
       </div>
 
       <div className="mt-6 px-5">
-        <PaymentMethods value={method} onChange={setMethod} allowCash={false} />
-        <PaymentNote />
+        {isFree ? (
+          <p className="text-[13px] leading-relaxed text-muted">
+            This event is free. Your place is confirmed when you reserve it.
+          </p>
+        ) : (
+          <>
+            <PaymentMethods value={method} onChange={setMethod} allowCash={false} />
+            <PaymentNote />
+          </>
+        )}
       </div>
 
       <div className="mt-6 px-5">

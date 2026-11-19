@@ -12,7 +12,7 @@
 import type { Event } from "@/lib/flash/types";
 
 import { DEMO_USER_ID } from "./business.ts";
-import { demoStore } from "./demo-store";
+import { demoStore } from "./demo-store.ts";
 
 export const events: Event[] = demoStore.events ?? (demoStore.events = [
   {
@@ -400,6 +400,42 @@ export const events: Event[] = demoStore.events ?? (demoStore.events = [
     ],
     going: 640,
     capacity: 700,
+  },
+  {
+    id: "evt-community-cleanup-walk",
+    slug: "community-cleanup-walk",
+    title: "Community Clean-Up Walk",
+    subtitle: "Free  ·  All ages welcome",
+    description:
+      "A free Saturday morning walk through Osu to clean up the neighbourhood. Places are limited so we can plan the route and the gloves. The planner pays the platform a flat fee for each confirmed attendee.",
+    venue: "Osu Children's Park",
+    neighbourhood: "Osu",
+    city: "Accra",
+    distanceKm: 2.1,
+    date: "2026-11-28",
+    startTime: "07:00",
+    endTime: "10:00",
+    image: {
+      src: "/assets/images/event-afrobeats-zone.jpg",
+      alt: "A daytime crowd gathered outdoors in Accra",
+    },
+    categories: ["Sports", "Festival"],
+    featured: false,
+    trending: false,
+    live: false,
+    priceFrom: 0,
+    tiers: [
+      {
+        id: "tier-cleanup-free",
+        name: "Free place",
+        description: "One place on the walk",
+        price: 0,
+        perks: ["Gloves provided"],
+        available: 8,
+      },
+    ],
+    going: 12,
+    capacity: 20,
   },
 ]);
 

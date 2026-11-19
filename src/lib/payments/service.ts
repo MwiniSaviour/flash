@@ -173,10 +173,27 @@ export async function fulfilPayment(payload: PaystackWebhookPayload): Promise<bo
           .maybeSingle()
       : { data: null };
 
+    const { data: ticket } = payment.ticket_id
+      ? await client
+          .from("tickets")
+          .select("event_id")
+          .eq("id", payment.ticket_id)
+          .maybeSingle()
+      : { data: null };
+
+    const { data: event } = ticket
+      ? await client
+          .from("events")
+          .select("owner_user_id")
+          .eq("id", ticket.event_id)
+          .maybeSingle()
+      : { data: null };
+
     await client.from("payouts").insert({
       id: `pay_seller_${payment.id}`,
       payment_id: payment.id,
-      user_id: kitchen?.owner_user_id ?? payment.user_id,
+      user_id:
+        kitchen?.owner_user_id ?? event?.owner_user_id ?? payment.payer_user_id ?? payment.user_id,
       kind: "seller",
       amount_pesewas: payment.seller_net_pesewas,
       status: payment.order_id ? "pending" : "processing",
@@ -457,4 +474,54 @@ export async function recordCashCommission(input: {
 /** A signed-out caller never reaches the payout actions. */
 export async function payoutCaller(): Promise<string | null> {
   return currentUserId();
+}
+
+/**
+ * Starts a Paystack charge for a commission the planner owes (typically a free
+ * event). The payment row already carries the amount and the payer; only the
+ * hosted checkout URL is created here.
+ */
+export async function startCommissionCheckout(input: {
+  paymentId: string;
+  email: string;
+}): Promise<{ ok: boolean; checkoutUrl: string | null; error?: string }> {
+  const client = createAdminClient();
+  if (!client) {
+    return { ok: false, checkoutUrl: null, error: "No database is connected." };
+  }
+
+  const { data: payment, error } = await client
+    .from("payments")
+    .select("*")
+    .eq("id", input.paymentId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!payment) return { ok: false, checkoutUrl: null, error: "That charge is no longer here." };
+  if (payment.status === "success") {
+    return { ok: false, checkoutUrl: null, error: "That commission is already settled." };
+  }
+
+  const amount = Number(payment.amount_pesewas);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { ok: false, checkoutUrl: null, error: "There is no commission to pay." };
+  }
+
+  const reference = newReference("FLC");
+  const result = await initPaystackTransaction({
+    amountPesewas: amount,
+    email: input.email,
+    reference,
+  });
+
+  if (!result.ok || !result.checkoutUrl) {
+    return { ok: false, checkoutUrl: null, error: result.message || "Payment could not start." };
+  }
+
+  await client
+    .from("payments")
+    .update({ reference, status: "pending" })
+    .eq("id", input.paymentId);
+
+  return { ok: true, checkoutUrl: result.checkoutUrl };
 }
