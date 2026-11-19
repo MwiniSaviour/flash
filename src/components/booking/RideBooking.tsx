@@ -3,12 +3,13 @@
 import { useEffect, useState, useTransition } from "react";
 
 import { Icon, type IconName } from "@/components/flash/Icon";
+import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
 import { LocationFields } from "@/components/flash/LocationFields";
 import type { Schedule } from "@/components/flash/SchedulePicker";
 import { SchedulePicker, scheduleInstant, scheduleLabel } from "@/components/flash/SchedulePicker";
 import { Sheet } from "@/components/flash/Sheet";
 import { Stepper } from "@/components/flash/Stepper";
-import { DemoNote, Field, SectionHeading, StatusBadge } from "@/components/flash/ui";
+import { Field, SectionHeading, StatusBadge } from "@/components/flash/ui";
 import { requestRide } from "@/lib/flash/actions";
 import { MAX_PASSENGERS } from "@/lib/flash/data/rides";
 import { cedis, distance } from "@/lib/flash/format";
@@ -46,6 +47,7 @@ export function RideBooking({
   const [pickup, setPickup] = useState(quote.pickup);
   const [dropoff, setDropoff] = useState(initialDropoff ?? quote.dropoff);
   const [phone, setPhone] = useState("");
+  const [method, setMethod] = useState<PaymentMethodId>("momo");
   const [schedule, setSchedule] = useState<Schedule>({ mode: "now" });
   const [reference, setReference] = useState<{ value: string; demo: boolean } | null>(null);
   const [searching, setSearching] = useState(false);
@@ -87,11 +89,17 @@ export function RideBooking({
         dropoff,
         phone,
         scheduledFor: scheduleInstant(schedule),
+        paymentMethod: method === "cash" ? "pod" : method,
       });
 
       if (!result.ok) {
         setError(result.error);
         setSearching(false);
+        return;
+      }
+
+      if (result.data.checkoutUrl) {
+        window.location.href = result.data.checkoutUrl;
         return;
       }
 
@@ -157,8 +165,7 @@ export function RideBooking({
 
           {reference.demo ? (
             <p className="mt-2 text-[12px] text-muted-soft">
-              Demo mode — no database is connected, so nothing was saved.
-            </p>
+              </p>
           ) : null}
         </div>
 
@@ -201,6 +208,11 @@ export function RideBooking({
         </div>
       }
     >
+      <section className="mb-5 rounded-[16px] border border-line/90 bg-surface p-3.5">
+        <PaymentMethods value={method} onChange={(value) => setMethod(value)} />
+        <PaymentNote />
+      </section>
+
       <LocationFields
         pickup={pickup}
         dropoff={dropoff}
@@ -320,7 +332,6 @@ export function RideBooking({
 
       <SchedulePicker className="mt-6" value={schedule} onChange={setSchedule} />
 
-      <DemoNote className="px-0 pt-5" />
 
       {error ? (
         <p

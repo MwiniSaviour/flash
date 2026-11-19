@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 
 import { Icon } from "@/components/flash/Icon";
 import { StickyAction } from "@/components/flash/StickyAction";
-import { DemoNote, Rating, SectionHeading, Tag } from "@/components/flash/ui";
+import { Rating, SectionHeading, Tag } from "@/components/flash/ui";
 import { Fact, KitchenBanner } from "@/components/food/KitchenBanner";
 import { MenuItemCard } from "@/components/food/MenuItemCards";
 import { useCart } from "@/lib/cart";
@@ -235,9 +235,6 @@ export function RestaurantDetail({ restaurant }: { restaurant: Restaurant }) {
           </div>
         )}
       </section>
-
-      <DemoNote />
-
       {cartForThisKitchen.length > 0 ? (
         <StickyAction>
           <div className="min-w-0">

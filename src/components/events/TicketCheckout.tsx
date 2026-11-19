@@ -95,8 +95,7 @@ export function TicketCheckout({
 
           {booked.demo ? (
             <p className="mt-1.5 text-[12px] text-muted-soft">
-              Demo mode — no database is connected, so nothing was saved.
-            </p>
+              </p>
           ) : null}
 
           <div className="mt-5 flex flex-col gap-2">

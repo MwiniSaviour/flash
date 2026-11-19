@@ -6,7 +6,7 @@ import { BookingCode } from "@/components/flash/BookingCode";
 import { ConfirmDeliveryButton } from "@/components/flash/ConfirmDeliveryButton";
 import { Icon } from "@/components/flash/Icon";
 import { PassActions } from "@/components/flash/PassActions";
-import { Avatar, DemoNote, StatusBadge } from "@/components/flash/ui";
+import { Avatar, StatusBadge } from "@/components/flash/ui";
 import { cedis } from "@/lib/flash/format";
 import { getDelivery } from "@/lib/flash/repository";
 
@@ -142,10 +142,6 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         {awaitingConfirmation ? <ConfirmDeliveryButton orderId={order.id} /> : null}
 
 </article>
-
-      <DemoNote />
-
-      
         <div className="mt-4">
         <PassActions
           reference={order.reference}

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { Icon } from "@/components/flash/Icon";
-import { DemoNote, SectionHeading } from "@/components/flash/ui";
+import { SectionHeading } from "@/components/flash/ui";
 import { RouteMap } from "@/components/track/RouteMap";
 import {
   CourierBar,
@@ -178,8 +178,6 @@ export function TrackingScreen({
           ))}
         </ul>
       </section>
-
-      <DemoNote />
     </div>
   );
 }

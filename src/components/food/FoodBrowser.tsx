@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 
 import { Icon } from "@/components/flash/Icon";
 import { RestaurantCard, RestaurantListCard } from "@/components/food/RestaurantCards";
-import { DemoNote, EmptyState, ScreenHeader, SectionHeading } from "@/components/flash/ui";
+import { EmptyState, ScreenHeader, SectionHeading } from "@/components/flash/ui";
 import { useCart } from "@/lib/cart";
 import type { Restaurant } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
@@ -191,8 +191,6 @@ export function FoodBrowser({ restaurants }: { restaurants: Restaurant[] }) {
           </section>
         </>
       )}
-
-      <DemoNote />
     </div>
   );
 }

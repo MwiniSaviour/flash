@@ -1078,3 +1078,123 @@ export async function confirmDeliveryAction(input: {
 
   return { ok: true, data: { confirmed: true } };
 }
+
+/**
+ * Books several ticket tiers in one checkout, so a basket with a General and
+ * a VIP line produces one payment and one Paystack redirect.
+ */
+export async function bookTicketBatch(input: {
+  lines: { tierId: string; quantity: number }[];
+  paymentMethod?: "online" | "cash";
+}): Promise<ActionResult<{ references: string[]; total: number; checkoutUrl: string | null }>> {
+  const lines = input.lines
+    .map((line) => ({ tierId: line.tierId, quantity: clampQuantity(line.quantity) }))
+    .filter((line) => line.quantity > 0);
+
+  if (lines.length === 0) return { ok: false, error: "Choose at least one ticket." };
+
+  const client = createAdminClient();
+  if (!client) {
+    return {
+      ok: true,
+      data: {
+        references: lines.map(() => mintReference()),
+        total: 0,
+        checkoutUrl: null,
+      },
+    };
+  }
+
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "Sign in to book tickets." };
+
+  await ensureProfile(client, userId);
+  const settings = await platformSettings();
+
+  let total = 0;
+  const references: string[] = [];
+  const made: string[] = [];
+
+  for (const line of lines) {
+    const { data: tier } = await client
+      .from("event_tiers")
+      .select("id, name, price, event_id, available, sales_closed, events(owner_user_id)")
+      .eq("id", line.tierId)
+      .maybeSingle();
+
+    if (!tier || tier.sales_closed || tier.available < line.quantity) {
+      for (const ticketId of made) await client.rpc("release_ticket", { p_ticket_id: ticketId });
+      return { ok: false, error: "One of those tiers just sold out. Check the basket and try again." };
+    }
+
+    const unit = Math.max(0, Math.round(tier.price * 100));
+    const commission = computeTicketCommission({
+      unitPricePesewas: unit,
+      quantity: line.quantity,
+      settings,
+    });
+
+    const id = mintId("tkt");
+    const reference = mintReference();
+    const { error } = await client.rpc("reserve_ticket", {
+      p_tier_id: tier.id,
+      p_user_id: userId,
+      p_ticket_id: id,
+      p_reference: reference,
+      p_quantity: line.quantity,
+      p_unit_price_pesewas: unit,
+      p_commission_pesewas: commission.commissionPesewas,
+      p_status: unit === 0 ? "confirmed" : "pending",
+    });
+
+    if (error) {
+      for (const ticketId of made) await client.rpc("release_ticket", { p_ticket_id: ticketId });
+      return { ok: false, error: error.message ?? "We could not hold those tickets." };
+    }
+
+    made.push(id);
+    references.push(reference);
+    total += tier.price * line.quantity;
+
+    if (unit === 0) {
+      const owner =
+        (tier.events as unknown as { owner_user_id: string | null } | null)?.owner_user_id ?? userId;
+      await client.from("payments").insert({
+        id: mintId("due"),
+        user_id: userId,
+        payer_user_id: owner,
+        kind: "ticket",
+        reference: mintReference(),
+        provider: "paystack",
+        status: "pending",
+        amount_pesewas: commission.commissionPesewas,
+        commission_pesewas: commission.commissionPesewas,
+      });
+    }
+  }
+
+  let checkoutUrl: string | null = null;
+
+  if (total > 0 && paystackConfigured() && input.paymentMethod !== "cash") {
+    const identity = await currentClerkIdentity();
+    const checkout = await startCheckout({
+      kind: "ticket",
+      userId,
+      email: identity?.email ?? "",
+      itemsCedis: total,
+      deliveryFeeCedis: 0,
+      selfDelivery: false,
+    });
+    checkoutUrl = checkout.checkoutUrl;
+
+    if (!checkoutUrl) {
+      for (const ticketId of made) await client.rpc("release_ticket", { p_ticket_id: ticketId });
+      return { ok: false, error: "We could not start the payment." };
+    }
+  }
+
+  revalidatePath("/bookings");
+  revalidatePath("/tickets");
+
+  return { ok: true, data: { references, total, checkoutUrl } };
+}

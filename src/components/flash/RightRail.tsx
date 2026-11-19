@@ -124,7 +124,7 @@ export async function RightRail() {
 
       <p className="text-[12px] leading-relaxed text-muted">
         <Icon name="info" size={13} className="mr-1 inline-block align-[-2px]" />
-        Prices and availability are demo data for this interface pass.
+        
       </p>
     </aside>
   );

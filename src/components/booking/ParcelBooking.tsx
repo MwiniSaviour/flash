@@ -9,7 +9,8 @@ import { SchedulePicker, scheduleInstant, scheduleLabel } from "@/components/fla
 import { SegmentedControl } from "@/components/flash/SegmentedControl";
 import { Sheet } from "@/components/flash/Sheet";
 import { Stepper } from "@/components/flash/Stepper";
-import { DemoNote, Field, SectionHeading, StatusBadge } from "@/components/flash/ui";
+import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
+import { Field, SectionHeading, StatusBadge } from "@/components/flash/ui";
 import { sendParcel } from "@/lib/flash/actions";
 import {
   MAX_PARCELS,
@@ -48,6 +49,7 @@ export function ParcelBooking({
   const [recipient, setRecipient] = useState("");
   const [phone, setPhone] = useState("");
   const [details, setDetails] = useState("");
+  const [method, setMethod] = useState<PaymentMethodId>("momo");
   const [sent, setSent] = useState<{ trackingNumber: string; demo: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -70,10 +72,16 @@ export function ParcelBooking({
         phone,
         details,
         scheduledFor: scheduleInstant(schedule),
+        paymentMethod: method === "cash" ? "pod" : method,
       });
 
       if (!result.ok) {
         setError(result.error);
+        return;
+      }
+
+      if (result.data.checkoutUrl) {
+        window.location.href = result.data.checkoutUrl;
         return;
       }
 
@@ -140,8 +148,7 @@ export function ParcelBooking({
 
           {sent.demo ? (
             <p className="mt-2 text-[12px] text-muted-soft">
-              Demo mode — no database is connected, so nothing was saved.
-            </p>
+              </p>
           ) : null}
         </div>
 
@@ -180,6 +187,11 @@ export function ParcelBooking({
         </div>
       }
     >
+      <section className="mb-5 rounded-[16px] border border-line/90 bg-surface p-3.5">
+        <PaymentMethods value={method} onChange={(value) => setMethod(value)} />
+        <PaymentNote />
+      </section>
+
       <LocationFields
         pickup={pickup}
         dropoff={dropoff}
@@ -349,7 +361,6 @@ export function ParcelBooking({
         </div>
       </section>
 
-      <DemoNote className="px-0 pt-5" />
 
       {error ? (
         <p

@@ -47,8 +47,10 @@ export function FoodCheckout({ businessAccount = false }: { businessAccount?: bo
         fulfilment,
         address: fulfilment === "delivery" ? address : "",
         paymentMethod: method === "cash" ? "cash" : "online",
-        lines: cart.lines.map((line) => ({
-          menuItemId: line.menuItemId,
+        lines: cart.lines
+          .filter((line) => line.kind !== "ticket" && line.menuItemId)
+          .map((line) => ({
+          menuItemId: line.menuItemId!,
           size: line.size,
           toppings: line.toppings,
           quantity: line.quantity,
@@ -105,8 +107,7 @@ export function FoodCheckout({ businessAccount = false }: { businessAccount?: bo
 
           {placed.demo ? (
             <p className="mt-1.5 text-[12px] text-muted-soft">
-              Demo mode — no database is connected, so nothing was saved.
-            </p>
+              </p>
           ) : null}
 
           <div className="mt-5 flex flex-col gap-2">

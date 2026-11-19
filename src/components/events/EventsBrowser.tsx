@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { EventListCard, EventMiniCard } from "@/components/events/EventCards";
 import { FeaturedEventCard } from "@/components/events/FeaturedEventCard";
 import { Icon } from "@/components/flash/Icon";
-import { DemoNote, EmptyState, SectionHeading, ScreenHeader } from "@/components/flash/ui";
+import { EmptyState, SectionHeading, ScreenHeader } from "@/components/flash/ui";
 import type { Event } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
 
@@ -155,8 +155,6 @@ export function EventsBrowser({ events }: { events: Event[] }) {
           </div>
         ) : null}
       </section>
-
-      <DemoNote />
     </div>
   );
 }

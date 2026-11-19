@@ -1,5 +1,5 @@
 import { BrandHeader } from "@/components/flash/BrandHeader";
-import { DemoNote, SectionHeading } from "@/components/flash/ui";
+import { SectionHeading } from "@/components/flash/ui";
 import { EventMiniCard } from "@/components/events/EventCards";
 import { FeaturedEventCard } from "@/components/events/FeaturedEventCard";
 import { RestaurantRailCard } from "@/components/food/RestaurantCards";
@@ -155,8 +155,6 @@ export default async function HomePage() {
       <section className="mt-6">
         <RideBriefCard quote={quote} />
       </section>
-
-      <DemoNote />
     </div>
   );
 }

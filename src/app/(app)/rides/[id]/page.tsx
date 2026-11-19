@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { BookingCode } from "@/components/flash/BookingCode";
 import { Icon } from "@/components/flash/Icon";
 import { PassActions } from "@/components/flash/PassActions";
-import { Avatar, DemoNote, StatusBadge } from "@/components/flash/ui";
+import { Avatar, StatusBadge } from "@/components/flash/ui";
 import { RouteMap } from "@/components/track/RouteMap";
 import { cedis, distance } from "@/lib/flash/format";
 import { getDelivery } from "@/lib/flash/repository";
@@ -115,10 +115,6 @@ export default async function RideDetailPage({ params }: { params: Promise<{ id:
           </div>
         </div>
       </article>
-
-      <DemoNote />
-
-      
         <div className="mt-4">
         <PassActions reference={ride.reference} title={`Flash ride ${ride.number}`} shareLabel="Share trip" />
       </div>

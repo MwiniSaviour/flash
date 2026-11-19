@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { BookingCode } from "@/components/flash/BookingCode";
 import { Icon } from "@/components/flash/Icon";
 import { PassActions } from "@/components/flash/PassActions";
-import { DemoNote } from "@/components/flash/ui";
 import { dayMonth, distance, timeRange } from "@/lib/flash/format";
 import { getEventById, listTickets } from "@/lib/flash/repository";
 
@@ -114,10 +113,6 @@ export default async function TicketPassPage({
           </div>
         </div>
       </article>
-
-      <DemoNote />
-
-      
         <div className="mt-4">
         <PassActions reference={ticket.reference} title={`${event.title} — ${ticket.tierName}`} />
       </div>

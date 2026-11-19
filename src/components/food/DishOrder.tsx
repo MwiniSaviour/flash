@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
+
 import { useState } from "react";
 
 import { Icon } from "@/components/flash/Icon";
 import { StickyAction } from "@/components/flash/StickyAction";
-import { DemoNote, Tag } from "@/components/flash/ui";
+import { Tag } from "@/components/flash/ui";
 import { Fact, KitchenBanner } from "@/components/food/KitchenBanner";
 import { configuredPrice, useCart } from "@/lib/cart";
 import { cedis, minutes } from "@/lib/flash/format";
@@ -31,7 +33,7 @@ export function DishOrder({
   const [sizeId, setSizeId] = useState(item.sizes[0]?.id ?? "");
   const [toppingIds, setToppingIds] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
-  const [added, setAdded] = useState(false);
+  const inCart = cart.lines.some((line) => line.menuItemId === item.id);
 
   const size = item.sizes.find((entry) => entry.id === sizeId) ?? item.sizes[0];
   const discountPercent = activeDiscountPercent(item);
@@ -57,8 +59,6 @@ export function DishOrder({
       },
       { sizeId, toppingIds },
     );
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1600);
   }
 
   return (
@@ -196,11 +196,7 @@ export function DishOrder({
             })}
           </ul>
         </section>
-      ) : null}
-
-      <DemoNote />
-
-      <StickyAction>
+      ) : null}      <StickyAction>
         <div className="flex h-[48px] shrink-0 items-center gap-1 rounded-full border border-line bg-surface px-1.5">
           <button
             type="button"
@@ -222,14 +218,24 @@ export function DishOrder({
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={addToCart}
-          className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed lg:max-w-[320px]"
-        >
-          <Icon name={added ? "check" : "bag"} size={16} />
-          {added ? "In your bag" : `Add to cart · ${cedis(netTotal)}`}
-        </button>
+        {inCart ? (
+          <Link
+            href="/food/checkout"
+            className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover lg:max-w-[320px]"
+          >
+            <Icon name="arrow-right" size={16} />
+            Proceed to checkout
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={addToCart}
+            className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed lg:max-w-[320px]"
+          >
+            <Icon name="bag" size={16} />
+            Add to cart · {cedis(netTotal)}
+          </button>
+        )}
       </StickyAction>
     </div>
   );

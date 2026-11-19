@@ -40,9 +40,16 @@ export interface CartOptions {
 }
 
 export interface CartLine {
+  /** What kind of purchase this line is. */
+  kind?: "food" | "ticket";
   /** The line's own key: the dish, its portion and its extras. */
   lineId: string;
-  menuItemId: string;
+  menuItemId?: string;
+  eventId?: string;
+  eventSlug?: string;
+  eventTitle?: string;
+  tierId?: string;
+  tierName?: string;
   name: string;
   /** The unit price before this dish's discount. */
   listPrice: number;
@@ -72,6 +79,15 @@ interface CartValue {
   /** What the kitchen takes off. */
   discount: number;
   add: (item: MenuItem, restaurant: CartRestaurant, options?: CartOptions) => void;
+  addTicket: (input: {
+    eventId: string;
+    eventSlug: string;
+    eventTitle: string;
+    tierId: string;
+    tierName: string;
+    price: number;
+    image: ImageAsset;
+  }) => void;
   setQuantity: (lineId: string, quantity: number) => void;
   remove: (lineId: string) => void;
   clear: () => void;
@@ -144,7 +160,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (existing) {
           return current.map((line) =>
             line.lineId === lineId
-              ? { ...line, quantity: Math.min(20, line.quantity + 1) }
+              ? { ...line, quantity: line.quantity + 1 }
               : line,
           );
         }
@@ -170,12 +186,63 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const addTicket = useCallback(
+    (input: {
+      eventId: string;
+      eventSlug: string;
+      eventTitle: string;
+      tierId: string;
+      tierName: string;
+      price: number;
+      image: ImageAsset;
+    }) => {
+      const lineId = `ticket:${input.tierId}`;
+      setLines((current) => {
+        const existing = current.find((line) => line.lineId === lineId);
+        if (existing) {
+          return current.map((line) =>
+            line.lineId === lineId ? { ...line, quantity: line.quantity + 1 } : line,
+          );
+        }
+        return [
+          ...current,
+          {
+            kind: "ticket" as const,
+            lineId,
+            eventId: input.eventId,
+            eventSlug: input.eventSlug,
+            eventTitle: input.eventTitle,
+            tierId: input.tierId,
+            tierName: input.tierName,
+            name: input.tierName,
+            listPrice: input.price,
+            price: input.price,
+            discountPercent: 0,
+            quantity: 1,
+            restaurant: {
+              id: input.eventId,
+              name: input.eventTitle,
+              deliveryFee: 0,
+              distanceKm: 0,
+              etaMinutes: 0,
+              neighbourhood: "",
+            },
+            size: "",
+            toppings: [],
+            image: input.image,
+          },
+        ];
+      });
+    },
+    [],
+  );
+
   const setQuantity = useCallback((lineId: string, quantity: number) => {
     setLines((current) =>
       quantity <= 0
         ? current.filter((line) => line.lineId !== lineId)
         : current.map((line) =>
-            line.lineId === lineId ? { ...line, quantity: Math.min(20, quantity) } : line,
+            line.lineId === lineId ? { ...line, quantity } : line,
           ),
     );
   }, []);
@@ -205,11 +272,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       subtotal,
       discount,
       add,
+      addTicket,
       setQuantity,
       remove,
       clear,
     };
-  }, [add, clear, lines, remove, setQuantity]);
+  }, [add, addTicket, clear, lines, remove, setQuantity]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

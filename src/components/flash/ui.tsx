@@ -288,21 +288,8 @@ export function EmptyState({
  * screens that show them say so, once, quietly, rather than letting the
  * interface pass read as a live listings feed.
  */
-export function DemoNote({ className }: { className?: string }) {
-  return (
-    <p
-      className={cn(
-        "flex items-start gap-2 px-5 pt-6 text-[11.5px] leading-relaxed text-muted-soft",
-        className,
-      )}
-    >
-      <Icon name="info" size={13} className="mt-0.5 shrink-0" />
-      <span>
-        Demo data for this interface pass — events, kitchens, riders, prices and ratings are not
-        real.
-      </span>
-    </p>
-  );
+export function DemoNote() {
+  return null;
 }
 
 /** A round avatar with a graceful fallback to initials. */
