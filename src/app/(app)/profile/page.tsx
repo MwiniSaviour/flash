@@ -5,7 +5,6 @@ import { NotificationPreference } from "@/components/dashboard/NotificationInbox
 import { AccountRow } from "@/components/flash/Account";
 import { Icon } from "@/components/flash/Icon";
 import { Avatar } from "@/components/flash/ui";
-import { requireAdmin } from "@/lib/admin/auth";
 import { getNotifications } from "@/lib/flash/notifications";
 import {
   getCurrentUser,
@@ -27,7 +26,6 @@ export default async function ProfilePage() {
     getNotifications(),
   ]);
   const business = businesses[0];
-  const admin = Boolean(await requireAdmin());
 
   const stats = [
     { label: "Tickets", value: tickets.reduce((total, ticket) => total + ticket.quantity, 0) },
@@ -88,7 +86,6 @@ export default async function ProfilePage() {
             href="/profile/transactions"
           />
           <AccountRow icon="settings" label="Settings" href="/profile/settings" />
-          {admin ? <AccountRow icon="dashboard" label="Admin console" href="/admin" /> : null}
           <AccountRow icon="help" label="Help & Support" href="/profile/help" />
         </div>
       </section>
@@ -153,26 +150,6 @@ export default async function ProfilePage() {
           </div>
         </div>
       </section>
-
-      {admin ? (
-        <section className="mt-5 px-5">
-          <Link
-            href="/admin"
-            className="flex items-center gap-3 rounded-[16px] border border-line/90 bg-surface p-3.5 transition hover:border-line-strong"
-          >
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-brand-soft text-brand-ink">
-              <Icon name="settings" size={19} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[14px] font-bold text-ink">Platform admin</span>
-              <span className="mt-0.5 block text-[12.5px] text-muted">
-                Commission rates, approvals and payouts
-              </span>
-            </span>
-            <Icon name="chevron-right" size={16} className="text-muted-soft" />
-          </Link>
-        </section>
-      ) : null}
 
       <section className="mt-5 px-5">
         <div className="rounded-[16px] border border-line/90 bg-surface p-3.5">

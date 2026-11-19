@@ -32,6 +32,8 @@ deployment with no service keys is a fully working demo.
 | Variable | Scope | Purpose |
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | Production | Final origin, no trailing slash. Leave unset to use the Vercel host. |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | All | Support address shown in Help & Support. |
+| `ADMIN_HOST` | Production | Host that serves the superadmin console, e.g. `admin.flash.scalmint.com`. |
 | `NEXT_PUBLIC_SUPABASE_URL` | All | Supabase project URL. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | All | Browser-safe Supabase key. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only | Bypasses RLS; never exposed to the browser. |
@@ -45,6 +47,25 @@ deployment with no service keys is a fully working demo.
 
 Every value is optional. A half-configured environment renders the fixtures and
 reports the inconsistency rather than throwing (`src/lib/env.ts`).
+
+## Superadmin subdomain
+
+The console is served from its own host, `admin.flash.scalmint.com`, and is not
+linked from the customer profile.
+
+1. In Vercel, open the project's **Settings → Domains** and add
+   `admin.flash.scalmint.com`.
+2. At your DNS provider add a `CNAME` record for `admin` pointing to
+   `cname.vercel-dns.com` (or the exact target Vercel shows for the domain).
+3. Set `ADMIN_HOST=admin.flash.scalmint.com` on the production environment and
+   redeploy.
+
+`vercel.json` rewrites that host's root to `/admin`. `src/proxy.ts` refuses any
+`/admin*` request on another host in production with 404; local development and
+Vercel preview deployments are exempt. The Clerk `publicMetadata.role ===
+"admin"` check in `requireAdmin()` still gates every admin page and action, so
+the subdomain alone never grants access. Sign in at
+`https://admin.flash.scalmint.com/sign-in`.
 
 ## Database
 

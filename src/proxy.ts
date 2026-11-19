@@ -4,17 +4,34 @@ import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server
 import { getEnv } from "@/lib/env";
 
 /**
- * Clerk's proxy.
+ * Clerk's proxy, with the admin host lock.
  *
- * Clerk owns the session, so it has to run before any route that reads one —
+ * Clerk owns the session, so it has to run before any route that reads one -
  * `auth()` on the server reads what the proxy established. Without keys there
  * is no session to read, so the proxy steps aside and lets the demo customer
  * through.
+ *
+ * In production the console is served only from ADMIN_HOST. A request for
+ * /admin* on the public host is refused with 404 rather than redirected, so
+ * the console is not advertised on the customer domain. Local development and
+ * Vercel preview deployments are exempt.
  */
 const clerk = clerkMiddleware();
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
-  if (!getEnv().clerkPublishableKey) return NextResponse.next();
+  const env = getEnv();
+  const { pathname, hostname } = request.nextUrl;
+
+  if (
+    process.env.VERCEL_ENV === "production" &&
+    env.adminHost &&
+    pathname.startsWith("/admin") &&
+    hostname !== env.adminHost
+  ) {
+    return new NextResponse(null, { status: 404 });
+  }
+
+  if (!env.clerkPublishableKey) return NextResponse.next();
   return clerk(request, event);
 }
 

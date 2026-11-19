@@ -9,6 +9,7 @@
 
 export type FlashEnv = {
   readonly siteUrl: string;
+  readonly adminHost: string | null;
   readonly supportEmail: string | null;
   readonly supabaseUrl: string | null;
   readonly supabaseAnonKey: string | null;
@@ -62,6 +63,7 @@ export function getEnv(): FlashEnv {
 
   cached = Object.freeze({
     siteUrl: readSiteUrl(),
+    adminHost: clean(process.env.ADMIN_HOST),
     supportEmail: clean(process.env.NEXT_PUBLIC_SUPPORT_EMAIL),
     supabaseUrl: clean(process.env.NEXT_PUBLIC_SUPABASE_URL),
     supabaseAnonKey: clean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
