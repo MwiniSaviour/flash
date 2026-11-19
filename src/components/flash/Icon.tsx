@@ -27,7 +27,6 @@ import {
   House,
   Info,
   LayoutGrid,
-  LogOut,
   MapPin,
   Menu,
   Minus,
@@ -132,7 +131,6 @@ export type IconName =
   | "more"
   | "flash"
   | "dashboard"
-  | "log-out"
   | "store";
 
 const ICONS: Record<IconName, LucideIcon> = {
@@ -197,7 +195,6 @@ const ICONS: Record<IconName, LucideIcon> = {
   more: Ellipsis,
   flash: Zap,
   dashboard: LayoutGrid,
-  "log-out": LogOut,
   store: Store,
 };
 
