@@ -8,6 +8,8 @@
  * row actually carries.
  */
 
+import { adaptDispatchStatus, type DispatchView } from "@/lib/dispatch/status";
+
 import { clock, dayMonth } from "./format";
 import type {
   Delivery,
@@ -44,87 +46,21 @@ const ORDER_PROGRESS: Record<string, number> = {
   delivered: 1,
 };
 
-const RIDE_PROGRESS: Record<string, number> = {
-  requested: 0.12,
-  accepted: 0.3,
-  "in progress": 0.6,
-  arriving: 0.84,
-  completed: 1,
-  cancelled: 0,
-};
-
-const PARCEL_PROGRESS: Record<string, number> = {
-  booked: 0.12,
-  assigned: 0.3,
-  "picked up": 0.44,
-  delivered: 1,
-};
-
-const RIDE_STAGE: Record<string, DeliveryStage> = {
-  requested: "preparing",
-  accepted: "preparing",
-  "in progress": "on the way",
-  arriving: "arriving",
-  completed: "delivered",
-  cancelled: "preparing",
-};
-
-const RIDE_LABEL: Record<string, string> = {
-  requested: "Requested",
-  accepted: "Rider assigned",
-  "in progress": "On the way",
-  arriving: "Arriving",
-  completed: "Arrived",
-  cancelled: "Cancelled",
-};
-
-const PARCEL_STAGE: Record<string, DeliveryStage> = {
-  booked: "preparing",
-  assigned: "preparing",
-  "picked up": "on the way",
-  delivered: "delivered",
-};
-
-const PARCEL_LABEL: Record<string, string> = {
-  booked: "Parcel booked",
-  assigned: "Courier assigned",
-  "picked up": "With the courier",
-  delivered: "Delivered",
-};
-
 const ORDER_LABEL: Record<string, string> = {
   preparing: "Preparing",
   "on the way": "On the way",
   delivered: "Delivered",
 };
 
-/** Which step of the journey the delivery has reached. */
-function currentStep(steps: string[], status: string): number {
-  switch (status) {
-    case "preparing":
-    case "booked":
-      return 0;
-    case "requested":
-      return 0;
-    case "accepted":
-    case "assigned":
-      return 1;
-    case "on the way":
-    case "picked up":
-    case "in progress":
-      return 2;
-    case "arriving":
-      return 2;
-    case "delivered":
-    case "completed":
-      return steps.length;
-    default:
-      return 0;
-  }
-}
+/** Food orders are not dispatched; their step index is local to the kitchen. */
+const ORDER_STEP: Record<string, number> = {
+  preparing: 0,
+  "on the way": 2,
+  delivered: ORDER_STEPS.length,
+};
 
-function buildSteps(labels: string[], status: string): DeliveryStep[] {
-  const reached = currentStep(labels, status);
+function buildSteps(labels: string[], step: number): DeliveryStep[] {
+  const reached = Math.min(step, labels.length);
   return labels.map((label, index) => ({
     label,
     done: index < reached,
@@ -134,6 +70,28 @@ function buildSteps(labels: string[], status: string): DeliveryStep[] {
 
 function etaText(minutes: number): string {
   return minutes <= 0 ? "Arriving" : `${minutes} min`;
+}
+
+/**
+ * A future job shows its window, never a countdown. The route is not live
+ * until the engine promotes the task out of `scheduled`.
+ */
+function dispatchEta(view: DispatchView, etaMinutes: number, scheduledFor: string | null): string {
+  if (view.stage === "scheduled") {
+    if (!scheduledFor) return "Scheduled";
+    const moment = new Date(scheduledFor);
+    if (Number.isNaN(moment.getTime())) return "Scheduled";
+    const date = moment.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+    const time = moment.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "UTC",
+    });
+    return `${date}, ${time}`;
+  }
+
+  return view.active ? etaText(etaMinutes) : "";
 }
 
 /** A rider who has not been assigned yet still needs a name on the card. */
@@ -187,7 +145,7 @@ export function orderToDelivery(order: OrderWithLinesRow): Delivery {
     image: restaurant
       ? { src: restaurant.image_src, alt: restaurant.image_alt }
       : RIDE_CARD_IMAGE,
-    steps: buildSteps(ORDER_STEPS, order.status),
+    steps: buildSteps(ORDER_STEPS, ORDER_STEP[order.status] ?? 0),
     receipt: {
       lines: lines.map((line) => ({
         name: line.name,
@@ -206,31 +164,34 @@ export function orderToDelivery(order: OrderWithLinesRow): Delivery {
 
 export function rideToDelivery(ride: RideWithRiderRow): Delivery {
   const className = ride.ride_classes?.name ?? "Taxi";
+  const view = adaptDispatchStatus(ride.dispatch_task_status ?? ride.status, ride.scheduled_for);
 
   return {
     id: ride.id,
     kind: "ride",
     number: ride.number,
     title: `${className} to ${ride.dropoff}`,
-    status: RIDE_STAGE[ride.status] ?? "preparing",
-    statusLabel: RIDE_LABEL[ride.status] ?? "Requested",
+    status: view.stage,
+    statusLabel: view.label,
     from: ride.pickup,
     fromPlace: ride.pickup_area,
     to: ride.dropoff,
     toPlace: ride.dropoff_area,
-    progress: RIDE_PROGRESS[ride.status] ?? 0.12,
-    eta: etaText(ride.eta_minutes),
+    progress: view.progress,
+    eta: dispatchEta(view, ride.eta_minutes, ride.scheduled_for),
     reference: ride.reference,
     price: ride.price,
     distanceKm: ride.distance_km,
     durationMinutes: ride.duration_minutes,
     rider: riderOf(ride.drivers),
     image: RIDE_CARD_IMAGE,
-    steps: buildSteps(RIDE_STEPS, ride.status),
+    steps: buildSteps(RIDE_STEPS, view.step),
   };
 }
 
 export function parcelToDelivery(parcel: ParcelWithCourierRow): Delivery {
+  const view = adaptDispatchStatus(parcel.dispatch_task_status ?? parcel.status, parcel.scheduled_for);
+
   return {
     id: parcel.id,
     kind: "parcel",
@@ -243,20 +204,20 @@ export function parcelToDelivery(parcel: ParcelWithCourierRow): Delivery {
       parcel.quantity > 1
         ? `${parcel.quantity} × ${parcel.parcel_type} to ${parcel.dropoff}`
         : `${parcel.parcel_type} to ${parcel.dropoff}`,
-    status: PARCEL_STAGE[parcel.status] ?? "preparing",
-    statusLabel: PARCEL_LABEL[parcel.status] ?? "Parcel booked",
+    status: view.stage,
+    statusLabel: view.label,
     from: parcel.pickup,
     fromPlace: parcel.pickup_area,
     to: parcel.dropoff,
     toPlace: parcel.dropoff_area,
-    progress: PARCEL_PROGRESS[parcel.status] ?? 0.12,
-    eta: etaText(parcel.eta_minutes),
+    progress: view.progress,
+    eta: dispatchEta(view, parcel.eta_minutes, parcel.scheduled_for),
     reference: parcel.tracking_number,
     price: parcel.price,
     distanceKm: parcel.distance_km,
     rider: riderOf(parcel.drivers),
     image: PARCEL_CARD_IMAGE,
-    steps: buildSteps(PARCEL_STEPS, parcel.status),
+    steps: buildSteps(PARCEL_STEPS, view.step),
   };
 }
 
@@ -295,6 +256,24 @@ export function rideToPastDelivery(ride: RideWithRiderRow): PastDelivery {
     price: ride.price,
     image: PARCEL_CARD_IMAGE,
     href: `/rides/${ride.id}`,
+  };
+}
+
+/** A finished parcel, in the history list under Track. */
+export function parcelToPastDelivery(parcel: ParcelWithCourierRow): PastDelivery {
+  return {
+    id: parcel.id,
+    title:
+      parcel.quantity > 1
+        ? `${parcel.quantity} × ${parcel.parcel_type}`
+        : parcel.parcel_type,
+    subtitle: `${parcel.pickup} → ${parcel.dropoff}${
+      parcel.recipient_name ? ` · ${parcel.recipient_name}` : ""
+    }`,
+    when: dayMonth(parcel.requested_at),
+    price: parcel.price,
+    image: PARCEL_CARD_IMAGE,
+    href: `/parcels/${parcel.id}`,
   };
 }
 

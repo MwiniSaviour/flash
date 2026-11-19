@@ -8,7 +8,7 @@
 import type { Fulfilment, ImageAsset } from "@/lib/flash/types";
 
 export type DeliveryKind = "order" | "ride" | "parcel";
-export type DeliveryStage = "preparing" | "on the way" | "arriving" | "delivered";
+export type DeliveryStage = "scheduled" | "preparing" | "on the way" | "arriving" | "delivered";
 
 export interface DeliveryStep {
   label: string;

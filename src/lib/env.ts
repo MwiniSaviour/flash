@@ -21,6 +21,9 @@ export type FlashEnv = {
   readonly cloudinaryFolder: string;
   readonly paystackSecretKey: string | null;
   readonly paystackWebhookSecret: string | null;
+  readonly dispatchBaseUrl: string | null;
+  readonly dispatchApiKey: string | null;
+  readonly dispatchAppId: string | null;
 };
 
 const DEFAULT_SITE_URL = "http://localhost:3000";
@@ -70,6 +73,9 @@ export function getEnv(): FlashEnv {
     cloudinaryFolder: clean(process.env.CLOUDINARY_FOLDER) ?? "flash",
     paystackSecretKey: clean(process.env.PAYSTACK_SECRET_KEY),
     paystackWebhookSecret: clean(process.env.PAYSTACK_WEBHOOK_SECRET),
+    dispatchBaseUrl: clean(process.env.DISPATCH_BASE_URL),
+    dispatchApiKey: clean(process.env.DISPATCH_API_KEY),
+    dispatchAppId: clean(process.env.DISPATCH_APP_ID),
   });
 
   return cached;
@@ -102,6 +108,12 @@ export function hasCloudinaryEnv(): boolean {
 /** True when Paystack can take live payments. */
 export function hasPaystackEnv(): boolean {
   return Boolean(getEnv().paystackSecretKey?.startsWith("sk_"));
+}
+
+/** True when Flash can post ride and parcel jobs to the shared engine. */
+export function hasDispatchEnv(): boolean {
+  const env = getEnv();
+  return Boolean(env.dispatchBaseUrl && env.dispatchApiKey && env.dispatchAppId);
 }
 
 /**
@@ -169,6 +181,18 @@ export function envIssues(): string[] {
 
     if (env.cloudinaryApiSecret && !env.cloudinaryApiKey) {
       issues.push("CLOUDINARY_API_SECRET is set but CLOUDINARY_API_KEY is missing.");
+    }
+
+    if (env.dispatchBaseUrl && !env.dispatchApiKey) {
+      issues.push("DISPATCH_BASE_URL is set but DISPATCH_API_KEY is missing; ride and parcel jobs cannot be dispatched.");
+    }
+
+    if (env.dispatchApiKey && !env.dispatchBaseUrl) {
+      issues.push("DISPATCH_API_KEY is set but DISPATCH_BASE_URL is missing.");
+    }
+
+    if ((env.dispatchApiKey || env.dispatchBaseUrl) && !env.dispatchAppId) {
+      issues.push("Dispatch is configured but DISPATCH_APP_ID is missing; jobs need a tenant id.");
     }
   }
 

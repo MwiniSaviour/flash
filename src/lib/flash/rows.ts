@@ -194,7 +194,19 @@ export interface OrderWithLinesRow extends OrderRow {
   drivers: DriverRow | null;
 }
 
-export interface RideRow {
+/** The dispatch snapshot both ride and parcel rows carry. */
+export interface DispatchRowFields {
+  dispatch_job_id: string | null;
+  dispatch_app_id: string | null;
+  dispatch_task_id: string | null;
+  /** Raw engine task state; `status` holds Flash's mapped state. */
+  dispatch_task_status: string | null;
+  dispatch_status_synced_at: string | null;
+  dispatch_last_payload: Record<string, unknown>;
+  dispatch_idempotency_key: string | null;
+}
+
+export interface RideRow extends DispatchRowFields {
   id: string;
   user_id: string;
   rider_id: string | null;
@@ -212,6 +224,8 @@ export interface RideRow {
   status: string;
   number: string;
   reference: string;
+  /** ISO instant for a future pick-up; null for an immediate ride. */
+  scheduled_for: string | null;
   requested_at: string;
 }
 
@@ -220,7 +234,7 @@ export interface RideWithRiderRow extends RideRow {
   ride_classes: { id: string; name: string } | null;
 }
 
-export interface ParcelRow {
+export interface ParcelRow extends DispatchRowFields {
   id: string;
   user_id: string;
   courier_id: string | null;

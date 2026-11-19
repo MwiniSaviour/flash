@@ -278,7 +278,7 @@ export interface Order {
   reference: string;
 }
 
-export type BookingKind = "ticket" | "ride" | "order";
+export type BookingKind = "ticket" | "ride" | "parcel" | "order";
 export type BookingStatus = "confirmed" | "pending" | "completed" | "cancelled";
 
 export interface Booking {

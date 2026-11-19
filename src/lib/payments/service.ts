@@ -33,7 +33,7 @@ function pesewas(cedis: number): number {
 
 /** Creates the payment record and returns Paystack's hosted checkout URL. */
 export async function startCheckout(input: {
-  kind: "order" | "ticket";
+  kind: "order" | "ticket" | "ride" | "parcel";
   userId: string;
   email: string;
   itemsCedis: number;
@@ -41,6 +41,8 @@ export async function startCheckout(input: {
   selfDelivery: boolean;
   orderId?: string;
   ticketId?: string;
+  rideId?: string;
+  parcelId?: string;
 }): Promise<CheckoutStart> {
   if (!paystackConfigured()) {
     return { reference: "", checkoutUrl: null, demo: true };
@@ -71,6 +73,8 @@ export async function startCheckout(input: {
     driver_pesewas: commission.driverPesewas,
     order_id: input.orderId ?? null,
     ticket_id: input.ticketId ?? null,
+    ride_id: input.rideId ?? null,
+    parcel_id: input.parcelId ?? null,
   });
 
   if (error) throw error;
@@ -260,27 +264,95 @@ async function sellerRecipient(client: AdminClient, userId: string): Promise<str
 async function driverRecipient(client: AdminClient, paymentId: string): Promise<string | null> {
   const { data: payment } = await client
     .from("payments")
-    .select("order_id")
+    .select("order_id, ride_id, parcel_id")
     .eq("id", paymentId)
     .maybeSingle();
 
-  if (!payment?.order_id) return null;
+  if (!payment) return null;
 
-  const { data: order } = await client
-    .from("orders")
-    .select("rider_id")
-    .eq("id", payment.order_id)
-    .maybeSingle();
+  // The order path is unchanged; rides and parcels carry the same driver id in
+  // their own table, so the payout lookup has one shape for all three products.
+  let driverId: string | null = null;
 
-  if (!order?.rider_id) return null;
+  if (payment.order_id) {
+    const { data: order } = await client
+      .from("orders")
+      .select("rider_id")
+      .eq("id", payment.order_id)
+      .maybeSingle();
+    driverId = order?.rider_id ?? null;
+  } else if (payment.ride_id) {
+    const { data: ride } = await client
+      .from("rides")
+      .select("rider_id")
+      .eq("id", payment.ride_id)
+      .maybeSingle();
+    driverId = ride?.rider_id ?? null;
+  } else if (payment.parcel_id) {
+    const { data: parcel } = await client
+      .from("parcels")
+      .select("courier_id")
+      .eq("id", payment.parcel_id)
+      .maybeSingle();
+    driverId = parcel?.courier_id ?? null;
+  }
+
+  if (!driverId) return null;
 
   const { data: driver } = await client
     .from("drivers")
     .select("payout_recipient_code")
-    .eq("id", order.rider_id)
+    .eq("id", driverId)
     .maybeSingle();
 
   return driver?.payout_recipient_code || null;
+}
+
+/**
+ * The engine's `delivered` event releases a ride or parcel's held driver payout.
+ * Idempotent: a repeated poll or webhook finds no pending payout to release.
+ */
+export async function releaseDriverPayoutForDispatch(input: {
+  jobId: string;
+}): Promise<boolean> {
+  const client = createAdminClient();
+  if (!client) return false;
+
+  const [ride, parcel] = await Promise.all([
+    client.from("rides").select("id").eq("dispatch_job_id", input.jobId).maybeSingle(),
+    client.from("parcels").select("id").eq("dispatch_job_id", input.jobId).maybeSingle(),
+  ]);
+
+  const linked = [
+    { column: "ride_id" as const, id: ride.data?.id ?? null },
+    { column: "parcel_id" as const, id: parcel.data?.id ?? null },
+  ].filter((entry): entry is { column: "ride_id" | "parcel_id"; id: string } => Boolean(entry.id));
+
+  if (linked.length === 0) return false;
+
+  let released = false;
+  for (const entry of linked) {
+    const { data: payments } = await client
+      .from("payments")
+      .select("id, status")
+      .eq(entry.column, entry.id);
+
+    for (const payment of payments ?? []) {
+      if (payment.status !== "success") continue;
+
+      const { data: payouts } = await client
+        .from("payouts")
+        .select("id")
+        .eq("payment_id", payment.id)
+        .eq("status", "pending");
+
+      for (const payout of payouts ?? []) {
+        if (await releasePayout(payout.id, null)) released = true;
+      }
+    }
+  }
+
+  return released;
 }
 
 /**
@@ -341,6 +413,8 @@ export async function recordCashCommission(input: {
   selfDelivery: boolean;
   orderId?: string;
   ticketId?: string;
+  rideId?: string;
+  parcelId?: string;
 }): Promise<void> {
   const client = createAdminClient();
   if (!client) return;
@@ -356,7 +430,13 @@ export async function recordCashCommission(input: {
   const { error } = await client.from("payments").insert({
     id: reference,
     user_id: input.userId,
-    kind: input.ticketId ? "ticket" : "order",
+    kind: input.ticketId
+      ? "ticket"
+      : input.rideId
+        ? "ride"
+        : input.parcelId
+          ? "parcel"
+          : "order",
     reference,
     provider: "cash",
     status: "cash",
@@ -366,6 +446,8 @@ export async function recordCashCommission(input: {
     driver_pesewas: commission.driverPesewas,
     order_id: input.orderId ?? null,
     ticket_id: input.ticketId ?? null,
+    ride_id: input.rideId ?? null,
+    parcel_id: input.parcelId ?? null,
     paid_at: new Date().toISOString(),
   });
 

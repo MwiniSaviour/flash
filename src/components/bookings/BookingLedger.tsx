@@ -15,6 +15,7 @@ type Filter = "all" | BookingKind;
 const kindIcons: Record<BookingKind, IconName> = {
   ticket: "ticket",
   ride: "ride",
+  parcel: "package",
   order: "bag",
 };
 
@@ -63,6 +64,7 @@ export function BookingLedger({
   const counts = useMemo(
     () => ({
       ride: bookings.filter((booking) => booking.kind === "ride").length,
+      parcel: bookings.filter((booking) => booking.kind === "parcel").length,
       order: bookings.filter((booking) => booking.kind === "order").length,
       ticket: bookings.filter((booking) => booking.kind === "ticket").length,
     }),
@@ -73,7 +75,7 @@ export function BookingLedger({
     <div className="pb-5">
       <ScreenHeader
         title="Bookings"
-        subtitle="Every ticket, ride and order you have made."
+        subtitle="Every ticket, ride, parcel and order you have made."
         className="pt-2"
       />
 
@@ -86,6 +88,7 @@ export function BookingLedger({
             { value: "all", label: "All", count: bookings.length },
             { value: "ticket", label: "Tickets", count: counts.ticket },
             { value: "ride", label: "Rides", count: counts.ride },
+            { value: "parcel", label: "Parcels", count: counts.parcel },
             { value: "order", label: "Orders", count: counts.order },
           ]}
         />

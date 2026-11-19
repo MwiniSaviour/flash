@@ -4,9 +4,11 @@ import { useEffect, useState, useTransition } from "react";
 
 import { Icon, type IconName } from "@/components/flash/Icon";
 import { LocationFields } from "@/components/flash/LocationFields";
+import type { Schedule } from "@/components/flash/SchedulePicker";
+import { SchedulePicker, scheduleInstant, scheduleLabel } from "@/components/flash/SchedulePicker";
 import { Sheet } from "@/components/flash/Sheet";
 import { Stepper } from "@/components/flash/Stepper";
-import { DemoNote, SectionHeading, StatusBadge } from "@/components/flash/ui";
+import { DemoNote, Field, SectionHeading, StatusBadge } from "@/components/flash/ui";
 import { requestRide } from "@/lib/flash/actions";
 import { MAX_PASSENGERS } from "@/lib/flash/data/rides";
 import { cedis, distance } from "@/lib/flash/format";
@@ -43,6 +45,8 @@ export function RideBooking({
   const [passengers, setPassengers] = useState(1);
   const [pickup, setPickup] = useState(quote.pickup);
   const [dropoff, setDropoff] = useState(initialDropoff ?? quote.dropoff);
+  const [phone, setPhone] = useState("");
+  const [schedule, setSchedule] = useState<Schedule>({ mode: "now" });
   const [reference, setReference] = useState<{ value: string; demo: boolean } | null>(null);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +85,8 @@ export function RideBooking({
         passengers,
         pickup,
         dropoff,
+        phone,
+        scheduledFor: scheduleInstant(schedule),
       });
 
       if (!result.ok) {
@@ -101,18 +107,21 @@ export function RideBooking({
   }, [searching, reference]);
 
   if (reference) {
+    const scheduled = schedule.mode === "later";
+
     return (
       <Sheet title="Book a ride" onClose={onClose}>
         <div className="rounded-[20px] border border-line/90 bg-surface p-5 text-center">
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-success-soft text-success-ink">
-            <Icon name="check" size={28} />
+            <Icon name={scheduled ? "calendar" : "check"} size={28} />
           </span>
           <h3 className="mt-4 text-[21px] font-bold tracking-[-0.02em] text-ink">
-            {selected.name} is on the way
+            {scheduled ? "Ride scheduled" : `${selected.name} is on the way`}
           </h3>
           <p className="mx-auto mt-1.5 max-w-[34ch] text-[13.5px] leading-relaxed text-muted">
-            We are looking for a rider near {pickup}. Track the ride from the Track tab once it is
-            assigned.
+            {scheduled
+              ? `Your ${selected.name.toLowerCase()} is booked for ${scheduleLabel(schedule)}. It is on the Track tab as Scheduled until the pick-up window opens.`
+              : `We are looking for a rider near ${pickup}. Track the ride from the Track tab once it is assigned.`}
           </p>
 
           <div className="mt-4 rounded-[14px] bg-surface-2/70 px-4 py-3 text-left">
@@ -130,6 +139,14 @@ export function RideBooking({
             <p className="mt-1 text-[14px] font-semibold text-ink">
               {passengers === 1 ? "1 passenger" : `${passengers} passengers`} · {selected.name}
             </p>
+            {scheduled ? (
+              <>
+                <p className="mt-2 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-muted">
+                  When
+                </p>
+                <p className="mt-1 text-[14px] font-semibold text-ink">{scheduleLabel(schedule)}</p>
+              </>
+            ) : null}
             <p className="mt-3 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-muted">
               Booking reference
             </p>
@@ -192,6 +209,22 @@ export function RideBooking({
         savedPlaces={savedPlaces}
         onSavedPlace={(place) => setDropoff(place.detail)}
       />
+
+      <section className="mt-6">
+        <SectionHeading title="How can the rider reach you?" />
+        <Field label="Phone number" icon="phone" className="mt-3">
+          <input
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            placeholder="So the rider can call you"
+            aria-label="Phone number"
+            autoComplete="tel"
+            inputMode="tel"
+            type="tel"
+            className="w-full bg-transparent text-[16px] text-ink placeholder:text-muted focus:outline-none"
+          />
+        </Field>
+      </section>
 
       <section className="mt-6">
         <SectionHeading title="How many of you?" />
@@ -284,6 +317,8 @@ export function RideBooking({
           })}
         </ul>
       </section>
+
+      <SchedulePicker className="mt-6" value={schedule} onChange={setSchedule} />
 
       <DemoNote className="px-0 pt-5" />
 

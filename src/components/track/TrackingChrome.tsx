@@ -48,6 +48,7 @@ export function GreetingHeader({ user }: { user: FlashUser }) {
 }
 
 const stageTone = {
+  scheduled: { tone: "brand" as const, icon: "calendar" as const },
   preparing: { tone: "warning" as const, icon: "clock" as const },
   "on the way": { tone: "brand" as const, icon: "truck" as const },
   arriving: { tone: "success" as const, icon: "navigation" as const },

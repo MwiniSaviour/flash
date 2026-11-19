@@ -3,11 +3,23 @@
 import { revalidatePath } from "next/cache";
 
 import { currentClerkIdentity, currentUserId } from "@/lib/auth/server";
+import { createDispatchJob, dispatchConfigured } from "@/lib/dispatch/client";
+import { dispatchPatch } from "@/lib/dispatch/status";
+import {
+  engineRideClass,
+  type CreateDispatchJobInput,
+  type DispatchContact,
+  type DispatchJobDTO,
+  type DispatchLocation,
+  type DispatchPaymentMethod,
+  type DispatchRequestType,
+} from "@/lib/dispatch/types";
+import { getEnv } from "@/lib/env";
 import { destroyImage } from "@/lib/media/cloudinary";
 import { isOwnedCloudinaryUrl, publicIdFromUrl } from "@/lib/media/url";
 import { paystackConfigured } from "@/lib/payments/paystack";
 import { confirmDelivery, recordCashCommission, startCheckout } from "@/lib/payments/service";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, type AdminClient } from "@/lib/supabase/admin";
 
 import { findCover } from "./covers";
 import { events } from "./data/events";
@@ -64,6 +76,7 @@ export type RideRequested = {
   price: number;
   etaMinutes: number;
   demo: boolean;
+  checkoutUrl?: string | null;
 };
 
 export type ParcelSent = {
@@ -72,6 +85,7 @@ export type ParcelSent = {
   price: number;
   etaMinutes: number;
   demo: boolean;
+  checkoutUrl?: string | null;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -101,6 +115,136 @@ function clampQuantity(quantity: number): number {
 /** The party size a ride can carry. */
 function clampPassengers(passengers: number): number {
   return Math.min(6, Math.max(1, Math.floor(passengers) || 1));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dispatch hand-off                                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Flash has no maps yet, so every route still uses the demo distance and one
+ * Accra anchor. The engine needs coordinates to assign a driver; these are
+ * reference points, not a map tile or a live location.
+ */
+const ACCRA_ANCHOR = { region: "Greater Accra", lat: 5.6037, lng: -0.187 } as const;
+
+function dispatchPoint(street: string, area: string): DispatchLocation {
+  const name = street.trim();
+  const district = area.trim();
+
+  return {
+    name,
+    address: district ? `${name}, ${district}` : name,
+    ...(district ? { area: district } : {}),
+    region: ACCRA_ANCHOR.region,
+    lat: ACCRA_ANCHOR.lat,
+    lng: ACCRA_ANCHOR.lng,
+  };
+}
+
+async function dispatchContact(
+  client: AdminClient,
+  userId: string,
+  phone: string,
+): Promise<DispatchContact> {
+  const profile = await ensureProfile(client, userId);
+  const identity = await currentClerkIdentity();
+
+  return {
+    name: profile.name || identity?.name || "Flash customer",
+    phone: phone.trim(),
+    email: profile.email || identity?.email || undefined,
+  };
+}
+
+/** A card or mobile-money ride is collected by Paystack, on delivery by the driver. */
+async function checkoutForDispatch(input: {
+  kind: "ride" | "parcel";
+  userId: string;
+  email: string;
+  price: number;
+  id: string;
+  paymentMethod: DispatchPaymentMethod;
+}): Promise<string | null> {
+  if (input.paymentMethod === "pod" || !paystackConfigured()) return null;
+
+  // The whole fare is the driver's charge, so it is passed as the delivery fee:
+  // the commission is taken from it and driver_pesewas holds the net.
+  const shared = {
+    userId: input.userId,
+    email: input.email,
+    itemsCedis: 0,
+    deliveryFeeCedis: input.price,
+    selfDelivery: false,
+  };
+
+  const checkout =
+    input.kind === "ride"
+      ? await startCheckout({ ...shared, kind: "ride", rideId: input.id })
+      : await startCheckout({ ...shared, kind: "parcel", parcelId: input.id });
+
+  return checkout.checkoutUrl;
+}
+
+/**
+ * Posts a job after the local row exists and stores the ids the engine returns.
+ * A failure cancels the row we just made and surfaces the engine's message —
+ * a booking never pretends to be dispatched when it was not.
+ */
+async function handoffToDispatch(
+  client: AdminClient,
+  input: {
+    id: string;
+    deviceId: string;
+    kind: DispatchRequestType;
+    table: "rides" | "parcels";
+    payload: Omit<CreateDispatchJobInput, "idempotencyKey" | "deviceId">;
+  },
+): Promise<{ ok: true; job: DispatchJobDTO } | { ok: false; error: string }> {
+  if (!dispatchConfigured()) {
+    await client
+      .from(input.table)
+      .update({ status: "cancelled", dispatch_last_payload: { error: "dispatch not configured" } })
+      .eq("id", input.id);
+
+    return {
+      ok: false,
+      error: `${input.kind === "ride" ? "Ride" : "Parcel"} dispatch is not configured on this deployment.`,
+    };
+  }
+
+  const idempotencyKey = `flash_${input.kind}_${input.id}`;
+
+  try {
+    const job = await createDispatchJob({
+      ...input.payload,
+      idempotencyKey,
+      deviceId: input.deviceId,
+    });
+
+    const { error } = await client
+      .from(input.table)
+      .update({
+        ...dispatchPatch(job, input.kind),
+        dispatch_app_id: getEnv().dispatchAppId,
+        dispatch_idempotency_key: idempotencyKey,
+      })
+      .eq("id", input.id);
+
+    if (error) throw new Error("the dispatch result could not be saved");
+    return { ok: true, job };
+  } catch (caught) {
+    const message = caught instanceof Error ? caught.message : "the engine could not be reached";
+    await client
+      .from(input.table)
+      .update({ status: "cancelled", dispatch_last_payload: { error: message } })
+      .eq("id", input.id);
+
+    return {
+      ok: false,
+      error: `We could not send this ${input.kind} to dispatch: ${message}. Nothing was charged.`,
+    };
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -475,11 +619,26 @@ export async function requestRide(input: {
   passengers: number;
   pickup: string;
   dropoff: string;
+  /** The chosen pick-up instant, or null when the rider goes now. */
+  scheduledFor?: string | null;
+  /** The number the rider can call. Required once a real booking is dispatched. */
+  phone?: string;
+  paymentMethod?: DispatchPaymentMethod;
 }): Promise<ActionResult<RideRequested>> {
   if (!input.pickup.trim() || !input.dropoff.trim()) {
     return { ok: false, error: "Add a pick-up and a drop-off." };
   }
 
+  let scheduledFor: string | null = null;
+  if (input.scheduledFor) {
+    const moment = new Date(input.scheduledFor);
+    if (Number.isNaN(moment.getTime())) {
+      return { ok: false, error: "Choose a pick-up date and time." };
+    }
+    scheduledFor = moment.toISOString();
+  }
+
+  const paymentMethod = input.paymentMethod ?? "pod";
   const client = createAdminClient();
 
   if (!client) {
@@ -504,6 +663,9 @@ export async function requestRide(input: {
 
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to book a ride." };
+  if (!input.phone?.trim()) {
+    return { ok: false, error: "Add a phone number so the rider can reach you." };
+  }
 
   await ensureProfile(client, userId);
 
@@ -545,13 +707,42 @@ export async function requestRide(input: {
     eta_minutes: rideClass.eta_minutes,
     price: rideClass.price,
     passengers,
-    status: "requested",
+    status: scheduledFor ? "scheduled" : "requested",
     number,
     reference,
+    scheduled_for: scheduledFor,
     requested_at: new Date().toISOString(),
   });
 
   if (error) return { ok: false, error: "We could not book that ride. Try again." };
+
+  const identity = await currentClerkIdentity();
+  const handoff = await handoffToDispatch(client, {
+    id,
+    deviceId: userId,
+    kind: "ride",
+    table: "rides",
+    payload: {
+      requestType: "ride",
+      contact: await dispatchContact(client, userId, input.phone),
+      pickup: dispatchPoint(input.pickup, ""),
+      dropoff: dispatchPoint(input.dropoff, ""),
+      rideClass: engineRideClass(rideClass.id),
+      scheduledFor: scheduledFor ?? undefined,
+      paymentMethod,
+    },
+  });
+
+  if (!handoff.ok) return { ok: false, error: handoff.error };
+
+  const checkoutUrl = await checkoutForDispatch({
+    kind: "ride",
+    userId,
+    email: identity?.email ?? "",
+    price: rideClass.price,
+    id,
+    paymentMethod,
+  });
 
   revalidatePath("/bookings");
   revalidatePath("/track");
@@ -563,9 +754,10 @@ export async function requestRide(input: {
       id,
       reference,
       number,
-      price: rideClass.price,
-      etaMinutes: rideClass.eta_minutes,
+      price: handoff.job.fare ?? rideClass.price,
+      etaMinutes: handoff.job.etaMinutes ?? rideClass.eta_minutes,
       demo: false,
+      checkoutUrl,
     },
   };
 }
@@ -645,6 +837,7 @@ export async function sendParcel(input: {
   details: string;
   /** The chosen pick-up instant, or null when the courier goes now. */
   scheduledFor: string | null;
+  paymentMethod?: DispatchPaymentMethod;
 }): Promise<ActionResult<ParcelSent>> {
   if (!input.pickup.trim() || !input.dropoff.trim()) {
     return { ok: false, error: "Add a pick-up and a drop-off." };
@@ -689,6 +882,9 @@ export async function sendParcel(input: {
 
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to send a parcel." };
+  if (!input.phone?.trim()) {
+    return { ok: false, error: "Add a phone number so the courier can reach the recipient." };
+  }
 
   await ensureProfile(client, userId);
 
@@ -712,13 +908,49 @@ export async function sendParcel(input: {
     distance_km: quote.distanceKm,
     price,
     eta_minutes: quote.etaMinutes,
-    status: "booked",
+    status: scheduledFor ? "scheduled" : "booked",
     tracking_number: trackingNumber,
     scheduled_for: scheduledFor,
     requested_at: new Date().toISOString(),
   });
 
   if (error) return { ok: false, error: "We could not book that courier. Try again." };
+
+  const paymentMethod = input.paymentMethod ?? "pod";
+  const identity = await currentClerkIdentity();
+  const handoff = await handoffToDispatch(client, {
+    id,
+    deviceId: userId,
+    kind: "parcel",
+    table: "parcels",
+    payload: {
+      requestType: "parcel",
+      contact: await dispatchContact(client, userId, input.phone),
+      pickup: dispatchPoint(input.pickup, ""),
+      dropoff: dispatchPoint(input.dropoff, ""),
+      parcelTier: input.parcelSize,
+      note: [
+        input.details.trim(),
+        `Recipient: ${input.recipient.trim()}`,
+        quantity > 1 ? `${quantity} parcels of ${type.name}` : "",
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      scheduledFor: scheduledFor ?? undefined,
+      paymentMethod,
+    },
+  });
+
+  if (!handoff.ok) return { ok: false, error: handoff.error };
+
+  const checkoutUrl = await checkoutForDispatch({
+    kind: "parcel",
+    userId,
+    email: identity?.email ?? "",
+    price,
+    id,
+    paymentMethod,
+  });
 
   revalidatePath("/bookings");
   revalidatePath("/track");
@@ -730,8 +962,9 @@ export async function sendParcel(input: {
       id,
       trackingNumber,
       price: quote.price,
-      etaMinutes: quote.etaMinutes,
+      etaMinutes: handoff.job.etaMinutes ?? quote.etaMinutes,
       demo: false,
+      checkoutUrl,
     },
   };
 }

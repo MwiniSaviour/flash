@@ -12,6 +12,16 @@
  */
 
 import { currentUserId } from "@/lib/auth/server";
+import { dispatchConfigured, getDispatchJob } from "@/lib/dispatch/client";
+import {
+  canonicalState,
+  dispatchPatch,
+  driverFromDispatchJob,
+  isDispatchTerminal,
+} from "@/lib/dispatch/status";
+import type { DispatchRequestType } from "@/lib/dispatch/types";
+import { getEnv } from "@/lib/env";
+import { releaseDriverPayoutForDispatch } from "@/lib/payments/service";
 import { createAdminClient, type AdminClient } from "@/lib/supabase/admin";
 
 import { activeOrder, bookings, tickets, user } from "./data/account";
@@ -26,6 +36,7 @@ import {
   orderToDelivery,
   orderToPastDelivery,
   parcelToDelivery,
+  parcelToPastDelivery,
   rideToDelivery,
   rideToPastDelivery,
 } from "./delivery";
@@ -268,14 +279,17 @@ const TICKET_STATUS: Record<string, BookingStatus> = {
   used: "completed",
 };
 
-const RIDE_STATUS: Record<string, BookingStatus> = {
-  requested: "pending",
-  accepted: "confirmed",
-  "in progress": "confirmed",
-  arriving: "confirmed",
-  completed: "completed",
-  cancelled: "cancelled",
-};
+/** One ledger status for rides and parcels, whatever vocabulary they arrived in. */
+function bookingStatus(status: string): BookingStatus {
+  const state = canonicalState(status);
+
+  if (state === "failed" || state === "returned" || state === "cancelled") return "cancelled";
+  if (state === "delivered") return "completed";
+  if (state === "scheduled" || state === "due" || state === "unassigned" || state === "offered") {
+    return "pending";
+  }
+  return "confirmed";
+}
 
 const ORDER_STATUS: Record<string, BookingStatus> = {
   preparing: "pending",
@@ -351,6 +365,74 @@ async function liveOrders(client: AdminClient, userId: string): Promise<OrderWit
   return (data ?? []) as OrderWithLinesRow[];
 }
 
+/**
+ * Poll only dispatched rows that can still move. The Track screen already
+ * refreshes every 15 seconds; the short throttle stops a single render from
+ * hitting the same job twice. An engine outage never breaks a page — the last
+ * snapshot is still rendered.
+ */
+const DISPATCH_POLL_THROTTLE_MS = 5000;
+const lastDispatchPoll = new Map<string, number>();
+
+type DispatchableRow = {
+  id: string;
+  status: string;
+  dispatch_job_id: string | null;
+  dispatch_task_status: string | null;
+  drivers: DriverRow | null;
+};
+
+async function syncDispatchRows<T extends DispatchableRow>(
+  client: AdminClient,
+  table: "rides" | "parcels",
+  rows: T[],
+  kind: DispatchRequestType,
+): Promise<T[]> {
+  if (!dispatchConfigured() || rows.length === 0) return rows;
+
+  const now = Date.now();
+  const due = rows.filter((row) => {
+    if (!row.dispatch_job_id) return false;
+    if (isDispatchTerminal(row.dispatch_task_status ?? row.status)) return false;
+    return now - (lastDispatchPoll.get(row.dispatch_job_id) ?? 0) >= DISPATCH_POLL_THROTTLE_MS;
+  });
+
+  if (due.length === 0) return rows;
+
+  const results = await Promise.allSettled(
+    due.map(async (row) => {
+      const jobId = row.dispatch_job_id as string;
+      lastDispatchPoll.set(jobId, now);
+
+      const job = await getDispatchJob(jobId);
+      const patch = dispatchPatch(job, kind);
+      const { error } = await client
+        .from(table)
+        .update({ ...patch, dispatch_app_id: getEnv().dispatchAppId })
+        .eq("id", row.id);
+
+      if (error) throw error;
+
+      // Delivery is the engine's payout trigger; the order path stays with the
+      // customer's confirmation in payments/service.ts.
+      if (canonicalState(patch.dispatch_task_status) === "delivered") {
+        await releaseDriverPayoutForDispatch({ jobId });
+      }
+
+      return { row, patch, driver: driverFromDispatchJob(job) };
+    }),
+  );
+
+  for (const result of results) {
+    if (result.status !== "fulfilled") continue;
+    const { row, patch, driver } = result.value;
+    Object.assign(row, patch);
+    if (driver) row.drivers = driver;
+  }
+
+  return rows;
+}
+
 async function liveRides(client: AdminClient, userId: string): Promise<RideWithRiderRow[]> {
   const { data, error } = await client
     .from("rides")
@@ -359,7 +441,7 @@ async function liveRides(client: AdminClient, userId: string): Promise<RideWithR
     .order("requested_at", { ascending: false });
 
   if (error) throw error;
-  return (data ?? []) as RideWithRiderRow[];
+  return syncDispatchRows(client, "rides", (data ?? []) as RideWithRiderRow[], "ride");
 }
 
 async function liveParcels(
@@ -373,12 +455,12 @@ async function liveParcels(
     .order("requested_at", { ascending: false });
 
   if (error) throw error;
-  return (data ?? []) as ParcelWithCourierRow[];
+  return syncDispatchRows(client, "parcels", (data ?? []) as ParcelWithCourierRow[], "parcel");
 }
 
 /** The ledger: every commitment, newest first. */
 async function liveBookings(client: AdminClient, userId: string): Promise<Booking[]> {
-  const [ticketRows, rideRows, orderRows] = await Promise.all([
+  const [ticketRows, rideRows, parcelRows, orderRows] = await Promise.all([
     client
       .from("tickets")
       .select("*, events(*), event_tiers(price)")
@@ -388,6 +470,10 @@ async function liveBookings(client: AdminClient, userId: string): Promise<Bookin
       .select("*, drivers(*), ride_classes(name)")
       .eq("user_id", userId),
     client
+      .from("parcels")
+      .select("*, drivers(*)")
+      .eq("user_id", userId),
+    client
       .from("orders")
       .select("*, restaurants(*), drivers(*), order_lines(*)")
       .eq("user_id", userId),
@@ -395,6 +481,7 @@ async function liveBookings(client: AdminClient, userId: string): Promise<Bookin
 
   if (ticketRows.error) throw ticketRows.error;
   if (rideRows.error) throw rideRows.error;
+  if (parcelRows.error) throw parcelRows.error;
   if (orderRows.error) throw orderRows.error;
 
   const tickets = (ticketRows.data ?? []) as (TicketRow & {
@@ -402,6 +489,7 @@ async function liveBookings(client: AdminClient, userId: string): Promise<Bookin
     event_tiers: { price: number } | null;
   })[];
   const rides = (rideRows.data ?? []) as RideWithRiderRow[];
+  const parcels = (parcelRows.data ?? []) as ParcelWithCourierRow[];
   const orders = (orderRows.data ?? []) as OrderWithLinesRow[];
 
   const fromTickets: Booking[] = tickets.map((ticket) => {
@@ -434,8 +522,8 @@ async function liveBookings(client: AdminClient, userId: string): Promise<Bookin
     kind: "ride",
     title: `${ride.ride_classes?.name ?? "Taxi"} to ${ride.dropoff}`,
     subtitle: `${ride.pickup}, ${ride.pickup_area.split(",")[0]} → ${ride.dropoff}`,
-    status: RIDE_STATUS[ride.status] ?? "pending",
-    when: ride.requested_at,
+    status: bookingStatus(ride.status),
+    when: ride.scheduled_for ?? ride.requested_at,
     price: ride.price,
     reference: ride.reference,
     image: { src: "/assets/images/ride-driver-pov.jpg", alt: "A driver's hands on the steering wheel at dusk" },
@@ -446,6 +534,30 @@ async function liveBookings(client: AdminClient, userId: string): Promise<Bookin
       ride.drivers ? `${ride.drivers.name} · ${ride.drivers.rating}` : "",
     ].filter(Boolean),
     href: `/rides/${ride.id}`,
+  }));
+
+  const fromParcels: Booking[] = parcels.map((parcel) => ({
+    id: parcel.id,
+    kind: "parcel",
+    title:
+      parcel.quantity > 1
+        ? `${parcel.quantity} × ${parcel.parcel_type}`
+        : parcel.parcel_type,
+    subtitle: `${parcel.pickup} → ${parcel.dropoff}`,
+    status: bookingStatus(parcel.status),
+    when: parcel.scheduled_for ?? parcel.requested_at,
+    price: parcel.price,
+    reference: parcel.tracking_number,
+    image: {
+      src: "/assets/images/ride-bike-sunset.jpg",
+      alt: "A motorcyclist riding at sunset on an open road",
+    },
+    details: [
+      parcel.recipient_name ? `For ${parcel.recipient_name}` : "",
+      parcel.recipient_phone,
+      parcel.scheduled_for ? "Scheduled collection" : "",
+    ].filter(Boolean),
+    href: `/parcels/${parcel.id}`,
   }));
 
   const fromOrders: Booking[] = orders.map((order) => {
@@ -473,7 +585,7 @@ async function liveBookings(client: AdminClient, userId: string): Promise<Bookin
     };
   });
 
-  return [...fromTickets, ...fromRides, ...fromOrders].sort((a, b) =>
+  return [...fromTickets, ...fromRides, ...fromParcels, ...fromOrders].sort((a, b) =>
     b.when.localeCompare(a.when),
   );
 }
@@ -1071,10 +1183,10 @@ export async function listDeliveries(): Promise<Delivery[]> {
       .filter((row) => row.status !== "delivered")
       .map(orderToDelivery),
     ...rideRows
-      .filter((row) => row.status !== "completed" && row.status !== "cancelled")
+      .filter((row) => !isDispatchTerminal(row.dispatch_task_status ?? row.status))
       .map(rideToDelivery),
     ...parcelRows
-      .filter((row) => row.status !== "delivered")
+      .filter((row) => !isDispatchTerminal(row.dispatch_task_status ?? row.status))
       .map(parcelToDelivery),
   ];
 }
@@ -1087,14 +1199,16 @@ export async function listPastDeliveries(): Promise<PastDelivery[]> {
   const userId = await currentUserId();
   if (!userId) return [];
 
-  const [orderRows, rideRows] = await Promise.all([
+  const [orderRows, rideRows, parcelRows] = await Promise.all([
     liveOrders(client, userId),
     liveRides(client, userId),
+    liveParcels(client, userId),
   ]);
 
   return [
     ...orderRows.filter((row) => row.status === "delivered").map(orderToPastDelivery),
-    ...rideRows.filter((row) => row.status === "completed").map(rideToPastDelivery),
+    ...rideRows.filter((row) => canonicalState(row.dispatch_task_status ?? row.status) === "delivered").map(rideToPastDelivery),
+    ...parcelRows.filter((row) => canonicalState(row.dispatch_task_status ?? row.status) === "delivered").map(parcelToPastDelivery),
   ].sort((a, b) => b.when.localeCompare(a.when));
 }
 
