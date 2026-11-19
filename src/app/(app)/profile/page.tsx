@@ -1,26 +1,39 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { AccountRow, NotificationToggle } from "@/components/flash/Account";
+import { NotificationPreference } from "@/components/dashboard/NotificationInbox";
+import { AccountRow } from "@/components/flash/Account";
 import { Icon } from "@/components/flash/Icon";
 import { Avatar } from "@/components/flash/ui";
 import { requireAdmin } from "@/lib/admin/auth";
-import { getCurrentUser, listBusinesses } from "@/lib/flash/repository";
+import { getNotifications } from "@/lib/flash/notifications";
+import {
+  getCurrentUser,
+  listBookings,
+  listBusinesses,
+  listTickets,
+} from "@/lib/flash/repository";
 
 export const metadata: Metadata = {
   title: "Your profile",
 };
 
-const STATS = [
-  { label: "Tickets", value: "11" },
-  { label: "Rides", value: "8" },
-  { label: "Orders", value: "5" },
-];
-
 export default async function ProfilePage() {
-  const [user, businesses] = await Promise.all([getCurrentUser(), listBusinesses()]);
+  const [user, businesses, tickets, bookings, inbox] = await Promise.all([
+    getCurrentUser(),
+    listBusinesses(),
+    listTickets(),
+    listBookings(),
+    getNotifications(),
+  ]);
   const business = businesses[0];
   const admin = Boolean(await requireAdmin());
+
+  const stats = [
+    { label: "Tickets", value: tickets.reduce((total, ticket) => total + ticket.quantity, 0) },
+    { label: "Rides", value: bookings.filter((booking) => booking.kind === "ride").length },
+    { label: "Orders", value: bookings.filter((booking) => booking.kind === "order").length },
+  ];
 
   return (
     <div className="pb-5">
@@ -38,7 +51,7 @@ export default async function ProfilePage() {
           <p className="truncate text-[20px] font-bold tracking-[-0.02em] text-ink">{user.name}</p>
           <p className="mt-0.5 truncate text-[13px] text-muted">{user.email}</p>
           <Link
-            href="/profile"
+            href="/profile/settings"
             className="mt-2 inline-block text-[13.5px] font-bold text-brand-ink transition-colors hover:text-brand"
           >
             Edit profile
@@ -47,10 +60,10 @@ export default async function ProfilePage() {
       </section>
 
       <section className="mt-5 grid grid-cols-3 border-y border-line/70 bg-surface/50">
-        {STATS.map((stat, index) => (
+        {stats.map((stat, index) => (
           <div
             key={stat.label}
-            className={`flex flex-col items-center py-3.5 ${index < STATS.length - 1 ? "border-r border-line/70" : ""}`}
+            className={`flex flex-col items-center py-3.5 ${index < stats.length - 1 ? "border-r border-line/70" : ""}`}
           >
             <span className="text-[20px] font-bold tracking-[-0.02em] text-ink">{stat.value}</span>
             <span className="mt-0.5 text-[12.5px] text-muted">{stat.label}</span>
@@ -60,14 +73,23 @@ export default async function ProfilePage() {
 
       <section className="mt-5 px-5">
         <div className="rounded-[14px] border border-line/90 bg-surface px-4">
-          <AccountRow icon="ticket" label="My Tickets" href="/bookings" />
+          <AccountRow icon="ticket" label="My Tickets" href="/tickets" />
           <AccountRow icon="bookings" label="My Bookings" href="/bookings" />
-          <AccountRow icon="map-pin" label="Saved places" href="/ride" />
-          <AccountRow icon="bell" label="Notifications" badge={2} href="/profile" />
-          <AccountRow icon="banknote" label="Payment methods" href="/profile" />
-          <AccountRow icon="settings" label="Settings" href="/profile" />
+          <AccountRow icon="map-pin" label="Saved places" href="/profile/saved-places" />
+          <AccountRow
+            icon="bell"
+            label="Notifications"
+            badge={inbox.unread || undefined}
+            href="/profile/notifications"
+          />
+          <AccountRow
+            icon="receipt"
+            label="Transaction history"
+            href="/profile/transactions"
+          />
+          <AccountRow icon="settings" label="Settings" href="/profile/settings" />
           {admin ? <AccountRow icon="dashboard" label="Admin console" href="/admin" /> : null}
-          <AccountRow icon="help" label="Help & Support" href="/profile" />
+          <AccountRow icon="help" label="Help & Support" href="/profile/help" />
         </div>
       </section>
 
@@ -153,26 +175,21 @@ export default async function ProfilePage() {
       ) : null}
 
       <section className="mt-5 px-5">
-        <div className="flex items-start gap-3 rounded-[16px] border border-line/90 bg-surface p-3.5">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-brand-soft text-brand-ink">
-            <Icon name="bell" size={19} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-bold tracking-[-0.01em] text-ink">Never miss a door opening</p>
-            <p className="mt-1 text-[12.5px] leading-snug text-muted">
-              Get alerts for show reminders, ride arrivals and order updates.
-            </p>
-          </div>
-          <NotificationToggle defaultOn={user.notificationsEnabled} />
+        <div className="rounded-[16px] border border-line/90 bg-surface p-3.5">
+          <NotificationPreference enabled={user.notificationsEnabled} />
+          <Link
+            href="/profile/notifications"
+            className="mt-3 inline-flex items-center gap-1 text-[13px] font-bold text-brand-ink"
+          >
+            Open notification inbox
+            <Icon name="chevron-right" size={13} />
+          </Link>
         </div>
       </section>
 
       <footer className="mt-7 px-5 text-center text-[12.5px] leading-relaxed text-muted">
         <p>Flash · Accra, Ghana</p>
         <p className="mt-1">Member since {user.memberSince}</p>
-        <p className="mt-2 text-muted-soft">
-          This is an interface prototype. Events, kitchens, riders and prices are demo data.
-        </p>
       </footer>
     </div>
   );
