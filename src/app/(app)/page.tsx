@@ -32,10 +32,12 @@ import {
  */
 export default async function HomePage() {
   const requestHeaders = await headers();
-  const host = requestHeaders.get("host")?.split(":")[0];
-  const adminHost = getEnv().adminHost;
+  const hosts = [requestHeaders.get("host"), requestHeaders.get("x-forwarded-host")]
+    .filter(Boolean)
+    .map((value) => value!.split(":")[0].toLowerCase());
+  const adminHost = getEnv().adminHost?.toLowerCase();
 
-  if (adminHost && host === adminHost) redirect("/admin");
+  if (adminHost && hosts.includes(adminHost)) redirect("/admin");
 
   const [user, trendingEvents, restaurants, quote, upcoming] = await Promise.all([
     getCurrentUser(),
