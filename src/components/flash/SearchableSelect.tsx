@@ -2,19 +2,20 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
-import { getDevicePosition } from "@/components/flash/device-location";
+import { getBestDevicePosition } from "@/components/flash/device-location";
 import { Icon } from "@/components/flash/Icon";
 import type { GeoPoint } from "@/lib/flash/geo";
-import { reverseGeocode, searchPlaces, type Place } from "@/lib/flash/places";
+import { nearbyPlaces, reverseGeocode, searchPlaces, type Place } from "@/lib/flash/places";
 import { cn } from "@/lib/utils";
 
 /**
  * A typeahead address field backed by a streamed geocoder.
  *
  * Suggestions come from Photon's CDN and are cached on the device, so a poor
- * connection can reuse recent searches. "Use precise location" asks the device
- * for its position (native fused provider in the Capacitor app) and resolves an
- * address through the same CDN, falling back to coordinates offline.
+ * connection can reuse recent searches. "Use precise location" keeps a
+ * high-accuracy watch open on the device's GPS / Wi-Fi provider and uses the
+ * best fix. When only an approximate fix is available, nearby areas are shown
+ * for the customer to confirm instead of guessing a pickup point.
  */
 export function SearchableSelect({
   label,
@@ -33,13 +34,18 @@ export function SearchableSelect({
 }) {
   const listId = useId();
   const [suggestions, setSuggestions] = useState<Place[]>([]);
+  const [nearby, setNearby] = useState<Place[]>([]);
+  const [nearbyMode, setNearbyMode] = useState(false);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const requestRef = useRef<AbortController | null>(null);
+
+  const shownPlaces = nearbyMode ? nearby : suggestions;
 
   useEffect(() => {
     const close = (event: MouseEvent) => {
@@ -51,7 +57,7 @@ export function SearchableSelect({
 
   useEffect(() => {
     const needle = value.trim();
-    if (!open || needle.length < 2) return;
+    if (!open || nearbyMode || needle.length < 2) return;
 
     requestRef.current?.abort();
     const controller = new AbortController();
@@ -73,11 +79,13 @@ export function SearchableSelect({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [value, open]);
+  }, [value, open, nearbyMode]);
 
   function choose(place: Place) {
     setNotice(place.cached ? "Saved result · reconnect for a refreshed address." : place.detail);
     setOpen(false);
+    setNearbyMode(false);
+    setNearby([]);
     onChange(place.label, { lat: place.lat, lng: place.lng });
   }
 
@@ -85,19 +93,39 @@ export function SearchableSelect({
     setLocating(true);
     setNotice(null);
     try {
-      const position = await getDevicePosition();
+      const position = await getBestDevicePosition();
+      const accuracy =
+        position.accuracy > 1000
+          ? `~${(position.accuracy / 1000).toFixed(0)} km`
+          : `~${Math.round(position.accuracy)} m`;
 
       if (!position.usable) {
-        const accuracy =
-          position.accuracy > 1000
-            ? `${(position.accuracy / 1000).toFixed(0)} km`
-            : `${Math.round(position.accuracy)} m`;
-        setNotice(
-          `Location is only accurate to about ${accuracy}. This is not precise enough for a pick-up — search for your address instead.`,
-        );
+        setSuggestions([]);
+        const candidates = await nearbyPlaces(position.point);
+
+        if (candidates.length) {
+          setNearby(candidates);
+          setNearbyMode(true);
+          setActive(0);
+          setOpen(true);
+          setNotice(`Approximate location (${accuracy}) — choose the nearest area below.`);
+        } else {
+          setNearbyMode(false);
+          setNearby([]);
+          const address = await reverseGeocode(position.point);
+          const label = address.detail
+            ? `${address.label}, ${address.detail}`
+            : address.label || "Current location";
+          onChange(label);
+          setOpen(false);
+          inputRef.current?.focus();
+          setNotice(`Approximate location (${accuracy}). Type the nearest address instead.`);
+        }
         return;
       }
 
+      setNearbyMode(false);
+      setNearby([]);
       const address = await reverseGeocode(position.point);
       const label = address.detail
         ? `${address.label}, ${address.detail}`
@@ -118,10 +146,13 @@ export function SearchableSelect({
 
       <div className="relative mt-1">
         <input
+          ref={inputRef}
           value={value}
           onChange={(event) => {
             setBusy(true);
             setNotice(null);
+            setNearbyMode(false);
+            setNearby([]);
             setOpen(true);
             onChange(event.target.value);
           }}
@@ -129,13 +160,13 @@ export function SearchableSelect({
           onKeyDown={(event) => {
             if (event.key === "ArrowDown") {
               event.preventDefault();
-              setActive((index) => Math.min(index + 1, suggestions.length - 1));
+              setActive((index) => Math.min(index + 1, shownPlaces.length - 1));
             } else if (event.key === "ArrowUp") {
               event.preventDefault();
               setActive((index) => Math.max(index - 1, 0));
-            } else if (event.key === "Enter" && open && suggestions[active]) {
+            } else if (event.key === "Enter" && open && shownPlaces[active]) {
               event.preventDefault();
-              choose(suggestions[active]);
+              choose(shownPlaces[active]);
             } else if (event.key === "Escape") {
               setOpen(false);
             }
@@ -149,33 +180,39 @@ export function SearchableSelect({
           className="w-full bg-transparent text-[16px] leading-snug text-ink placeholder:text-muted focus:outline-none"
         />
 
-        {open && value.trim().length >= 2 && suggestions.length ? (
-          <ul
-            id={listId}
-            role="listbox"
-            aria-label={`${label} suggestions`}
-            className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-60 overflow-y-auto rounded-[12px] border border-line bg-surface py-1 shadow-raised"
-          >
-            {suggestions.map((place, index) => (
-              <li key={place.id} role="option" aria-selected={index === active}>
-                <button
-                  type="button"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => choose(place)}
-                  className={cn(
-                    "flex w-full items-start gap-2.5 px-3 py-2 text-left",
-                    index === active ? "bg-surface-2" : "hover:bg-surface-2/60",
-                  )}
-                >
-                  <Icon name="map-pin" size={16} className="mt-0.5 shrink-0 text-icon-idle" />
-                  <span className="min-w-0">
-                    <span className="block text-[13.5px] font-semibold text-ink">{place.label}</span>
-                    <span className="block truncate text-[11.5px] text-muted">{place.detail}</span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+        {open && shownPlaces.length ? (
+          <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-60 overflow-y-auto rounded-[12px] border border-line bg-surface py-1 shadow-raised">
+            {nearbyMode ? (
+              <p className="px-3 pb-1 pt-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-muted">
+                Near you
+              </p>
+            ) : null}
+            <ul
+              id={listId}
+              role="listbox"
+              aria-label={nearbyMode ? "Nearby areas" : `${label} suggestions`}
+            >
+              {shownPlaces.map((place, index) => (
+                <li key={place.id} role="option" aria-selected={index === active}>
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => choose(place)}
+                    className={cn(
+                      "flex w-full items-start gap-2.5 px-3 py-2 text-left",
+                      index === active ? "bg-surface-2" : "hover:bg-surface-2/60",
+                    )}
+                  >
+                    <Icon name="map-pin" size={16} className="mt-0.5 shrink-0 text-icon-idle" />
+                    <span className="min-w-0">
+                      <span className="block text-[13.5px] font-semibold text-ink">{place.label}</span>
+                      <span className="block truncate text-[11.5px] text-muted">{place.detail}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
       </div>
 

@@ -26,7 +26,7 @@ export type Place = {
   cached?: boolean;
 };
 
-type PhotonFeature = {
+export type PhotonFeature = {
   properties: {
     osm_type?: string;
     osm_id?: number;
@@ -180,6 +180,64 @@ export async function reverseGeocode(
       label: "Current location",
       detail: `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`,
     };
+  }
+}
+
+/** How far from a coarse fix we are willing to suggest nearby areas. */
+const NEARBY_RADIUS_KM = 25;
+
+/**
+ * Turn Photon's reverse results into a deduplicated, nearest-first list.
+ * Photon ignores `layer` reliably but honours `radius`, so distance is checked
+ * here too before we offer a candidate as a pickup area.
+ */
+export function toNearbyPlaces(
+  features: PhotonFeature[],
+  center: GeoPoint,
+  maxDistanceKm = NEARBY_RADIUS_KM,
+): Place[] {
+  const seen = new Set<string>();
+  const candidates: Array<{ place: Place; distance: number }> = [];
+
+  for (const feature of features) {
+    const [lng, lat] = feature.geometry?.coordinates ?? [];
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+    const place = toPlace(feature);
+    const key = place.label.toLowerCase();
+    if (seen.has(key)) continue;
+
+    const distance = haversineKm(center, { lat, lng });
+    if (distance > maxDistanceKm) continue;
+
+    seen.add(key);
+    candidates.push({ place, distance });
+  }
+
+  return candidates.sort((a, b) => a.distance - b.distance).map(({ place }) => place);
+}
+
+/** Nearby villages, landmarks and areas around an approximate device fix. */
+export async function nearbyPlaces(point: GeoPoint, signal?: AbortSignal): Promise<Place[]> {
+  const params = new URLSearchParams({
+    lon: String(point.lng),
+    lat: String(point.lat),
+    limit: "12",
+    radius: String(NEARBY_RADIUS_KM),
+    lang: "en",
+  });
+
+  try {
+    const response = await fetch(`${GEOCODER_URL}/reverse?${params.toString()}`, {
+      signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error(`Geocoder returned ${response.status}`);
+
+    const body = (await response.json()) as { features?: PhotonFeature[] };
+    return toNearbyPlaces(body.features ?? [], point);
+  } catch {
+    return [];
   }
 }
 
