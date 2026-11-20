@@ -17,7 +17,7 @@ type PaystackPopType = {
     email: string;
     amount: number;
     access_code: string;
-    reference: string;
+    ref: string;
     currency: string;
     channels: string[];
     callback: () => void;
@@ -69,7 +69,7 @@ export async function openPaystackCheckout(options: CheckoutOptions): Promise<bo
     email: options.email,
     amount: options.amountPesewas,
     access_code: options.accessCode,
-    reference: options.reference,
+    ref: options.reference,
     currency: "GHS",
     channels: ["mobile_money", "card"],
     callback: () => {
