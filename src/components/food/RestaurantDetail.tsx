@@ -29,9 +29,14 @@ import { cn } from "@/lib/utils";
  */
 export function RestaurantDetail({ restaurant }: { restaurant: Restaurant }) {
   const cart = useCart();
-  const [added, setAdded] = useState<string | null>(null);
+
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
+
+  const quantityFor = (itemId: string) =>
+    cart.lines
+      .filter((line) => line.menuItemId === itemId)
+      .reduce((sum, line) => sum + line.quantity, 0);
 
   const cartForThisKitchen = cart.lines.filter(
     (line) => line.restaurant.id === restaurant.id,
@@ -77,8 +82,6 @@ export function RestaurantDetail({ restaurant }: { restaurant: Restaurant }) {
       etaMinutes: restaurant.etaMinutes,
       neighbourhood: restaurant.neighbourhood,
     });
-    setAdded(itemId);
-    setTimeout(() => setAdded(null), 1200);
   }
 
   return (
@@ -210,12 +213,17 @@ export function RestaurantDetail({ restaurant }: { restaurant: Restaurant }) {
                     aria-label={`Add ${item.name} to your cart`}
                     className={cn(
                       "grid h-11 w-11 shrink-0 place-items-center rounded-full transition active:scale-95",
-                      added === item.id
+                      quantityFor(item.id) > 0
                         ? "bg-brand-solid text-white"
                         : "border border-line bg-surface text-ink hover:border-line-strong",
                     )}
                   >
-                    <Icon name={added === item.id ? "check" : "plus"} size={18} />
+                    <span className="flex items-center gap-1.5">
+                    <Icon name={quantityFor(item.id) > 0 ? "check" : "plus"} size={18} />
+                    {quantityFor(item.id) > 0 ? (
+                      <span className="text-[12px] font-bold">×{quantityFor(item.id)}</span>
+                    ) : null}
+                  </span>
                   </button>
                 </li>
               );
@@ -228,7 +236,7 @@ export function RestaurantDetail({ restaurant }: { restaurant: Restaurant }) {
                 key={item.id}
                 item={item}
                 href={`/food/${restaurant.slug}/dish/${item.id}`}
-                added={added === item.id}
+                quantity={quantityFor(item.id)}
                 onAdd={() => add(item.id)}
               />
             ))}

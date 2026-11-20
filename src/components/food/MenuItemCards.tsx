@@ -20,12 +20,12 @@ export function MenuItemCard({
   item,
   href,
   onAdd,
-  added = false,
+  quantity = 0,
 }: {
   item: MenuItem;
   href: string;
   onAdd: () => void;
-  added?: boolean;
+  quantity?: number;
 }) {
   return (
     <div className="w-[160px] shrink-0 snap-start">
@@ -44,6 +44,12 @@ export function MenuItemCard({
           <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-1 text-[11.5px] font-bold tracking-[-0.01em] text-ink shadow-[0_2px_8px_rgb(20_18_15/0.18)]">
             GHC{item.price}
           </span>
+
+          {quantity > 0 ? (
+            <span className="absolute left-2 bottom-2 z-20 rounded-full bg-brand-solid px-2.5 py-1 text-[12px] font-bold text-white shadow-[0_2px_8px_rgb(20_18_15/0.28)]">
+              ×{quantity} in bag
+            </span>
+          ) : null}
         </span>
 
         <button
@@ -52,10 +58,10 @@ export function MenuItemCard({
           aria-label={`Add ${item.name} to your cart`}
           className={cn(
             "absolute bottom-2 right-2 z-20 grid h-11 w-11 place-items-center rounded-full shadow-[0_3px_10px_rgb(20_18_15/0.24)] transition active:scale-95",
-            added ? "bg-brand-solid text-white" : "bg-white text-brand",
+            quantity > 0 ? "bg-brand-solid text-white" : "bg-white text-brand",
           )}
         >
-          <Icon name={added ? "check" : "plus"} size={19} />
+          <Icon name={quantity > 0 ? "check" : "plus"} size={19} />
         </button>
 
         <Link

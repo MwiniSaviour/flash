@@ -142,8 +142,14 @@ export function EventDetail({ event }: { event: Event }) {
                         </button>
                       </SignInGate>
                     ) : (
-                      <span className="text-[12px] text-muted">
-                        {quantity > 0 ? `${quantity} selected` : "Tap + to add"}
+                      <span className="inline-flex items-center">
+                        {quantity > 0 ? (
+                          <span className="rounded-full bg-brand-solid px-2.5 py-1 text-[12px] font-bold text-white">
+                            ×{quantity} in bag
+                          </span>
+                        ) : (
+                          <span className="text-[12px] text-muted">Tap + to add</span>
+                        )}
                       </span>
                     )}
 
