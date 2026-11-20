@@ -1,7 +1,5 @@
-import Link from "next/link";
-
+import { AccountControl } from "@/components/auth/AccountControl";
 import { Icon } from "@/components/flash/Icon";
-import { Avatar } from "@/components/flash/ui";
 import type { FlashUser } from "@/lib/flash/types";
 
 /**
@@ -34,9 +32,7 @@ export function TopBar({ user }: { user: FlashUser }) {
         <Icon name="bell" size={20} />
       </button>
 
-      <Link href="/profile" aria-label="Your profile" className="rounded-full">
-        <Avatar src={user.avatarUrl} alt={`${user.name}'s profile photo`} name={user.name} size={36} />
-      </Link>
+      <AccountControl user={user} />
     </header>
   );
 }

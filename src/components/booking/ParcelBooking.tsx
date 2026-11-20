@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 
+import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
 import type { Schedule } from "@/components/flash/SchedulePicker";
 import { LocationFields } from "@/components/flash/LocationFields";
@@ -175,15 +176,20 @@ export function ParcelBooking({
             </p>
             <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">{cedis(total)}</p>
           </div>
-          <button
-            type="button"
-            onClick={dispatch}
-            disabled={isPending}
-            className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed disabled:opacity-80"
+          <SignInGate
+            label="Sign in to send"
+            className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover"
           >
-            {isPending ? "Booking a courier…" : "Send parcel"}
-            <Icon name="arrow-right" size={16} />
-          </button>
+            <button
+              type="button"
+              onClick={dispatch}
+              disabled={isPending}
+              className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed disabled:opacity-80"
+            >
+              {isPending ? "Booking a courier." : "Send parcel"}
+              <Icon name="arrow-right" size={16} />
+            </button>
+          </SignInGate>
         </div>
       }
     >

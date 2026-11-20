@@ -1,5 +1,6 @@
 "use client";
 
+import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon, type IconName } from "@/components/flash/Icon";
 import { useBooking, type BookingKind } from "@/lib/booking";
 import { cn } from "@/lib/utils";
@@ -23,15 +24,20 @@ export function BookingActions({
   return (
     <div className={cn("flex gap-2 px-5", className)}>
       {items.map((item) => (
-        <button
+        <SignInGate
           key={item.kind}
-          type="button"
-          onClick={() => open({ kind: item.kind, dropoff: item.dropoff })}
-          className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-full bg-brand-solid text-[13.5px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed"
+          label={`Sign in to ${item.label.toLowerCase()}`}
+          className="flex h-[42px] flex-1 items-center justify-center rounded-full bg-brand-solid text-[13.5px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover"
         >
-          <Icon name={item.icon} size={16} />
-          {item.label}
-        </button>
+          <button
+            type="button"
+            onClick={() => open({ kind: item.kind, dropoff: item.dropoff })}
+            className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-full bg-brand-solid text-[13.5px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed"
+          >
+            <Icon name={item.icon} size={16} />
+            {item.label}
+          </button>
+        </SignInGate>
       ))}
     </div>
   );

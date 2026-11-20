@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { FlashLogo } from "@/components/flash/FlashLogo";
 import { Icon } from "@/components/flash/Icon";
-import { Avatar } from "@/components/flash/ui";
+import { AccountControl } from "@/components/auth/AccountControl";
 import type { FlashUser } from "@/lib/flash/types";
 
 /**
@@ -26,15 +26,7 @@ export function BrandHeader({ user }: { user: FlashUser }) {
         >
           <Icon name="search" size={21} />
         </Link>
-        <Link href="/profile" aria-label="Your profile" className="rounded-full active:scale-95">
-          <Avatar
-            src={user.avatarUrl}
-            alt={`${user.name}'s profile photo`}
-            name={user.name}
-            size={34}
-            className="ring-[1.5px] ring-white/80"
-          />
-        </Link>
+        <AccountControl user={user} size={34} className="ring-[1.5px] ring-white/80 active:scale-95" />
       </div>
     </header>
   );

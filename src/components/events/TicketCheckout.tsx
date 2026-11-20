@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
+import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
 import { DateBadge } from "@/components/flash/ui";
@@ -193,15 +194,20 @@ export function TicketCheckout({
           </p>
         ) : null}
 
-        <button
-          type="button"
-          onClick={confirm}
-          disabled={isPending}
-          className="flex h-[50px] w-full items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed disabled:opacity-80"
+        <SignInGate
+          label="Sign in to pay"
+          className="flex h-[50px] w-full items-center justify-center rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover"
         >
-          {isPending ? "Holding your ticket…" : `Pay ${cedis(total)}`}
-          <Icon name="arrow-right" size={16} />
-        </button>
+          <button
+            type="button"
+            onClick={confirm}
+            disabled={isPending}
+            className="flex h-[50px] w-full items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed disabled:opacity-80"
+          >
+            {isPending ? "Holding your ticket." : `Pay ${cedis(total)}`}
+            <Icon name="arrow-right" size={16} />
+          </button>
+        </SignInGate>
       </div>
     </div>
   );

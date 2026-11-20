@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
+import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
 import { useCart } from "@/lib/cart";
@@ -148,15 +149,20 @@ export function EventsCheckout() {
             <span className="text-[20px] font-bold tracking-[-0.02em] text-ink">{cedis(total)}</span>
           </div>
 
-          <button
-            type="button"
-            onClick={checkout}
-            disabled={isPending}
-            className="mt-4 flex h-[50px] w-full items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand disabled:opacity-60"
+          <SignInGate
+            label="Sign in to pay"
+            className="mt-4 flex h-[50px] w-full items-center justify-center rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand"
           >
-            {isPending ? "Holding your tickets…" : `Pay ${cedis(total)}`}
-            <Icon name="arrow-right" size={16} />
-          </button>
+            <button
+              type="button"
+              onClick={checkout}
+              disabled={isPending}
+              className="mt-4 flex h-[50px] w-full items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand disabled:opacity-60"
+            >
+              {isPending ? "Holding your tickets." : `Pay ${cedis(total)}`}
+              <Icon name="arrow-right" size={16} />
+            </button>
+          </SignInGate>
         </>
       )}
     </div>

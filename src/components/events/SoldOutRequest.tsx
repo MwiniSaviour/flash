@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 
+import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
 import { requestTickets } from "@/lib/flash/actions";
 
@@ -107,14 +108,19 @@ export function SoldOutRequest({
           {error}
         </p>
       ) : null}
-      <button
-        type="button"
-        onClick={submit}
-        disabled={isPending || !name.trim()}
-        className="mt-2.5 h-10 w-full rounded-[10px] bg-brand-solid text-[13px] font-bold text-white disabled:opacity-60"
+      <SignInGate
+        label="Sign in to ask"
+        className="mt-2.5 flex h-10 w-full items-center justify-center rounded-[10px] bg-brand-solid text-[13px] font-bold text-white"
       >
-        {isPending ? "Sending…" : "Send request"}
-      </button>
+        <button
+          type="button"
+          onClick={submit}
+          disabled={isPending || !name.trim()}
+          className="mt-2.5 h-10 w-full rounded-[10px] bg-brand-solid text-[13px] font-bold text-white disabled:opacity-60"
+        >
+          {isPending ? "Sending." : "Send request"}
+        </button>
+      </SignInGate>
     </div>
   );
 }

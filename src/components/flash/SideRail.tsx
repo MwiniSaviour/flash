@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { FlashLogo } from "@/components/flash/FlashLogo";
 import { Icon } from "@/components/flash/Icon";
-import { Avatar } from "@/components/flash/ui";
+import { AccountControl } from "@/components/auth/AccountControl";
 import { isActivePath, navItems } from "@/lib/flash/navigation";
 import type { FlashUser } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
@@ -58,16 +58,7 @@ export function SideRail({ user }: { user: FlashUser }) {
       </nav>
 
       <div className="mt-auto border-t border-line/70 pt-4">
-        <Link
-          href="/profile"
-          className="flex items-center gap-3 rounded-[12px] px-2 py-2 transition-colors hover:bg-surface-2/70"
-        >
-          <Avatar src={user.avatarUrl} alt={`${user.name}'s profile photo`} name={user.name} size={38} />
-          <span className="min-w-0">
-            <span className="block truncate text-[13.5px] font-semibold text-ink">{user.name}</span>
-            <span className="block truncate text-[12px] text-muted">View profile</span>
-          </span>
-        </Link>
+        <AccountControl user={user} variant="row" />
       </div>
     </aside>
   );

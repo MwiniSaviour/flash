@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { SignInGate } from "@/components/auth/SignInGate";
 import { SoldOutRequest } from "@/components/events/SoldOutRequest";
 import { Icon } from "@/components/flash/Icon";
 import { StickyAction } from "@/components/flash/StickyAction";
@@ -127,14 +128,19 @@ export function EventDetail({ event }: { event: Event }) {
 
                   <div className="mt-3 flex items-center justify-between gap-3 border-t border-line/70 pt-3">
                     {soldOut ? (
-                      <button
-                        type="button"
-                        onClick={() => setRequestTierId(item.id)}
-                        className="flex h-9 items-center gap-1.5 rounded-[10px] border border-line bg-surface px-3 text-[12.5px] font-semibold text-ink"
+                      <SignInGate
+                        label="Sign in to ask"
+                        className="flex h-9 items-center rounded-[10px] border border-line bg-surface px-3 text-[12.5px] font-semibold text-brand-ink"
                       >
-                        <Icon name="bell" size={14} />
-                        Ask for a place
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setRequestTierId(item.id)}
+                          className="flex h-9 items-center gap-1.5 rounded-[10px] border border-line bg-surface px-3 text-[12.5px] font-semibold text-ink"
+                        >
+                          <Icon name="bell" size={14} />
+                          Ask for a place
+                        </button>
+                      </SignInGate>
                     ) : (
                       <span className="text-[12px] text-muted">
                         {quantity > 0 ? `${quantity} selected` : "Tap + to add"}
@@ -191,15 +197,20 @@ export function EventDetail({ event }: { event: Event }) {
           </p>
           <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">{priceLabel(total)}</p>
         </div>
-        <button
-          type="button"
-          onClick={proceed}
-          disabled={count === 0}
-          className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover disabled:opacity-50 lg:max-w-[320px]"
+        <SignInGate
+          label="Sign in to book"
+          className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover lg:max-w-[320px]"
         >
-          Proceed to checkout
-          <Icon name="arrow-right" size={16} />
-        </button>
+          <button
+            type="button"
+            onClick={proceed}
+            disabled={count === 0}
+            className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover disabled:opacity-50 lg:max-w-[320px]"
+          >
+            Proceed to checkout
+            <Icon name="arrow-right" size={16} />
+          </button>
+        </SignInGate>
       </StickyAction>
     </div>
   );

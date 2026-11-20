@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
+import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
 import { SegmentedControl } from "@/components/flash/SegmentedControl";
@@ -318,15 +319,20 @@ export function FoodCheckout({ businessAccount = false }: { businessAccount?: bo
           </p>
         ) : null}
 
-        <button
-          type="button"
-          onClick={place}
-          disabled={isPending || businessAccount}
-          className="flex h-[50px] w-full items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed disabled:opacity-80"
+        <SignInGate
+          label="Sign in to place an order"
+          className="flex h-[50px] w-full items-center justify-center rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover"
         >
-          {isPending ? "Placing your order…" : `Place order · ${cedis(total)}`}
-          <Icon name="arrow-right" size={16} />
-        </button>
+          <button
+            type="button"
+            onClick={place}
+            disabled={isPending || businessAccount}
+            className="flex h-[50px] w-full items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed disabled:opacity-80"
+          >
+            {isPending ? "Placing your order." : `Place order · ${cedis(total)}`}
+            <Icon name="arrow-right" size={16} />
+          </button>
+        </SignInGate>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 
+import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon, type IconName } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
 import { LocationFields } from "@/components/flash/LocationFields";
@@ -192,19 +193,24 @@ export function RideBooking({
             </p>
             <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">{cedis(selected.price)}</p>
           </div>
-          <button
-            type="button"
-            onClick={request}
-            disabled={searching || isPending}
-            className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed disabled:opacity-80"
+          <SignInGate
+            label="Sign in to book"
+            className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover"
           >
-            {searching || isPending ? "Finding a rider…" : `Request ${selected.name}`}
-            {searching || isPending ? (
-              <Icon name="timer" size={16} />
-            ) : (
-              <Icon name="arrow-right" size={16} />
-            )}
-          </button>
+            <button
+              type="button"
+              onClick={request}
+              disabled={searching || isPending}
+              className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed disabled:opacity-80"
+            >
+              {searching || isPending ? "Finding a rider." : `Request ${selected.name}`}
+              {searching || isPending ? (
+                <Icon name="timer" size={16} />
+              ) : (
+                <Icon name="arrow-right" size={16} />
+              )}
+            </button>
+          </SignInGate>
         </div>
       }
     >

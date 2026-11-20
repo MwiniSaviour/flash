@@ -1,13 +1,24 @@
-import Link from "next/link";
 import { SignIn } from "@clerk/nextjs";
+import Link from "next/link";
+import { Suspense } from "react";
 
 import { hasClerkEnv } from "@/lib/env";
+import { safeReturnPath } from "@/lib/auth/return-to";
 
-export default function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect_url?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const returnTo = safeReturnPath(params.redirect_url);
+
   return (
     <main className="flex min-h-dvh items-center justify-center bg-paper px-5 py-10">
       {hasClerkEnv() ? (
-        <SignIn />
+        <Suspense fallback={<p className="text-[13px] text-muted">Loading sign in…</p>}>
+          <SignIn fallbackRedirectUrl={returnTo} />
+        </Suspense>
       ) : (
         <div className="max-w-sm text-center">
           <p className="text-[17px] font-bold text-ink">Sign-in is not configured</p>

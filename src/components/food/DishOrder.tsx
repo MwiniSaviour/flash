@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { useState } from "react";
 
+import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
 import { StickyAction } from "@/components/flash/StickyAction";
 import { Tag } from "@/components/flash/ui";
@@ -218,24 +219,29 @@ export function DishOrder({
           </button>
         </div>
 
-        {inCart ? (
-          <Link
-            href="/food/checkout"
-            className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover lg:max-w-[320px]"
-          >
-            <Icon name="arrow-right" size={16} />
-            Proceed to checkout
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={addToCart}
-            className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed lg:max-w-[320px]"
-          >
-            <Icon name="bag" size={16} />
-            Add to cart · {cedis(netTotal)}
-          </button>
-        )}
+        <SignInGate
+          label="Sign in to order"
+          className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover lg:max-w-[320px]"
+        >
+          {inCart ? (
+            <Link
+              href="/food/checkout"
+              className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover lg:max-w-[320px]"
+            >
+              <Icon name="arrow-right" size={16} />
+              Proceed to checkout
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={addToCart}
+              className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed lg:max-w-[320px]"
+            >
+              <Icon name="bag" size={16} />
+              Add to cart · {cedis(netTotal)}
+            </button>
+          )}
+        </SignInGate>
       </StickyAction>
     </div>
   );

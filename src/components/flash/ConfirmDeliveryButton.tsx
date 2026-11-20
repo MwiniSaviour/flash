@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 
+import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
 import { confirmDeliveryAction } from "@/lib/flash/actions";
 
@@ -27,25 +28,30 @@ export function ConfirmDeliveryButton({ orderId }: { orderId: string }) {
 
   return (
     <div className="mt-3">
-      <button
-        type="button"
-        disabled={isPending}
-        onClick={() =>
-          startTransition(async () => {
-            setError(null);
-            const result = await confirmDeliveryAction({ orderId });
-            if (!result.ok) {
-              setError(result.error);
-              return;
-            }
-            setDone(true);
-          })
-        }
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[14px] font-bold text-white transition hover:bg-brand-solid-hover disabled:opacity-60"
+      <SignInGate
+        label="Sign in to confirm delivery"
+        className="flex h-11 w-full items-center justify-center rounded-[12px] bg-brand-solid text-[14px] font-bold text-white transition hover:bg-brand-solid-hover"
       >
-        <Icon name="check" size={16} />
-        {isPending ? "Confirming…" : "I have received my order"}
-      </button>
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() =>
+            startTransition(async () => {
+              setError(null);
+              const result = await confirmDeliveryAction({ orderId });
+              if (!result.ok) {
+                setError(result.error);
+                return;
+              }
+              setDone(true);
+            })
+          }
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[14px] font-bold text-white transition hover:bg-brand-solid-hover disabled:opacity-60"
+        >
+          <Icon name="check" size={16} />
+          {isPending ? "Confirming." : "I have received my order"}
+        </button>
+      </SignInGate>
       {error ? (
         <p role="alert" className="mt-1.5 text-[12px] text-danger-ink">
           {error}
