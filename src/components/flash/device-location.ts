@@ -4,7 +4,7 @@ import type { GeoPoint } from "@/lib/flash/geo";
 export const MAX_USABLE_ACCURACY_M = 100;
 
 /** How long watchPosition is allowed to refine the fix before we use the best sample. */
-export const WATCH_SAMPLE_MS = 8000;
+export const WATCH_SAMPLE_MS = 6000;
 
 export type DevicePosition = {
   point: GeoPoint;
@@ -41,8 +41,13 @@ type CapacitorBridge = {
 };
 
 type Watcher = {
-  watch: (onSample: (coords: DeviceCoords) => void, options: WatchOptions) => number;
+  watch: (
+    onSample: (coords: DeviceCoords) => void,
+    onError: (error: unknown) => void,
+    options: WatchOptions,
+  ) => number;
   clear: (id: number) => void;
+  single?: (options: WatchOptions) => Promise<DeviceCoords>;
 };
 
 function nativeGeolocation(): NativeGeolocation | null {
@@ -77,31 +82,31 @@ function nativeWatcher(): Watcher | null {
 
   if (native.watchPosition) {
     return {
-      watch: (onSample, options) =>
-        native.watchPosition!((position) => onSample(position.coords), undefined, options),
+      watch: (onSample, onError, options) =>
+        native.watchPosition!((position) => onSample(position.coords), onError, options),
       clear: (id) => native.clearWatch?.(id),
+      single: native.getCurrentPosition
+        ? (options) => native.getCurrentPosition!(options).then((position) => position.coords)
+        : undefined,
     };
   }
 
   if (native.getCurrentPosition) {
-    let cancelled = false;
     return {
-      watch: (onSample, options) => {
+      watch: (onSample, onError, options) => {
         const poll = () => {
           void native.getCurrentPosition!(options).then(
-            (position) => {
-              if (!cancelled) onSample(position.coords);
-            },
-            () => {},
+            (position) => onSample(position.coords),
+            (error) => onError(error),
           );
         };
         poll();
         return window.setInterval(poll, 1000);
       },
       clear: (id) => {
-        cancelled = true;
         window.clearInterval(id);
       },
+      single: (options) => native.getCurrentPosition!(options).then((position) => position.coords),
     };
   }
 
@@ -109,71 +114,112 @@ function nativeWatcher(): Watcher | null {
 }
 
 function browserWatcher(): Watcher | null {
-  if (typeof navigator === "undefined" || !navigator.geolocation?.watchPosition) return null;
+  if (typeof navigator === "undefined" || !navigator.geolocation) return null;
 
   return {
-    watch: (onSample, options) =>
+    watch: (onSample, onError, options) =>
       navigator.geolocation.watchPosition(
         (position) => onSample(position.coords),
-        undefined,
+        (error) => onError(error),
         options,
       ),
     clear: (id) => navigator.geolocation.clearWatch(id),
+    single: navigator.geolocation.getCurrentPosition
+      ? (options) =>
+          new Promise<DeviceCoords>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              (position) => resolve(position.coords),
+              (error) => reject(error),
+              options,
+            );
+          })
+      : undefined,
   };
 }
 
-function collectBestFix(watcher: Watcher, sampleMs: number): Promise<DevicePosition> {
-  return new Promise<DevicePosition>((resolve, reject) => {
-    const samples: DevicePosition[] = [];
-    let settled = false;
-    let watchId: number | null = null;
-
-    function finish(position: DevicePosition | null, error?: unknown) {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      if (watchId !== null) watcher.clear(watchId);
-      if (position) resolve(position);
-      else
-        reject(
-          error instanceof Error
-            ? error
-            : new Error("Location is unavailable. Type the address instead."),
-        );
-    }
-
-    const timer = setTimeout(() => finish(bestFix(samples)), sampleMs);
-
-    const options: WatchOptions = {
-      enableHighAccuracy: true,
-      timeout: 12000,
-      maximumAge: 0,
-    };
-
-    try {
-      watchId = watcher.watch((coords) => {
-        const fix = positionFromCoords(coords);
-        samples.push(fix);
-        if (fix.usable) finish(fix);
-      }, options);
-    } catch (error) {
-      finish(null, error);
-    }
-  });
+function permissionMessage(error: unknown): string | null {
+  if (error && typeof error === "object" && "code" in error) {
+    const code = (error as { code?: number }).code;
+    if (code === 1) return "Location permission was denied. Allow it in your browser, or type the address.";
+    if (code === 2) return "Location is unavailable on this device. Type the address instead.";
+    if (code === 3) return "Location request timed out. Try again, or type the address.";
+  }
+  return null;
 }
 
-/**
- * The device's best available position, from its GPS / Wi-Fi provider.
- *
- * A single lookup can return an IP-derived fix with a 50 km radius. We keep a
- * watch open for a short window with high accuracy enabled and use the most
- * accurate sample, or stop early once a fix is good enough for a pickup.
- */
+function errorMessage(error: unknown): string {
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return "Location is unavailable. Type the address instead.";
+}
+
 export function getBestDevicePosition(sampleMs = WATCH_SAMPLE_MS): Promise<DevicePosition> {
   const watcher = nativeWatcher() ?? browserWatcher();
   if (!watcher) {
     return Promise.reject(new Error("This device cannot share a location. Type the address instead."));
   }
 
-  return collectBestFix(watcher, sampleMs);
+  const options: WatchOptions = {
+    enableHighAccuracy: true,
+    timeout: 12000,
+    maximumAge: 0,
+  };
+
+  return new Promise<DevicePosition>((resolve, reject) => {
+    const samples: DevicePosition[] = [];
+    let settled = false;
+    let watchId: number | null = null;
+    let lastError: unknown = null;
+
+    const finish = (position: DevicePosition | null, error?: unknown) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (watchId !== null) watcher.clear(watchId);
+      watchId = null;
+      if (position) resolve(position);
+      else {
+        const message = permissionMessage(error ?? lastError) ?? errorMessage(error ?? lastError);
+        reject(new Error(message));
+      }
+    };
+
+    const timer = setTimeout(() => finish(bestFix(samples), lastError), sampleMs);
+
+    try {
+      watchId = watcher.watch(
+        (coords) => {
+          const fix = positionFromCoords(coords);
+          samples.push(fix);
+          if (fix.usable) finish(fix);
+        },
+        (error) => {
+          lastError = error;
+          const message = permissionMessage(error);
+          if (message && (error as { code?: number })?.code === 1) finish(null, error);
+        },
+        options,
+      );
+    } catch (error) {
+      finish(null, error);
+      return;
+    }
+
+    if (watcher.single) {
+      void watcher.single(options).then(
+        (coords) => {
+          if (settled) return;
+          samples.push(positionFromCoords(coords));
+          const best = bestFix(samples);
+          if (best?.usable) finish(best);
+        },
+        (error) => {
+          lastError = error;
+        },
+      );
+    }
+  });
 }

@@ -49,6 +49,10 @@ export async function updatePlatformSettings(input: {
   deliveryCommissionBps: number;
   payoutHoldHours: number;
   freeEventAttendeeFeePesewas: number;
+  ridePerKmPesewas: number;
+  parcelPerKmPesewas: number;
+  deliveryPerKmPesewas: number;
+  deliveryBaseKm: number;
 }): Promise<AdminActionResult> {
   const admin = await requireAdmin();
   if (!admin) return { ok: false, error: "You do not have access to this action." };
@@ -59,6 +63,10 @@ export async function updatePlatformSettings(input: {
     input.deliveryCommissionBps,
     input.payoutHoldHours,
     input.freeEventAttendeeFeePesewas,
+    input.ridePerKmPesewas,
+    input.parcelPerKmPesewas,
+    input.deliveryPerKmPesewas,
+    input.deliveryBaseKm,
   ];
 
   if (values.some((value) => !Number.isInteger(value) || value < 0)) {
@@ -90,6 +98,10 @@ export async function updatePlatformSettings(input: {
       delivery_commission_bps: input.deliveryCommissionBps,
       payout_hold_hours: input.payoutHoldHours,
       free_event_attendee_fee_pesewas: input.freeEventAttendeeFeePesewas,
+      ride_per_km_pesewas: input.ridePerKmPesewas,
+      parcel_per_km_pesewas: input.parcelPerKmPesewas,
+      delivery_per_km_pesewas: input.deliveryPerKmPesewas,
+      delivery_base_km: input.deliveryBaseKm,
       updated_at: new Date().toISOString(),
     })
     .eq("id", "platform");

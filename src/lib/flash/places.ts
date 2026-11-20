@@ -176,10 +176,33 @@ export async function reverseGeocode(
 
     return labelFor(placeFeature);
   } catch {
-    return {
-      label: "Current location",
-      detail: `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`,
-    };
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${point.lat}&lon=${point.lng}&zoom=14&addressdetails=1`,
+        { signal, headers: { Accept: "application/json" } },
+      );
+      if (!response.ok) throw new Error(`Geocoder returned ${response.status}`);
+      const body = (await response.json()) as { address?: Record<string, string> };
+      const address = body.address ?? {};
+      const label =
+        address.neighbourhood ||
+        address.suburb ||
+        address.village ||
+        address.town ||
+        address.city ||
+        address.county ||
+        "Current location";
+      const detail = [address.county, address.state, address.country]
+        .filter((part): part is string => Boolean(part && part !== label))
+        .filter((part, index, all) => all.indexOf(part) === index)
+        .join(", ");
+      return { label, detail: detail || "Ghana" };
+    } catch {
+      return {
+        label: "Current location",
+        detail: `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`,
+      };
+    }
   }
 }
 
@@ -202,6 +225,10 @@ export function toNearbyPlaces(
   for (const feature of features) {
     const [lng, lat] = feature.geometry?.coordinates ?? [];
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+    // Skip points of interest (banks, shops, fuel stations): they collapse to
+    // the same area name and are not useful as pickup neighbourhoods.
+    if (feature.properties.osm_key && POI_KEYS.has(feature.properties.osm_key)) continue;
 
     const place = toPlace(feature);
     const key = place.label.toLowerCase();

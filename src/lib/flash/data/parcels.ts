@@ -7,6 +7,7 @@
  */
 
 import type { IconName } from "@/components/flash/Icon";
+import { parcelFareCedis, type TransportRates, demoTransportRates } from "@/lib/flash/pricing";
 
 export interface ParcelType {
   id: string;
@@ -101,14 +102,14 @@ export function quoteParcel(
   type: ParcelType,
   size: ParcelSize,
   distanceKm = parcelQuote.distanceKm,
+  rates: TransportRates = demoTransportRates,
 ): ParcelQuote {
   const multiplier = parcelSizes.find((item) => item.id === size)?.multiplier ?? 1;
-  const distanceFactor = 1 + Math.max(0, distanceKm - 4.6) * 0.06;
 
   return {
     distanceKm,
     durationMinutes: Math.round(parcelQuote.durationMinutes + (distanceKm - 4.6) * 1.4),
-    price: Math.round(type.price * multiplier * distanceFactor),
+    price: parcelFareCedis(type.price, multiplier, distanceKm, rates),
     etaMinutes: Math.round(type.etaMinutes + (distanceKm - 4.6) * 1.4),
     courier: {
       name: "Flash Courier",

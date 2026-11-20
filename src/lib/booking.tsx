@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 
 import { ParcelBooking } from "@/components/booking/ParcelBooking";
 import { RideBooking } from "@/components/booking/RideBooking";
+import type { TransportRates } from "@/lib/flash/pricing";
 import type { RideQuote, SavedPlace } from "@/lib/flash/types";
 
 export type BookingKind = "ride" | "parcel";
@@ -44,10 +45,12 @@ export function BookingProvider({
   children,
   quote,
   savedPlaces,
+  rates,
 }: {
   children: ReactNode;
   quote: RideQuote;
   savedPlaces: SavedPlace[];
+  rates: TransportRates;
 }) {
   const [request, setRequest] = useState<BookingRequest | null>(null);
 
@@ -69,13 +72,14 @@ export function BookingProvider({
         <RideBooking
           quote={quote}
           savedPlaces={savedPlaces}
+          rates={rates}
           initialDropoff={request.dropoff}
           onClose={close}
         />
       ) : null}
 
       {request?.kind === "parcel" ? (
-        <ParcelBooking savedPlaces={savedPlaces} onClose={close} />
+        <ParcelBooking savedPlaces={savedPlaces} rates={rates} onClose={close} />
       ) : null}
     </BookingContext.Provider>
   );

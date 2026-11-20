@@ -52,7 +52,8 @@ export function ParcelScreen({ user }: { user: FlashUser }) {
           </ul>
 
           <p className="mt-3 text-[12.5px] text-muted-soft">
-            From GHC 8 a parcel — every parcel is charged on its own.
+            The price depends on the distance and how many parcels you send - each one is charged on
+            its own.
           </p>
         </div>
       </section>

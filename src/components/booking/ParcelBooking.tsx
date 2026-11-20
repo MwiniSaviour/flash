@@ -26,6 +26,7 @@ import {
   type ParcelType,
 } from "@/lib/flash/data/parcels";
 import { cedis, distance } from "@/lib/flash/format";
+import { parcelFareCedis, type TransportRates } from "@/lib/flash/pricing";
 import type { SavedPlace } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
 
@@ -39,9 +40,11 @@ import { cn } from "@/lib/utils";
  */
 export function ParcelBooking({
   savedPlaces,
+  rates,
   onClose,
 }: {
   savedPlaces: SavedPlace[];
+  rates: TransportRates;
   onClose: () => void;
 }) {
   const [type, setType] = useState<ParcelType>(parcelTypes[0]);
@@ -65,7 +68,8 @@ export function ParcelBooking({
       ? Math.round(haversineKm(pickupPoint, dropoffPoint) * 10) / 10
       : parcelQuote.distanceKm;
   const durationMinutes = estimateMinutes(distanceKm, 24);
-  const quote = quoteParcel(type, size, distanceKm);
+  const quote = quoteParcel(type, size, distanceKm, rates);
+  const sizeMultiplier = parcelSizes.find((entry) => entry.id === size)?.multiplier ?? 1;
   // Every parcel is charged on its own, so the count is what moves the price.
   const total = quote.price * quantity;
 
@@ -315,7 +319,7 @@ export function ParcelBooking({
 
                   <span className="shrink-0 text-right">
                     <span className="block text-[14px] font-bold text-ink">
-                      {cedis(item.price)}
+                      {cedis(parcelFareCedis(item.price, sizeMultiplier, distanceKm, rates))}
                       {quantity > 1 ? (
                         <span className="text-[11px] font-medium text-muted"> each</span>
                       ) : null}

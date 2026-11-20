@@ -17,6 +17,7 @@ import { payWithIntent } from "@/lib/payments/inline";
 import { MAX_PASSENGERS } from "@/lib/flash/data/rides";
 import { cedis, distance } from "@/lib/flash/format";
 import { estimateMinutes, haversineKm, type GeoPoint } from "@/lib/flash/geo";
+import { rideFareCedis, type TransportRates } from "@/lib/flash/pricing";
 
 import type { RideClass, RideQuote, SavedPlace } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
@@ -39,18 +40,20 @@ const classIcons: Record<string, IconName> = {
 export function RideBooking({
   quote,
   savedPlaces,
+  rates,
   initialDropoff,
   onClose,
 }: {
   quote: RideQuote;
   savedPlaces: SavedPlace[];
+  rates: TransportRates;
   initialDropoff?: string;
   onClose: () => void;
 }) {
   const [selected, setSelected] = useState<RideClass>(quote.classes[1] ?? quote.classes[0]);
   const [passengers, setPassengers] = useState(1);
-  const [pickup, setPickup] = useState(quote.pickup);
-  const [dropoff, setDropoff] = useState(initialDropoff ?? quote.dropoff);
+  const [pickup, setPickup] = useState("");
+  const [dropoff, setDropoff] = useState(initialDropoff ?? "");
   const [pickupPoint, setPickupPoint] = useState<GeoPoint | null>(null);
   const [dropoffPoint, setDropoffPoint] = useState<GeoPoint | null>(null);
   const [phone, setPhone] = useState("");
@@ -66,6 +69,7 @@ export function RideBooking({
       ? Math.round(haversineKm(pickupPoint, dropoffPoint) * 10) / 10
       : quote.distanceKm;
   const durationMinutes = estimateMinutes(distanceKm);
+  const fareFor = (item: RideClass) => rideFareCedis(item.price, distanceKm, rates);
 
   // The biggest party the classes can carry, capped by the product limit.
   const maxPassengers = Math.min(
@@ -86,7 +90,7 @@ export function RideBooking({
       const fits = quote.classes.filter((item) => item.seats >= next);
       if (fits.length === 0) return current;
 
-      return fits.reduce((cheapest, item) => (item.price < cheapest.price ? item : cheapest));
+      return fits.reduce((cheapest, item) => (fareFor(item) < fareFor(cheapest) ? item : cheapest));
     });
   }
 
@@ -311,7 +315,7 @@ export function RideBooking({
 
         <div className="mt-2 flex items-center gap-2 text-[12.5px] text-muted">
           <Icon name="route" size={15} className="text-muted-soft" />
-          {distance(quote.distanceKm)} · about {quote.durationMinutes} minutes
+          {distance(distanceKm)} · about {durationMinutes} minutes · fare includes the distance
         </div>
 
         <ul className="mt-3 space-y-2.5">
@@ -366,7 +370,7 @@ export function RideBooking({
 
                   <span className="shrink-0 text-right">
                     <span className="block text-[15px] font-bold tracking-[-0.01em] text-ink">
-                      {cedis(item.price)}
+                      {cedis(fareFor(item))}
                     </span>
                     <span className="mt-0.5 block text-[11.5px] text-muted">{item.etaMinutes} min</span>
                   </span>

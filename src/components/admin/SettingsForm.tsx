@@ -17,6 +17,10 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
   const [freeFee, setFreeFee] = useState(
     String((initial.freeEventAttendeeFeePesewas ?? 100) / 100),
   );
+  const [ridePerKm, setRidePerKm] = useState(String(initial.ridePerKmPesewas / 100));
+  const [parcelPerKm, setParcelPerKm] = useState(String(initial.parcelPerKmPesewas / 100));
+  const [deliveryPerKm, setDeliveryPerKm] = useState(String(initial.deliveryPerKmPesewas / 100));
+  const [deliveryBaseKm, setDeliveryBaseKm] = useState(String(initial.deliveryBaseKm));
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -32,6 +36,10 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
         deliveryCommissionBps: Number(delivery) * 100,
         payoutHoldHours: Number(hold),
         freeEventAttendeeFeePesewas: Number(freeFee) * 100,
+        ridePerKmPesewas: Number(ridePerKm) * 100,
+        parcelPerKmPesewas: Number(parcelPerKm) * 100,
+        deliveryPerKmPesewas: Number(deliveryPerKm) * 100,
+        deliveryBaseKm: Number(deliveryBaseKm),
       });
 
       if (!result.ok) {
@@ -45,20 +53,56 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
   }
 
   const fields = [
-    { label: "On what is sold", value: goods, set: setGoods, detail: "Items and tickets" },
+    { label: "On what is sold", value: goods, set: setGoods, detail: "Items and tickets", unit: "%" },
     {
       label: "Free event attendee",
       value: freeFee,
       set: setFreeFee,
       detail: "Flat fee per attendee, paid by the planner",
+      unit: "GHS",
     },
     {
       label: "Seller delivers it",
       value: selfDelivery,
       set: setSelfDelivery,
       detail: "No delivery commission",
+      unit: "%",
     },
-    { label: "On the delivery fee", value: delivery, set: setDelivery, detail: "Flash delivers" },
+    {
+      label: "On the delivery fee",
+      value: delivery,
+      set: setDelivery,
+      detail: "Flash delivers",
+      unit: "%",
+    },
+    {
+      label: "Ride distance",
+      value: ridePerKm,
+      set: setRidePerKm,
+      detail: "Per km after the first 3 km",
+      unit: "GHS/km",
+    },
+    {
+      label: "Parcel distance",
+      value: parcelPerKm,
+      set: setParcelPerKm,
+      detail: "Per km after the first 4.6 km",
+      unit: "GHS/km",
+    },
+    {
+      label: "Food delivery distance",
+      value: deliveryPerKm,
+      set: setDeliveryPerKm,
+      detail: "Per km after the base distance",
+      unit: "GHS/km",
+    },
+    {
+      label: "Food base distance",
+      value: deliveryBaseKm,
+      set: setDeliveryBaseKm,
+      detail: "Kilometres covered by the base fee",
+      unit: "km",
+    },
   ];
 
   return (
@@ -78,9 +122,7 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
                 aria-label={field.label}
                 className="min-w-0 flex-1 bg-transparent text-right text-[14px] font-bold text-ink focus:outline-none"
               />
-              <span className="text-[12px] font-semibold text-muted">
-                {field.label === "Free event attendee" ? "GHS" : "%"}
-              </span>
+              <span className="text-[12px] font-semibold text-muted">{field.unit}</span>
             </span>
           </label>
         ))}

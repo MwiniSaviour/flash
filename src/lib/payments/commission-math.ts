@@ -12,6 +12,14 @@ export type PlatformSettings = {
   payoutHoldHours: number;
   /** Flat fee per attendee of a free event, in pesewas. */
   freeEventAttendeeFeePesewas: number;
+  /** Ride fare surcharge per kilometre beyond the base, in pesewas. */
+  ridePerKmPesewas: number;
+  /** Parcel fare surcharge per kilometre beyond the base, in pesewas. */
+  parcelPerKmPesewas: number;
+  /** Delivery fee per kilometre beyond the base distance, in pesewas. */
+  deliveryPerKmPesewas: number;
+  /** Kilometres the delivery base fee covers. */
+  deliveryBaseKm: number;
 };
 
 const settingsHost = globalThis as typeof globalThis & {
@@ -24,8 +32,12 @@ export const DEMO_SETTINGS: PlatformSettings =
     goodsCommissionBps: 300,
     selfDeliveryGoodsCommissionBps: 400,
     deliveryCommissionBps: 300,
-    payoutHoldHours: 48,
-    freeEventAttendeeFeePesewas: 100,
+  payoutHoldHours: 48,
+  freeEventAttendeeFeePesewas: 100,
+  ridePerKmPesewas: 120,
+  parcelPerKmPesewas: 100,
+  deliveryPerKmPesewas: 200,
+  deliveryBaseKm: 3,
   });
 
 export type CommissionInput = {

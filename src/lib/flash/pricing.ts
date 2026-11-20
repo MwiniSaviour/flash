@@ -24,24 +24,80 @@ export const DELIVERY_BASE_KM = 3;
 /** What each kilometre beyond the base costs. */
 export const DELIVERY_PER_KM = 2;
 
+/** The kilometres a ride's class fare covers before the distance surcharge. */
+export const RIDE_BASE_KM = 3;
+
+/** The kilometres a parcel's base price covers before the distance surcharge. */
+export const PARCEL_BASE_KM = 4.6;
+
+/**
+ * The distance rates the superadmin can change. They are a subset of
+ * PlatformSettings so the same object can be passed straight through, and a
+ * plain shape so the booking UI (a client component) can carry them as props.
+ */
+export type TransportRates = {
+  ridePerKmPesewas: number;
+  parcelPerKmPesewas: number;
+  deliveryPerKmPesewas: number;
+  deliveryBaseKm: number;
+};
+
+/** Defaults mirroring DEMO_SETTINGS, used when no database is connected. */
+export const demoTransportRates: TransportRates = {
+  ridePerKmPesewas: 120,
+  parcelPerKmPesewas: 100,
+  deliveryPerKmPesewas: 200,
+  deliveryBaseKm: 3,
+};
+
 /** The delivery charge for a journey, in whole cedis. */
 export function deliveryFeeFor(
   distanceKm: number,
   baseFee: number,
   fulfilment: Fulfilment = "delivery",
+  perKmPesewas = DELIVERY_PER_KM * 100,
+  baseKm = DELIVERY_BASE_KM,
 ): number {
   if (fulfilment !== "delivery") return 0;
 
-  const extraKm = Math.max(0, Math.ceil(distanceKm) - DELIVERY_BASE_KM);
-  return baseFee + extraKm * DELIVERY_PER_KM;
+  const extraKm = Math.max(0, Math.ceil(distanceKm) - baseKm);
+  return baseFee + Math.round((extraKm * perKmPesewas) / 100);
 }
 
 /** The delivery charge for a kitchen, in whole cedis. */
 export function deliveryQuote(
   kitchen: { deliveryFee: number; distanceKm: number },
   fulfilment: Fulfilment = "delivery",
+  rates: TransportRates = demoTransportRates,
 ): number {
-  return deliveryFeeFor(kitchen.distanceKm, kitchen.deliveryFee, fulfilment);
+  return deliveryFeeFor(
+    kitchen.distanceKm,
+    kitchen.deliveryFee,
+    fulfilment,
+    rates.deliveryPerKmPesewas,
+    rates.deliveryBaseKm,
+  );
+}
+
+/** A ride's fare: the class's base fare plus the distance beyond the base. */
+export function rideFareCedis(
+  baseFare: number,
+  distanceKm: number,
+  rates: TransportRates = demoTransportRates,
+): number {
+  const extraKm = Math.max(0, Math.ceil(distanceKm) - RIDE_BASE_KM);
+  return baseFare + Math.round((extraKm * rates.ridePerKmPesewas) / 100);
+}
+
+/** A parcel's fare: base price × size, plus the distance beyond the base. */
+export function parcelFareCedis(
+  basePrice: number,
+  multiplier: number,
+  distanceKm: number,
+  rates: TransportRates = demoTransportRates,
+): number {
+  const extraKm = Math.max(0, Math.ceil(distanceKm) - PARCEL_BASE_KM);
+  return Math.round(basePrice * multiplier + (extraKm * rates.parcelPerKmPesewas) / 100);
 }
 
 /** What a discount takes off, in whole cedis. */

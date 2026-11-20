@@ -12,7 +12,7 @@ import { useCart } from "@/lib/cart";
 import { placeOrder } from "@/lib/flash/actions";
 import { payWithIntent } from "@/lib/payments/inline";
 import { cedis } from "@/lib/flash/format";
-import { deliveryQuote } from "@/lib/flash/pricing";
+import { deliveryQuote, type TransportRates } from "@/lib/flash/pricing";
 import type { Fulfilment } from "@/lib/flash/types";
 
 /**
@@ -23,10 +23,16 @@ import type { Fulfilment } from "@/lib/flash/types";
  * The customer can have it delivered, or collect it from the kitchen and eat
  * there; collecting costs nothing because nobody rides anywhere.
  */
-export function FoodCheckout({ businessAccount = false }: { businessAccount?: boolean }) {
+export function FoodCheckout({
+  businessAccount = false,
+  rates,
+}: {
+  businessAccount?: boolean;
+  rates: TransportRates;
+}) {
   const cart = useCart();
   const [method, setMethod] = useState<PaymentMethodId>("momo");
-  const [address, setAddress] = useState("Nii Boa Street, Ridge");
+  const [address, setAddress] = useState("");
   const [fulfilment, setFulfilment] = useState<Fulfilment>("delivery");
   const [placed, setPlaced] = useState<{
     reference: string;
@@ -37,7 +43,7 @@ export function FoodCheckout({ businessAccount = false }: { businessAccount?: bo
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const deliveryFee = cart.restaurant ? deliveryQuote(cart.restaurant, fulfilment) : 0;
+  const deliveryFee = cart.restaurant ? deliveryQuote(cart.restaurant, fulfilment, rates) : 0;
   const total = cart.subtotal - cart.discount + deliveryFee;
 
   function place() {
@@ -251,7 +257,8 @@ export function FoodCheckout({ businessAccount = false }: { businessAccount?: bo
                 value={address}
                 onChange={(event) => setAddress(event.target.value)}
                 aria-label="Delivery address"
-                className="w-full bg-transparent text-[13.5px] text-ink focus:outline-none"
+                placeholder="Where are you going?"
+                className="w-full bg-transparent text-[13.5px] text-ink placeholder:text-muted focus:outline-none"
               />
             </span>
           </label>

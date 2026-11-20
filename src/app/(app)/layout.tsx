@@ -9,6 +9,7 @@ import {
   getRideQuote,
   getSavedPlaces,
 } from "@/lib/flash/repository";
+import { platformSettings } from "@/lib/payments/commission";
 
 /**
  * Every screen in Flash reads the database, so nothing here can be
@@ -30,15 +31,16 @@ export const dynamic = "force-dynamic";
  * are read once for the whole app.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [user, quote, savedPlaces] = await Promise.all([
+  const [user, quote, savedPlaces, settings] = await Promise.all([
     getCurrentUser(),
     getRideQuote(),
     getSavedPlaces(),
+    platformSettings(),
   ]);
 
   return (
     <CartProvider>
-      <BookingProvider quote={quote} savedPlaces={savedPlaces}>
+      <BookingProvider quote={quote} savedPlaces={savedPlaces} rates={settings}>
         <div className="min-h-dvh">
           <div className="mx-auto flex w-full max-w-[1440px]">
             <SideRail user={user} />

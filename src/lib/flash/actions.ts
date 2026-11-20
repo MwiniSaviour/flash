@@ -32,7 +32,7 @@ import {
   type ParcelSize,
 } from "./data/parcels";
 import { ensureProfile } from "./profile";
-import { activeDiscountPercent, deliveryQuote, discountOn } from "./pricing";
+import { activeDiscountPercent, deliveryQuote, discountOn, rideFareCedis } from "./pricing";
 import { isBusinessAccount } from "./repository";
 import type { Fulfilment } from "./types";
 /**
@@ -593,9 +593,11 @@ export async function placeOrder(input: {
     0,
   );
 
+  const settings = await platformSettings();
   const deliveryFee = deliveryQuote(
     { deliveryFee: restaurant.delivery_fee, distanceKm: restaurant.distance_km },
     fulfilment,
+    settings,
   );
   const discount = priced.reduce((total, line) => total + line!.discount * line!.quantity, 0);
 
@@ -765,6 +767,8 @@ export async function requestRide(input: {
       ? Math.round(haversineKm(input.pickupPoint, input.dropoffPoint) * 10) / 10
       : 3.8;
   const durationMinutes = input.durationMinutes ?? Math.max(1, Math.round((distanceKm / 28) * 60 + 3));
+  const settings = await platformSettings();
+  const fare = rideFareCedis(rideClass.price, distanceKm, settings);
 
   const { error } = await client.from("rides").insert({
     id,
@@ -778,7 +782,7 @@ export async function requestRide(input: {
     distance_km: distanceKm,
     duration_minutes: durationMinutes,
     eta_minutes: durationMinutes,
-    price: rideClass.price,
+    price: fare,
     passengers,
     status: scheduledFor ? "scheduled" : "requested",
     number,
@@ -815,7 +819,7 @@ export async function requestRide(input: {
     kind: "ride",
     userId,
     email: identity?.email ?? "",
-    price: rideClass.price,
+    price: fare,
     id,
     paymentMethod,
   });
@@ -830,7 +834,7 @@ export async function requestRide(input: {
       id,
       reference,
       number,
-      price: handoff?.fare ?? rideClass.price,
+      price: handoff?.fare ?? fare,
       etaMinutes: handoff?.etaMinutes ?? rideClass.eta_minutes,
       demo: false,
       checkoutUrl: checkout?.checkoutUrl ?? null,
@@ -948,7 +952,8 @@ export async function sendParcel(input: {
     input.pickupPoint && input.dropoffPoint
       ? Math.round(haversineKm(input.pickupPoint, input.dropoffPoint) * 10) / 10
       : (input.distanceKm ?? parcelQuote.distanceKm);
-  const quote = quoteParcel(type, input.parcelSize, distanceKm);
+  const settings = await platformSettings();
+  const quote = quoteParcel(type, input.parcelSize, distanceKm, settings);
   const price = quote.price * quantity;
   const client = createAdminClient();
 
@@ -1040,7 +1045,7 @@ export async function sendParcel(input: {
     data: {
       id,
       trackingNumber,
-      price: quote.price,
+      price,
       etaMinutes: handoff?.etaMinutes ?? quote.etaMinutes,
       demo: false,
       checkoutUrl: checkout?.checkoutUrl ?? null,
@@ -1165,6 +1170,7 @@ export async function bookTicketBatch(input: {
       itemsCedis: total,
       deliveryFeeCedis: 0,
       selfDelivery: false,
+      ticketId: made[0] ?? undefined,
     });
     checkoutUrl = checkout.checkoutUrl;
     checkoutIntent = {
