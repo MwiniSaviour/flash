@@ -23,8 +23,6 @@ import { confirmDelivery, recordCashCommission, startCheckout } from "@/lib/paym
 import { createAdminClient, type AdminClient } from "@/lib/supabase/admin";
 
 import { findCover } from "./covers";
-import { events } from "./data/events";
-import { restaurants } from "./data/food";
 import {
   parcelTrackingNumber,
   parcelTypes,
@@ -34,7 +32,7 @@ import {
 import { ensureProfile } from "./profile";
 import { activeDiscountPercent, deliveryQuote, discountOn } from "./pricing";
 import { isBusinessAccount } from "./repository";
-import type { Fulfilment, MenuItem } from "./types";
+import type { Fulfilment } from "./types";
 /**
  * The writes.
  *
@@ -262,20 +260,9 @@ export async function bookTicket(input: {
   const client = createAdminClient();
 
   if (!client) {
-    const event = events.find((entry) => entry.id === input.eventId);
-    const tier = event?.tiers.find((entry) => entry.id === input.tierId);
-    if (!tier) return { ok: false, error: "That ticket is no longer available." };
-
-    return {
-      ok: true,
-      data: {
-        id: mintId("tkt"),
-        reference: mintReference(),
-        total: tier.price * quantity,
-        demo: true,
-      },
-    };
+    return { ok: false, error: "Checkout is unavailable right now. Please try again shortly." };
   }
+
 
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to book a ticket." };
@@ -405,6 +392,7 @@ export async function requestTickets(input: {
   const quantity = clampQuantity(input.quantity);
   const client = createAdminClient();
   const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "Sign in to ask for a ticket." };
 
   if (!client) {
     return { ok: true, data: { id: mintId("treq") }, demo: true };
@@ -489,56 +477,9 @@ export async function placeOrder(input: {
   }
 
   if (!client) {
-    const restaurant = restaurants.find((entry) => entry.id === input.restaurantId);
-    if (!restaurant) return { ok: false, error: "That kitchen is no longer available." };
-
-    const priced = lines.map((line) => {
-      const item = restaurant.menu.find((entry) => entry.id === line.menuItemId);
-      if (!item) return null;
-
-      const size = item.sizes.find((entry) => entry.id === line.size) ?? item.sizes[0];
-      const toppings = line.toppings
-        .map((id) => item.toppings.find((topping) => topping.id === id))
-        .filter((topping): topping is MenuItem["toppings"][number] => Boolean(topping));
-
-      const listPrice =
-        (size?.price ?? item.price) +
-        toppings.reduce((total, topping) => total + topping.price, 0);
-      const percent = activeDiscountPercent(item);
-
-      return {
-        name: item.name,
-        size: size?.name ?? "",
-        toppings: toppings.map((topping) => topping.name),
-        price: listPrice - discountOn(listPrice, percent),
-        discount: discountOn(listPrice, percent),
-        quantity: line.quantity,
-      };
-    });
-
-    if (priced.some((line) => line === null)) {
-      return { ok: false, error: "One of those items is no longer on the menu." };
-    }
-
-    const subtotal = priced.reduce(
-      (total, line) => total + (line!.price + line!.discount) * line!.quantity,
-      0,
-    );
-    const discount = priced.reduce((total, line) => total + line!.discount * line!.quantity, 0);
-    const deliveryFee = deliveryQuote(restaurant, fulfilment);
-
-    return {
-      ok: true,
-      data: {
-        id: mintId("ord"),
-        reference: mintReference(),
-        number: mintNumber(),
-        total: subtotal - discount + deliveryFee,
-        etaMinutes: restaurant.etaMinutes,
-        demo: true,
-      },
-    };
+    return { ok: false, error: "Checkout is unavailable right now. Please try again shortly." };
   }
+
 
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to place an order." };
@@ -736,24 +677,9 @@ export async function requestRide(input: {
   const client = createAdminClient();
 
   if (!client) {
-    const rideClass = ["flash-bike", "flash-go", "flash-comfort", "flash-xl"].includes(
-      input.rideClass,
-    )
-      ? input.rideClass
-      : "flash-go";
-
-    return {
-      ok: true,
-      data: {
-        id: mintId("ride"),
-        reference: mintReference(),
-        number: mintNumber(),
-        price: rideClass === "flash-go" ? 28 : 0,
-        etaMinutes: 12,
-        demo: true,
-      },
-    };
+    return { ok: false, error: "Checkout is unavailable right now. Please try again shortly." };
   }
+
 
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to book a ride." };
@@ -962,17 +888,9 @@ export async function sendParcel(input: {
   const client = createAdminClient();
 
   if (!client) {
-    return {
-      ok: true,
-      data: {
-        id: mintId("par"),
-        trackingNumber: parcelTrackingNumber(Math.floor(Math.random() * 9000) + 1000),
-        price,
-        etaMinutes: quote.etaMinutes,
-        demo: true,
-      },
-    };
+    return { ok: false, error: "Checkout is unavailable right now. Please try again shortly." };
   }
+
 
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to send a parcel." };
@@ -1095,15 +1013,9 @@ export async function bookTicketBatch(input: {
 
   const client = createAdminClient();
   if (!client) {
-    return {
-      ok: true,
-      data: {
-        references: lines.map(() => mintReference()),
-        total: 0,
-        checkoutUrl: null,
-      },
-    };
+    return { ok: false, error: "Checkout is unavailable right now. Please try again shortly." };
   }
+
 
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to book tickets." };
