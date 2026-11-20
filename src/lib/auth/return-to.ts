@@ -15,3 +15,7 @@ export function safeReturnPath(value: string | string[] | undefined): string {
 export function signInHref(returnPath: string): string {
   return `/sign-in?redirect_url=${encodeURIComponent(safeReturnPath(returnPath))}`;
 }
+
+export function signUpHref(returnPath: string): string {
+  return `/sign-up?redirect_url=${encodeURIComponent(safeReturnPath(returnPath))}`;
+}

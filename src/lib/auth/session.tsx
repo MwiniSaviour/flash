@@ -80,7 +80,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ClerkProvider publishableKey={publishableKey}>
+    <ClerkProvider
+      publishableKey={publishableKey}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+    >
       <ClerkSession>{children}</ClerkSession>
     </ClerkProvider>
   );

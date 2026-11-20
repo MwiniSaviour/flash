@@ -1,9 +1,7 @@
-import { SignIn } from "@clerk/nextjs";
-import Link from "next/link";
-import { Suspense } from "react";
-
-import { hasClerkEnv } from "@/lib/env";
+import { AuthForm } from "@/components/auth/AuthForm";
 import { safeReturnPath } from "@/lib/auth/return-to";
+import { hasClerkEnv } from "@/lib/env";
+import Link from "next/link";
 
 export default async function SignInPage({
   searchParams,
@@ -16,9 +14,7 @@ export default async function SignInPage({
   return (
     <main className="flex min-h-dvh items-center justify-center bg-paper px-5 py-10">
       {hasClerkEnv() ? (
-        <Suspense fallback={<p className="text-[13px] text-muted">Loading sign in…</p>}>
-          <SignIn fallbackRedirectUrl={returnTo} />
-        </Suspense>
+        <AuthForm mode="sign-in" returnTo={returnTo} />
       ) : (
         <div className="max-w-sm text-center">
           <p className="text-[17px] font-bold text-ink">Sign-in is not configured</p>
