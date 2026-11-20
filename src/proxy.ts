@@ -31,8 +31,17 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
     return new NextResponse(null, { status: 404 });
   }
 
-  if (env.adminHost && hostname === env.adminHost && pathname === "/") {
-    return NextResponse.redirect(new URL("/admin", request.url));
+  if (env.adminHost && hostname === env.adminHost) {
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+
+    const allowed =
+      pathname.startsWith("/admin") ||
+      pathname.startsWith("/sign-in") ||
+      pathname.startsWith("/api/webhooks");
+
+    if (!allowed) return new NextResponse(null, { status: 404 });
   }
 
   if (!env.clerkPublishableKey) return NextResponse.next();
