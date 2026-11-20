@@ -30,11 +30,14 @@ type PhotonFeature = {
   properties: {
     osm_type?: string;
     osm_id?: number;
+    osm_key?: string;
+    osm_value?: string;
     name?: string;
     street?: string;
     city?: string;
     town?: string;
     village?: string;
+    locality?: string;
     district?: string;
     county?: string;
     state?: string;
@@ -43,10 +46,20 @@ type PhotonFeature = {
   geometry: { coordinates: [number, number] };
 };
 
+const POI_KEYS = new Set(["amenity", "tourism", "shop", "office", "leisure"]);
+
 function labelFor(feature: PhotonFeature): { label: string; detail: string } {
   const p = feature.properties;
-  const label = p.name || p.street || p.city || p.town || p.village || "Selected place";
-  const parts = [p.street, p.city ?? p.town ?? p.village, p.district ?? p.county, p.state]
+  const isPoi = Boolean(p.osm_key && POI_KEYS.has(p.osm_key));
+  const area = p.city ?? p.town ?? p.village ?? p.locality ?? "";
+  const street = p.street ?? "";
+  const district = p.county ?? p.district ?? "";
+  const state = p.state ?? "";
+
+  // A hotel or a shop is not an address. Prefer the street or the town, and
+  // keep the administrative context so the customer can recognise the area.
+  const label = !isPoi && p.name ? p.name : street || area || "Current location";
+  const parts = [street, area, district, state]
     .filter((part): part is string => Boolean(part && part !== label))
     .filter((part, index, all) => all.indexOf(part) === index);
 
@@ -138,7 +151,7 @@ export async function reverseGeocode(
   const params = new URLSearchParams({
     lon: String(point.lng),
     lat: String(point.lat),
-    limit: "1",
+    limit: "5",
     lang: "en",
   });
 
@@ -150,10 +163,18 @@ export async function reverseGeocode(
     if (!response.ok) throw new Error(`Geocoder returned ${response.status}`);
 
     const body = (await response.json()) as { features?: PhotonFeature[] };
-    const feature = body.features?.[0];
-    if (!feature) throw new Error("No address found");
+    const features = body.features ?? [];
+    if (!features.length) throw new Error("No address found");
 
-    return labelFor(feature);
+    const placeFeature =
+      features.find((feature) => feature.properties.osm_key === "place") ??
+      features.find((feature) => {
+        const key = feature.properties.osm_key;
+        return !key || !POI_KEYS.has(key);
+      }) ??
+      features[0];
+
+    return labelFor(placeFeature);
   } catch {
     return {
       label: "Current location",

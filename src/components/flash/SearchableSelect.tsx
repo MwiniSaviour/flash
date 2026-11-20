@@ -86,12 +86,25 @@ export function SearchableSelect({
     setNotice(null);
     try {
       const position = await getDevicePosition();
+
+      if (!position.usable) {
+        const accuracy =
+          position.accuracy > 1000
+            ? `${(position.accuracy / 1000).toFixed(0)} km`
+            : `${Math.round(position.accuracy)} m`;
+        setNotice(
+          `Location is only accurate to about ${accuracy}. This is not precise enough for a pick-up — search for your address instead.`,
+        );
+        return;
+      }
+
       const address = await reverseGeocode(position.point);
-      setNotice(
-        `${address.label || address.detail} · accurate to about ${Math.round(position.accuracy)} m`,
-      );
+      const label = address.detail
+        ? `${address.label}, ${address.detail}`
+        : address.label || "Current location";
+      setNotice(`${label} · accurate to about ${Math.round(position.accuracy)} m`);
       setOpen(false);
-      onChange("Current location", position.point);
+      onChange(label, position.point);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Location is unavailable.");
     } finally {

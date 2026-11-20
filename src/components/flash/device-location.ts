@@ -1,8 +1,12 @@
 import type { GeoPoint } from "@/lib/flash/geo";
 
+/** A fix coarser than this is not usable for a pickup or a fare. */
+export const MAX_USABLE_ACCURACY_M = 100;
+
 export type DevicePosition = {
   point: GeoPoint;
   accuracy: number;
+  usable: boolean;
 };
 
 type NativeGeolocation = {
@@ -47,7 +51,8 @@ export async function getDevicePosition(): Promise<DevicePosition> {
       lng: position.coords.longitude,
     };
 
-    return { point, accuracy: position.coords.accuracy ?? 0 };
+    const accuracy = position.coords.accuracy ?? Number.POSITIVE_INFINITY;
+    return { point, accuracy, usable: accuracy <= MAX_USABLE_ACCURACY_M };
   }
 
   if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -67,5 +72,6 @@ export async function getDevicePosition(): Promise<DevicePosition> {
     lng: position.coords.longitude,
   };
 
-  return { point, accuracy: position.coords.accuracy };
+  const accuracy = position.coords.accuracy ?? Number.POSITIVE_INFINITY;
+  return { point, accuracy, usable: accuracy <= MAX_USABLE_ACCURACY_M };
 }
