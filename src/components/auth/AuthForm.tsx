@@ -1,6 +1,6 @@
 "use client";
 
-import { useSignIn, useSignUp } from "@clerk/nextjs";
+import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -11,9 +11,29 @@ import { signInHref, signUpHref } from "@/lib/auth/return-to";
 
 import { GoogleMark } from "./GoogleMark";
 
+type ClerkFieldError = {
+  code?: string;
+  message?: string;
+  long_message?: string;
+};
+
 function clerkError(error: unknown): string {
-  const err = error as { errors?: { message?: string }[]; message?: string; longMessage?: string } | null;
-  return err?.errors?.[0]?.message ?? err?.longMessage ?? err?.message ?? "Something went wrong. Try again.";
+  const err = error as {
+    errors?: ClerkFieldError[];
+    message?: string;
+    longMessage?: string;
+  } | null;
+  const first = err?.errors?.[0];
+
+  if (first?.code === "form_param_unknown") {
+    return "This account form has fields this deployment does not accept. Try again or contact support.";
+  }
+
+  const message = first?.long_message ?? first?.message ?? err?.longMessage ?? err?.message;
+  if (!message || /is unknow|unknown error|internal_error|unexpected_error/i.test(message)) {
+    return "We could not complete that request. Check your details and try again.";
+  }
+  return message;
 }
 
 const INPUT =
@@ -33,6 +53,7 @@ export function AuthForm({
   returnTo: string;
 }) {
   const router = useRouter();
+  const clerk = useClerk();
   const signInAuth = useSignIn();
   const signUpAuth = useSignUp();
   const [name, setName] = useState("");
@@ -46,6 +67,17 @@ export function AuthForm({
   const isSignIn = mode === "sign-in";
   const signIn = signInAuth.signIn;
   const signUp = signUpAuth.signUp;
+
+  type ClerkEnvironment = {
+    userSettings?: {
+      attributes?: Record<string, { enabled?: boolean }>;
+      passwordSettings?: { min_length?: number };
+    };
+  };
+  const environment = (clerk as unknown as { environment?: ClerkEnvironment }).environment;
+  const attributes = environment?.userSettings?.attributes;
+  const collectsNames = Boolean(attributes?.first_name?.enabled && attributes?.last_name?.enabled);
+  const minPassword = environment?.userSettings?.passwordSettings?.min_length ?? 15;
 
   async function finish(complete: boolean) {
     if (!complete) {
@@ -72,12 +104,19 @@ export function AuthForm({
         if (failure) throw failure;
         await finish(signIn.status === "complete");
       } else if (stage === "form") {
+        if (password.length < minPassword) {
+          setError(`Use at least ${minPassword} characters for your password.`);
+          return;
+        }
+
         const parts = name.trim().split(/\s+/);
         const { error: failure } = await signUp.create({
           emailAddress: email.trim(),
           password,
-          firstName: parts[0],
-          lastName: parts.slice(1).join(" ") || undefined,
+          unsafeMetadata: { full_name: name.trim() },
+          ...(collectsNames
+            ? { firstName: parts[0], lastName: parts.slice(1).join(" ") || undefined }
+            : {}),
         });
         if (failure) throw failure;
 
@@ -218,7 +257,8 @@ export function AuthForm({
                     type="password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    placeholder="At least 8 characters"
+                    placeholder={isSignIn ? "Your password" : `At least ${minPassword} characters`}
+                    minLength={isSignIn ? undefined : minPassword}
                     autoComplete={isSignIn ? "current-password" : "new-password"}
                     required
                     className={INPUT}
