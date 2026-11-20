@@ -10,6 +10,7 @@ import { SegmentedControl } from "@/components/flash/SegmentedControl";
 import { EmptyState, Price } from "@/components/flash/ui";
 import { useCart } from "@/lib/cart";
 import { placeOrder } from "@/lib/flash/actions";
+import { payWithIntent } from "@/lib/payments/inline";
 import { cedis } from "@/lib/flash/format";
 import { deliveryQuote } from "@/lib/flash/pricing";
 import type { Fulfilment } from "@/lib/flash/types";
@@ -63,10 +64,24 @@ export function FoodCheckout({ businessAccount = false }: { businessAccount?: bo
         return;
       }
 
-      if (result.data.checkoutUrl) {
-        window.location.href = result.data.checkoutUrl;
+      if (result.data.checkout) {
+        await payWithIntent(result.data.checkout, () => {
+          setPlaced({
+          reference: result.data.reference,
+          etaMinutes: result.data.etaMinutes,
+          total: result.data.total,
+          demo: result.data.demo,
+        });
+        });
         return;
       }
+
+      setPlaced({
+          reference: result.data.reference,
+          etaMinutes: result.data.etaMinutes,
+          total: result.data.total,
+          demo: result.data.demo,
+        });
 
       setPlaced({
         reference: result.data.reference,

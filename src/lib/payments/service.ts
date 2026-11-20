@@ -24,6 +24,9 @@ import {
 export type CheckoutStart = {
   reference: string;
   checkoutUrl: string | null;
+  accessCode: string | null;
+  amountPesewas: number;
+  email: string;
   demo: boolean;
 };
 
@@ -45,11 +48,11 @@ export async function startCheckout(input: {
   parcelId?: string;
 }): Promise<CheckoutStart> {
   if (!paystackConfigured()) {
-    return { reference: "", checkoutUrl: null, demo: true };
+    return { reference: "", checkoutUrl: null, accessCode: null, amountPesewas: 0, email: "", demo: true };
   }
 
   const client = createAdminClient();
-  if (!client) return { reference: "", checkoutUrl: null, demo: true };
+  if (!client) return { reference: "", checkoutUrl: null, accessCode: null, amountPesewas: 0, email: "", demo: true };
 
   const commission = computeCommission({
     itemsPesewas: pesewas(input.itemsCedis),
@@ -91,7 +94,14 @@ export async function startCheckout(input: {
     throw new Error(result.message || "We could not start the payment.");
   }
 
-  return { reference, checkoutUrl: result.checkoutUrl, demo: false };
+  return {
+    reference,
+    checkoutUrl: result.checkoutUrl,
+    accessCode: result.accessCode,
+    amountPesewas: commission.totalChargedPesewas,
+    email: input.email,
+    demo: false,
+  };
 }
 
 /**

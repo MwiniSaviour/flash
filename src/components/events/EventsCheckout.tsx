@@ -8,6 +8,7 @@ import { Icon } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
 import { useCart } from "@/lib/cart";
 import { bookTicketBatch } from "@/lib/flash/actions";
+import { payWithIntent } from "@/lib/payments/inline";
 import { cedis } from "@/lib/flash/format";
 
 /** The ticket basket: every chosen tier, with its own quantity. */
@@ -34,10 +35,16 @@ export function EventsCheckout() {
         return;
       }
 
-      if (result.data.checkoutUrl) {
-        window.location.href = result.data.checkoutUrl;
+      if (result.data.checkout) {
+        await payWithIntent(result.data.checkout, () => {
+          setDone(result.data.references);
+      cart.clear();
+        });
         return;
       }
+
+      setDone(result.data.references);
+      cart.clear();
 
       setDone(result.data.references);
       cart.clear();

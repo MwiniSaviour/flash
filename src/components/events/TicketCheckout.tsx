@@ -8,6 +8,7 @@ import { Icon } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
 import { DateBadge } from "@/components/flash/ui";
 import { bookTicket } from "@/lib/flash/actions";
+import { payWithIntent } from "@/lib/payments/inline";
 import { cedis, dateBadge, distance, priceLabel } from "@/lib/flash/format";
 import type { Event } from "@/lib/flash/types";
 
@@ -55,10 +56,22 @@ export function TicketCheckout({
         return;
       }
 
-      if (result.data.checkoutUrl) {
-        window.location.href = result.data.checkoutUrl;
+      if (result.data.checkout) {
+        await payWithIntent(result.data.checkout, () => {
+          setBooked({
+          reference: result.data.reference,
+          total: result.data.total,
+          demo: result.data.demo,
+        });
+        });
         return;
       }
+
+      setBooked({
+          reference: result.data.reference,
+          total: result.data.total,
+          demo: result.data.demo,
+        });
 
       setBooked({
         reference: result.data.reference,

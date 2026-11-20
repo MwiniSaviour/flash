@@ -22,6 +22,7 @@ export type FlashEnv = {
   readonly cloudinaryApiSecret: string | null;
   readonly cloudinaryFolder: string;
   readonly paystackSecretKey: string | null;
+  readonly paystackPublicKey: string | null;
   readonly paystackWebhookSecret: string | null;
   readonly dispatchBaseUrl: string | null;
   readonly dispatchApiKey: string | null;
@@ -78,6 +79,7 @@ export function getEnv(): FlashEnv {
     cloudinaryApiSecret: clean(process.env.CLOUDINARY_API_SECRET),
     cloudinaryFolder: clean(process.env.CLOUDINARY_FOLDER) ?? "flash",
     paystackSecretKey: clean(process.env.PAYSTACK_SECRET_KEY),
+    paystackPublicKey: clean(process.env.PAYSTACK_PUBLIC_KEY),
     paystackWebhookSecret: clean(process.env.PAYSTACK_WEBHOOK_SECRET),
     dispatchBaseUrl: clean(process.env.DISPATCH_BASE_URL),
     dispatchApiKey: clean(process.env.DISPATCH_API_KEY),

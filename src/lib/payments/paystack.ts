@@ -59,6 +59,7 @@ export type PaystackInit = {
   ok: boolean;
   message: string;
   checkoutUrl: string | null;
+  accessCode: string | null;
   reference: string;
 };
 
@@ -69,22 +70,27 @@ export async function initPaystackTransaction(input: {
   reference: string;
   callbackUrl?: string;
 }): Promise<PaystackInit> {
-  const result = await request<{ authorization_url?: string }>("/transaction/initialize", {
+  const result = await request<{ authorization_url?: string; access_code?: string }>(
+    "/transaction/initialize",
+    {
     method: "POST",
     body: {
       amount: input.amountPesewas,
       email: input.email,
       currency: "GHS",
       reference: input.reference,
-      callback_url: input.callbackUrl,
-      metadata: { reference: input.reference },
+        callback_url: input.callbackUrl,
+        channels: ["mobile_money", "card"],
+        metadata: { reference: input.reference },
+      },
     },
-  });
+  );
 
   return {
     ok: result.ok && Boolean(result.data?.authorization_url),
     message: result.message,
     checkoutUrl: result.data?.authorization_url ?? null,
+    accessCode: result.data?.access_code ?? null,
     reference: input.reference,
   };
 }

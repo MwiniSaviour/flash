@@ -52,12 +52,21 @@ export type ActionResult<T> =
   | { ok: true; data: T; demo?: boolean }
   | { ok: false; error: string };
 
+export type CheckoutIntent = {
+  reference: string;
+  accessCode: string | null;
+  amountPesewas: number;
+  email: string;
+  checkoutUrl: string | null;
+};
+
 export type TicketBooking = {
   id: string;
   reference: string;
   total: number;
   demo: boolean;
   checkoutUrl?: string | null;
+  checkout?: CheckoutIntent;
 };
 
 export type OrderPlaced = {
@@ -68,6 +77,7 @@ export type OrderPlaced = {
   etaMinutes: number;
   demo: boolean;
   checkoutUrl?: string | null;
+  checkout?: CheckoutIntent;
 };
 
 export type RideRequested = {
@@ -78,6 +88,7 @@ export type RideRequested = {
   etaMinutes: number;
   demo: boolean;
   checkoutUrl?: string | null;
+  checkout?: CheckoutIntent;
 };
 
 export type ParcelSent = {
@@ -87,6 +98,7 @@ export type ParcelSent = {
   etaMinutes: number;
   demo: boolean;
   checkoutUrl?: string | null;
+  checkout?: CheckoutIntent;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -206,16 +218,11 @@ async function handoffToDispatch(
     table: "rides" | "parcels";
     payload: Omit<CreateDispatchJobInput, "idempotencyKey" | "deviceId">;
   },
-): Promise<{ ok: true; job: DispatchJobDTO } | { ok: false; error: string }> {
+): Promise<{ ok: true; job: DispatchJobDTO | null } | { ok: false; error: string }> {
   if (!dispatchConfigured()) {
-    await client
-      .from(input.table)
-      .update({ status: "cancelled", dispatch_last_payload: { error: "dispatch not configured" } })
-      .eq("id", input.id);
-
     return {
-      ok: false,
-      error: `${input.kind === "ride" ? "Ride" : "Parcel"} dispatch is not configured on this deployment.`,
+      ok: true as const,
+      job: null,
     };
   }
 
@@ -630,6 +637,13 @@ export async function placeOrder(input: {
           etaMinutes: restaurant.eta_minutes,
           demo: false,
           checkoutUrl: checkout.checkoutUrl,
+        checkout: {
+          reference: checkout.reference,
+          accessCode: checkout.accessCode,
+          amountPesewas: checkout.amountPesewas,
+          email: checkout.email,
+          checkoutUrl: checkout.checkoutUrl,
+        },
         },
       };
     }
@@ -755,7 +769,7 @@ export async function requestRide(input: {
   if (error) return { ok: false, error: "We could not book that ride. Try again." };
 
   const identity = await currentClerkIdentity();
-  const handoff = await handoffToDispatch(client, {
+  const handoffResult = await handoffToDispatch(client, {
     id,
     deviceId: userId,
     kind: "ride",
@@ -771,7 +785,10 @@ export async function requestRide(input: {
     },
   });
 
-  if (!handoff.ok) return { ok: false, error: handoff.error };
+  if (!handoffResult.ok) {
+    console.error("[dispatch] handoff failed", handoffResult.error);
+  }
+  const handoff = handoffResult.ok ? handoffResult.job : null;
 
   const checkoutUrl = await checkoutForDispatch({
     kind: "ride",
@@ -792,8 +809,8 @@ export async function requestRide(input: {
       id,
       reference,
       number,
-      price: handoff.job.fare ?? rideClass.price,
-      etaMinutes: handoff.job.etaMinutes ?? rideClass.eta_minutes,
+      price: handoff?.fare ?? rideClass.price,
+      etaMinutes: handoff?.etaMinutes ?? rideClass.eta_minutes,
       demo: false,
       checkoutUrl,
     },
@@ -956,7 +973,7 @@ export async function sendParcel(input: {
 
   const paymentMethod = input.paymentMethod ?? "pod";
   const identity = await currentClerkIdentity();
-  const handoff = await handoffToDispatch(client, {
+  const handoffResult = await handoffToDispatch(client, {
     id,
     deviceId: userId,
     kind: "parcel",
@@ -979,7 +996,9 @@ export async function sendParcel(input: {
     },
   });
 
-  if (!handoff.ok) return { ok: false, error: handoff.error };
+  const handoff = handoffResult.ok ? handoffResult.job : null;
+
+  if (!handoffResult.ok) console.error("[dispatch] handoff failed", handoffResult.error);
 
   const checkoutUrl = await checkoutForDispatch({
     kind: "parcel",
@@ -1000,7 +1019,7 @@ export async function sendParcel(input: {
       id,
       trackingNumber,
       price: quote.price,
-      etaMinutes: handoff.job.etaMinutes ?? quote.etaMinutes,
+      etaMinutes: handoff?.etaMinutes ?? quote.etaMinutes,
       demo: false,
       checkoutUrl,
     },
@@ -1030,7 +1049,7 @@ export async function confirmDeliveryAction(input: {
 export async function bookTicketBatch(input: {
   lines: { tierId: string; quantity: number }[];
   paymentMethod?: "online" | "cash";
-}): Promise<ActionResult<{ references: string[]; total: number; checkoutUrl: string | null }>> {
+}): Promise<ActionResult<{ references: string[]; total: number; checkoutUrl: string | null; checkout?: CheckoutIntent }>> {
   const lines = input.lines
     .map((line) => ({ tierId: line.tierId, quantity: clampQuantity(line.quantity) }))
     .filter((line) => line.quantity > 0);
@@ -1112,6 +1131,7 @@ export async function bookTicketBatch(input: {
   }
 
   let checkoutUrl: string | null = null;
+  let checkoutIntent: CheckoutIntent | null = null;
 
   if (total > 0 && paystackConfigured() && input.paymentMethod !== "cash") {
     const identity = await currentClerkIdentity();
@@ -1124,6 +1144,13 @@ export async function bookTicketBatch(input: {
       selfDelivery: false,
     });
     checkoutUrl = checkout.checkoutUrl;
+    checkoutIntent = {
+      reference: checkout.reference,
+      accessCode: checkout.accessCode,
+      amountPesewas: checkout.amountPesewas,
+      email: checkout.email,
+      checkoutUrl,
+    };
 
     if (!checkoutUrl) {
       for (const ticketId of made) await client.rpc("release_ticket", { p_ticket_id: ticketId });
@@ -1134,5 +1161,5 @@ export async function bookTicketBatch(input: {
   revalidatePath("/bookings");
   revalidatePath("/tickets");
 
-  return { ok: true, data: { references, total, checkoutUrl } };
+  return { ok: true, data: { references, total, checkoutUrl, checkout: checkoutIntent ?? undefined } };
 }

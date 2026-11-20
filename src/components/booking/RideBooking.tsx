@@ -13,6 +13,7 @@ import { Sheet } from "@/components/flash/Sheet";
 import { Stepper } from "@/components/flash/Stepper";
 import { Field, SectionHeading, StatusBadge } from "@/components/flash/ui";
 import { requestRide } from "@/lib/flash/actions";
+import { payWithIntent } from "@/lib/payments/inline";
 import { MAX_PASSENGERS } from "@/lib/flash/data/rides";
 import { cedis, distance } from "@/lib/flash/format";
 import { estimateMinutes, haversineKm, type GeoPoint } from "@/lib/flash/geo";
@@ -114,10 +115,14 @@ export function RideBooking({
         return;
       }
 
-      if (result.data.checkoutUrl) {
-        window.location.href = result.data.checkoutUrl;
+      if (result.data.checkout) {
+        await payWithIntent(result.data.checkout, () => {
+          setReference({ value: result.data.reference, demo: result.data.demo });
+        });
         return;
       }
+
+      setReference({ value: result.data.reference, demo: result.data.demo });
 
       setReference({ value: result.data.reference, demo: result.data.demo });
     });

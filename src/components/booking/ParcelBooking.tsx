@@ -15,6 +15,7 @@ import { Stepper } from "@/components/flash/Stepper";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
 import { Field, SectionHeading, StatusBadge } from "@/components/flash/ui";
 import { sendParcel } from "@/lib/flash/actions";
+import { payWithIntent } from "@/lib/payments/inline";
 import {
   MAX_PARCELS,
   parcelQuote,
@@ -94,10 +95,14 @@ export function ParcelBooking({
         return;
       }
 
-      if (result.data.checkoutUrl) {
-        window.location.href = result.data.checkoutUrl;
+      if (result.data.checkout) {
+        await payWithIntent(result.data.checkout, () => {
+          setSent({ trackingNumber: result.data.trackingNumber, demo: result.data.demo });
+        });
         return;
       }
+
+      setSent({ trackingNumber: result.data.trackingNumber, demo: result.data.demo });
 
       setSent({ trackingNumber: result.data.trackingNumber, demo: result.data.demo });
     });
