@@ -60,12 +60,12 @@ linked from the customer profile.
 3. Set `ADMIN_HOST=admin.flash.scalmint.com` on the production environment and
    redeploy.
 
-`vercel.json` rewrites that host's root to `/admin`. `src/proxy.ts` refuses any
-`/admin*` request on another host in production with 404; local development and
-Vercel preview deployments are exempt. The Clerk `publicMetadata.role ===
-"admin"` check in `requireAdmin()` still gates every admin page and action, so
-the subdomain alone never grants access. Sign in at
-`https://admin.flash.scalmint.com/sign-in`.
+The home route redirects that host's root to `/admin` on the server
+(`src/app/(app)/page.tsx`). `src/proxy.ts` refuses any `/admin*` request on
+another host in production with 404; local development and Vercel preview
+deployments are exempt. The Clerk `publicMetadata.role === "admin"` check in
+`requireAdmin()` still gates every admin page and action, so the subdomain alone
+never grants access. Sign in at `https://admin.flash.scalmint.com/sign-in`.
 
 ## Database
 

@@ -1,3 +1,6 @@
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
 import { BrandHeader } from "@/components/flash/BrandHeader";
 import { SectionHeading } from "@/components/flash/ui";
 import { EventMiniCard } from "@/components/events/EventCards";
@@ -6,6 +9,7 @@ import { RestaurantRailCard } from "@/components/food/RestaurantCards";
 import { HeroCarousel, type HeroSlide } from "@/components/home/HeroCarousel";
 import { UpNextTile } from "@/components/home/UpNextTile";
 import { RideBriefCard } from "@/components/ride/RideBriefCard";
+import { getEnv } from "@/lib/env";
 import { clock, relativeDay } from "@/lib/flash/format";
 import type { ImageAsset } from "@/lib/flash/types";
 import {
@@ -27,6 +31,12 @@ import {
  * to eat and a ride brief.
  */
 export default async function HomePage() {
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("host")?.split(":")[0];
+  const adminHost = getEnv().adminHost;
+
+  if (adminHost && host === adminHost) redirect("/admin");
+
   const [user, trendingEvents, restaurants, quote, upcoming] = await Promise.all([
     getCurrentUser(),
     getTrendingEvents(3),
