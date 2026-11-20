@@ -321,7 +321,7 @@ create table public.orders (
 );
 
 comment on table public.orders is
-  'Food orders. fulfilment says whether the order is delivered, collected or eaten in; a collected order carries no delivery fee. subtotal + delivery_fee is the total — no service fee, because no payment provider is connected.';
+  'Food orders. fulfilment says whether the order is delivered, collected or eaten in; a collected order carries no delivery fee. subtotal + delivery_fee is the total charged to the customer.';
 
 create table public.order_lines (
   id           text primary key,
