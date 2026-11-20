@@ -31,7 +31,9 @@ export type FlashEnv = {
 const DEFAULT_SITE_URL = "http://localhost:3000";
 
 function clean(value: string | undefined): string | null {
-  const trimmed = value?.trim();
+  // .env files often quote values; a quoted API key would silently fail every
+  // provider check, so strip the quotes as well as the whitespace.
+  const trimmed = value?.trim().replace(/^["']|["']$/g, "");
   return trimmed ? trimmed : null;
 }
 

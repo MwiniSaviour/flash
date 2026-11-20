@@ -107,16 +107,12 @@ export function PaymentMethods({
   );
 }
 
-/**
- * The honest note under the payment methods: no payment provider is connected
- * in this interface pass, and the UI says so instead of faking a receipt.
- */
+/** A short assurance under the payment choices. */
 export function PaymentNote() {
   return (
     <p className="mt-3 flex items-start gap-2 rounded-[12px] bg-surface-2/70 px-3 py-2.5 text-[12px] leading-snug text-muted">
-      <Icon name="info" size={13} className="mt-0.5 shrink-0" />
-      No payment provider is connected in this interface pass. Confirming here creates a demo
-      booking only.
+      <Icon name="check" size={13} className="mt-0.5 shrink-0" />
+      Secured by Paystack. You will be taken to a secure payment page to finish the purchase.
     </p>
   );
 }

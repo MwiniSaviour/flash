@@ -25,6 +25,7 @@ export const CONSOLE_SECTIONS: Record<ConsoleKind, ConsoleSection[]> = {
     { path: "dishes", label: "Dishes", icon: "bowl" },
     { path: "customers", label: "Customers", icon: "user" },
     { path: "storefront", label: "Storefront", icon: "store" },
+    { path: "settlement", label: "Payments", icon: "banknote" },
   ],
   events: [
     { path: "", label: "Overview", icon: "home" },
@@ -33,6 +34,7 @@ export const CONSOLE_SECTIONS: Record<ConsoleKind, ConsoleSection[]> = {
     { path: "ticket-types", label: "Ticket types", icon: "ticket-stub" },
     { path: "attendees", label: "Attendees", icon: "user" },
     { path: "requests", label: "Requests", icon: "bell" },
+    { path: "settlement", label: "Payments", icon: "banknote" },
   ],
 };
 

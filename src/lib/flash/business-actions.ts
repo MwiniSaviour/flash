@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { currentClerkIdentity, currentUserId } from "@/lib/auth/server";
 import { destroyImage } from "@/lib/media/cloudinary";
 import { isAllowedImageUrl, publicIdFromUrl } from "@/lib/media/url";
+import { createTransferRecipient, listPaystackBanks } from "@/lib/payments/paystack";
 import { startCommissionCheckout } from "@/lib/payments/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -1377,6 +1378,73 @@ export async function deleteTicketTier(input: {
 
   revalidateConsole("events", gate.business.id);
   return { ok: true, data: { id: input.tierId } };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Settlement                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/** The GHS banks and mobile-money providers Paystack can pay. */
+export async function getSettlementBanks(): Promise<
+  { banks: { code: string; name: string }[]; momo: { code: string; name: string }[] }
+> {
+  return listPaystackBanks();
+}
+
+/** Registers the account a business is paid through and verifies it. */
+export async function saveSettlementDetails(input: {
+  businessId: string;
+  bankCode: string;
+  accountNumber: string;
+  type: "mobile_money" | "nuban";
+  accountName: string;
+}): Promise<BusinessResult<{ recipientCode: string }>> {
+  const gate = await requireApproved("restaurant", input.businessId);
+  const eventsGate = "error" in gate ? null : gate;
+
+  // The same action serves kitchens and event planners.
+  let owner = eventsGate;
+  if (!owner) {
+    const other = await requireApproved("events", input.businessId);
+    if (!("error" in other)) owner = other;
+  }
+  if (!owner) return { ok: false, error: "You cannot change this business's payment details." };
+
+  const code = input.bankCode.trim();
+  const account = input.accountNumber.replace(/\D/g, "");
+  if (!code || account.length < 9 || account.length > 15) {
+    return { ok: false, error: "Choose a provider and enter a valid account number." };
+  }
+
+  const result = await createTransferRecipient({
+    type: input.type,
+    name: input.accountName.trim() || owner.business.name,
+    accountNumber: account,
+    bankCode: code,
+  });
+
+  if (!result.ok || !result.recipientCode) {
+    return { ok: false, error: result.message || "We could not verify that account." };
+  }
+
+  const client = createAdminClient();
+  if (!client) return { ok: true, data: { recipientCode: result.recipientCode }, demo: true };
+
+  const { error } = await client
+    .from("businesses")
+    .update({
+      settlement_bank: code,
+      settlement_account: account.slice(-4),
+      settlement_type: input.type,
+      transfer_recipient_code: result.recipientCode,
+      settlement_verified: true,
+    })
+    .eq("id", input.businessId);
+
+  if (error) return { ok: false, error: "We could not save those payment details." };
+
+  revalidateConsole(owner.business.kind, input.businessId);
+  return { ok: true, data: { recipientCode: result.recipientCode } };
 }
 
 /* -------------------------------------------------------------------------- */

@@ -269,13 +269,22 @@ async function releasePayout(payoutId: string, recipient: string | null): Promis
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>;
 
 async function sellerRecipient(client: AdminClient, userId: string): Promise<string | null> {
-  const { data } = await client
+  const { data: business } = await client
+    .from("businesses")
+    .select("transfer_recipient_code")
+    .eq("user_id", userId)
+    .eq("settlement_verified", true)
+    .maybeSingle();
+
+  if (business?.transfer_recipient_code) return business.transfer_recipient_code;
+
+  const { data: profile } = await client
     .from("profiles")
     .select("transfer_recipient_code")
     .eq("id", userId)
     .maybeSingle();
 
-  return data?.transfer_recipient_code || null;
+  return profile?.transfer_recipient_code || null;
 }
 
 async function driverRecipient(client: AdminClient, paymentId: string): Promise<string | null> {
