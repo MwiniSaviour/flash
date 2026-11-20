@@ -107,12 +107,7 @@ export function PaymentMethods({
   );
 }
 
-/** A short assurance under the payment choices. */
+/** Kept as a no-op so existing call sites remain valid. */
 export function PaymentNote() {
-  return (
-    <p className="mt-3 flex items-start gap-2 rounded-[12px] bg-surface-2/70 px-3 py-2.5 text-[12px] leading-snug text-muted">
-      <Icon name="check" size={13} className="mt-0.5 shrink-0" />
-      Secured by Paystack. You will be taken to a secure payment page to finish the purchase.
-    </p>
-  );
+  return null;
 }

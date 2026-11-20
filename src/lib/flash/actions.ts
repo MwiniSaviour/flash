@@ -260,7 +260,7 @@ export async function bookTicket(input: {
   const client = createAdminClient();
 
   if (!client) {
-    return { ok: false, error: "Checkout is unavailable right now. Please try again shortly." };
+    return { ok: false, error: "Something went wrong. Please try again." };
   }
 
 
@@ -477,7 +477,7 @@ export async function placeOrder(input: {
   }
 
   if (!client) {
-    return { ok: false, error: "Checkout is unavailable right now. Please try again shortly." };
+    return { ok: false, error: "Something went wrong. Please try again." };
   }
 
 
@@ -677,7 +677,7 @@ export async function requestRide(input: {
   const client = createAdminClient();
 
   if (!client) {
-    return { ok: false, error: "Checkout is unavailable right now. Please try again shortly." };
+    return { ok: false, error: "Something went wrong. Please try again." };
   }
 
 
@@ -888,7 +888,7 @@ export async function sendParcel(input: {
   const client = createAdminClient();
 
   if (!client) {
-    return { ok: false, error: "Checkout is unavailable right now. Please try again shortly." };
+    return { ok: false, error: "Something went wrong. Please try again." };
   }
 
 
@@ -1013,7 +1013,7 @@ export async function bookTicketBatch(input: {
 
   const client = createAdminClient();
   if (!client) {
-    return { ok: false, error: "Checkout is unavailable right now. Please try again shortly." };
+    return { ok: false, error: "Something went wrong. Please try again." };
   }
 
 
