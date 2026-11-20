@@ -235,6 +235,14 @@ export function ParcelBooking({
         onSavedPlace={(place) => setDropoff(place.detail)}
       />
 
+      {pickupPoint && dropoffPoint ? (
+        <LiveMap
+          from={pickupPoint}
+          to={dropoffPoint}
+          className="mt-3 h-36 w-full overflow-hidden rounded-[12px] border border-line/80"
+        />
+      ) : null}
+
       <section className="mt-6">
         <SectionHeading title="Who is receiving it?" />
 
