@@ -28,7 +28,12 @@ export function MenuItemCard({
   quantity?: number;
 }) {
   return (
-    <div className="w-[160px] shrink-0 snap-start">
+    <div
+      className={cn(
+        "w-[160px] shrink-0 snap-start rounded-[18px] transition-all",
+        quantity > 0 && "bg-brand-soft/60 p-1.5 -m-1.5 outline outline-2 outline-brand",
+      )}
+    >
       <div className="relative">
         <span className="relative block aspect-square w-full overflow-hidden rounded-[14px] bg-media">
           {/* eslint-disable-next-line @next/next/no-img-element */}
