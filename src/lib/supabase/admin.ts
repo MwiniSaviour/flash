@@ -15,7 +15,13 @@ import { getEnv } from "@/lib/env";
  */
 export function createAdminClient() {
   const env = getEnv();
-  if (!env.supabaseUrl || !env.supabaseServiceRoleKey) return null;
+  if (!env.supabaseUrl || !env.supabaseServiceRoleKey) {
+    console.error("[admin] Supabase admin client unavailable", {
+      hasUrl: Boolean(env.supabaseUrl),
+      hasServiceRoleKey: Boolean(env.supabaseServiceRoleKey),
+    });
+    return null;
+  }
 
   return createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },

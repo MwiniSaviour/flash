@@ -183,7 +183,7 @@ async function checkoutForDispatch(input: {
   price: number;
   id: string;
   paymentMethod: DispatchPaymentMethod;
-}): Promise<string | null> {
+}): Promise<CheckoutIntent | null> {
   if (input.paymentMethod === "pod" || !paystackConfigured()) return null;
 
   // The whole fare is the driver's charge, so it is passed as the delivery fee:
@@ -201,7 +201,15 @@ async function checkoutForDispatch(input: {
       ? await startCheckout({ ...shared, kind: "ride", rideId: input.id })
       : await startCheckout({ ...shared, kind: "parcel", parcelId: input.id });
 
-  return checkout.checkoutUrl;
+  if (!checkout.checkoutUrl) return null;
+
+  return {
+    reference: checkout.reference,
+    accessCode: checkout.accessCode,
+    amountPesewas: checkout.amountPesewas,
+    email: checkout.email,
+    checkoutUrl: checkout.checkoutUrl,
+  };
 }
 
 /**
@@ -376,7 +384,20 @@ export async function bookTicket(input: {
 
       return {
         ok: true,
-        data: { id, reference, total, demo: false, checkoutUrl: checkout.checkoutUrl },
+        data: {
+          id,
+          reference,
+          total,
+          demo: false,
+          checkoutUrl: checkout.checkoutUrl,
+          checkout: {
+            reference: checkout.reference,
+            accessCode: checkout.accessCode,
+            amountPesewas: checkout.amountPesewas,
+            email: checkout.email,
+            checkoutUrl: checkout.checkoutUrl,
+          },
+        },
       };
     }
   }
@@ -790,7 +811,7 @@ export async function requestRide(input: {
   }
   const handoff = handoffResult.ok ? handoffResult.job : null;
 
-  const checkoutUrl = await checkoutForDispatch({
+  const checkout = await checkoutForDispatch({
     kind: "ride",
     userId,
     email: identity?.email ?? "",
@@ -812,7 +833,8 @@ export async function requestRide(input: {
       price: handoff?.fare ?? rideClass.price,
       etaMinutes: handoff?.etaMinutes ?? rideClass.eta_minutes,
       demo: false,
-      checkoutUrl,
+      checkoutUrl: checkout?.checkoutUrl ?? null,
+      checkout: checkout ?? undefined,
     },
   };
 }
@@ -1000,7 +1022,7 @@ export async function sendParcel(input: {
 
   if (!handoffResult.ok) console.error("[dispatch] handoff failed", handoffResult.error);
 
-  const checkoutUrl = await checkoutForDispatch({
+  const checkout = await checkoutForDispatch({
     kind: "parcel",
     userId,
     email: identity?.email ?? "",
@@ -1021,7 +1043,8 @@ export async function sendParcel(input: {
       price: quote.price,
       etaMinutes: handoff?.etaMinutes ?? quote.etaMinutes,
       demo: false,
-      checkoutUrl,
+      checkoutUrl: checkout?.checkoutUrl ?? null,
+      checkout: checkout ?? undefined,
     },
   };
 }
