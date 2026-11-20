@@ -6,6 +6,7 @@ import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon, type IconName } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
 import { LocationFields } from "@/components/flash/LocationFields";
+import { LiveMap } from "@/components/flash/LiveMap";
 import type { Schedule } from "@/components/flash/SchedulePicker";
 import { SchedulePicker, scheduleInstant, scheduleLabel } from "@/components/flash/SchedulePicker";
 import { Sheet } from "@/components/flash/Sheet";
@@ -14,6 +15,8 @@ import { Field, SectionHeading, StatusBadge } from "@/components/flash/ui";
 import { requestRide } from "@/lib/flash/actions";
 import { MAX_PASSENGERS } from "@/lib/flash/data/rides";
 import { cedis, distance } from "@/lib/flash/format";
+import { estimateMinutes, haversineKm, type GeoPoint } from "@/lib/flash/geo";
+
 import type { RideClass, RideQuote, SavedPlace } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +50,8 @@ export function RideBooking({
   const [passengers, setPassengers] = useState(1);
   const [pickup, setPickup] = useState(quote.pickup);
   const [dropoff, setDropoff] = useState(initialDropoff ?? quote.dropoff);
+  const [pickupPoint, setPickupPoint] = useState<GeoPoint | null>(null);
+  const [dropoffPoint, setDropoffPoint] = useState<GeoPoint | null>(null);
   const [phone, setPhone] = useState("");
   const [method, setMethod] = useState<PaymentMethodId>("momo");
   const [schedule, setSchedule] = useState<Schedule>({ mode: "now" });
@@ -54,6 +59,12 @@ export function RideBooking({
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const distanceKm =
+    pickupPoint && dropoffPoint
+      ? Math.round(haversineKm(pickupPoint, dropoffPoint) * 10) / 10
+      : quote.distanceKm;
+  const durationMinutes = estimateMinutes(distanceKm);
 
   // The biggest party the classes can carry, capped by the product limit.
   const maxPassengers = Math.min(
@@ -88,6 +99,10 @@ export function RideBooking({
         passengers,
         pickup,
         dropoff,
+        pickupPoint: pickupPoint ?? undefined,
+        dropoffPoint: dropoffPoint ?? undefined,
+        distanceKm,
+        durationMinutes,
         phone,
         scheduledFor: scheduleInstant(schedule),
         paymentMethod: method === "cash" ? "pod" : method,
@@ -142,6 +157,13 @@ export function RideBooking({
               Drop-off
             </p>
             <p className="mt-1 text-[14px] font-semibold text-ink">{dropoff}</p>
+            <p className="mt-2 text-[12px] text-muted">
+              {distance(distanceKm)} · about {durationMinutes} min
+              {pickupPoint && dropoffPoint ? "" : " · estimate from the demo route"}
+            </p>
+            {pickupPoint && dropoffPoint ? (
+              <LiveMap from={pickupPoint} to={dropoffPoint} className="mt-3 h-40 w-full rounded-[12px]" />
+            ) : null}
             <p className="mt-2 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-muted">
               Party
             </p>
@@ -222,8 +244,14 @@ export function RideBooking({
       <LocationFields
         pickup={pickup}
         dropoff={dropoff}
-        onPickupChange={setPickup}
-        onDropoffChange={setDropoff}
+        onPickupChange={(value, point) => {
+          setPickup(value);
+          setPickupPoint(point ?? null);
+        }}
+        onDropoffChange={(value, point) => {
+          setDropoff(value);
+          setDropoffPoint(point ?? null);
+        }}
         savedPlaces={savedPlaces}
         onSavedPlace={(place) => setDropoff(place.detail)}
       />

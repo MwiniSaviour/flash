@@ -22,8 +22,10 @@ import { computeTicketCommission, platformSettings } from "@/lib/payments/commis
 import { confirmDelivery, recordCashCommission, startCheckout } from "@/lib/payments/service";
 import { createAdminClient, type AdminClient } from "@/lib/supabase/admin";
 
+import { haversineKm, type GeoPoint } from "./geo";
 import { findCover } from "./covers";
 import {
+  parcelQuote,
   parcelTrackingNumber,
   parcelTypes,
   quoteParcel,
@@ -127,17 +129,22 @@ function clampPassengers(passengers: number): number {
  */
 const ACCRA_ANCHOR = { region: "Greater Accra", lat: 5.6037, lng: -0.187 } as const;
 
-function dispatchPoint(street: string, area: string): DispatchLocation {
+function dispatchPoint(
+  street: string,
+  area: string,
+  point?: { lat: number; lng: number },
+): DispatchLocation {
   const name = street.trim();
   const district = area.trim();
+  const coordinates = point ?? ACCRA_ANCHOR;
 
   return {
     name,
     address: district ? `${name}, ${district}` : name,
     ...(district ? { area: district } : {}),
     region: ACCRA_ANCHOR.region,
-    lat: ACCRA_ANCHOR.lat,
-    lng: ACCRA_ANCHOR.lng,
+    lat: coordinates.lat,
+    lng: coordinates.lng,
   };
 }
 
@@ -654,6 +661,10 @@ export async function requestRide(input: {
   passengers: number;
   pickup: string;
   dropoff: string;
+  pickupPoint?: GeoPoint;
+  dropoffPoint?: GeoPoint;
+  distanceKm?: number;
+  durationMinutes?: number;
   /** The chosen pick-up instant, or null when the rider goes now. */
   scheduledFor?: string | null;
   /** The number the rider can call. Required once a real booking is dispatched. */
@@ -712,7 +723,14 @@ export async function requestRide(input: {
   const reference = mintReference();
   const number = mintNumber();
 
-  // Flash has no maps yet, so every route is still the demo distance.
+  // The browser supplies a point; the server recomputes the distance so a
+  // client cannot quote its own journey. Without a point we keep the demo route.
+  const distanceKm =
+    input.pickupPoint && input.dropoffPoint
+      ? Math.round(haversineKm(input.pickupPoint, input.dropoffPoint) * 10) / 10
+      : 3.8;
+  const durationMinutes = input.durationMinutes ?? Math.max(1, Math.round((distanceKm / 28) * 60 + 3));
+
   const { error } = await client.from("rides").insert({
     id,
     user_id: userId,
@@ -722,9 +740,9 @@ export async function requestRide(input: {
     pickup_area: "",
     dropoff: input.dropoff.trim(),
     dropoff_area: "",
-    distance_km: 3.8,
-    duration_minutes: 14,
-    eta_minutes: rideClass.eta_minutes,
+    distance_km: distanceKm,
+    duration_minutes: durationMinutes,
+    eta_minutes: durationMinutes,
     price: rideClass.price,
     passengers,
     status: scheduledFor ? "scheduled" : "requested",
@@ -745,8 +763,8 @@ export async function requestRide(input: {
     payload: {
       requestType: "ride",
       contact: await dispatchContact(client, userId, input.phone),
-      pickup: dispatchPoint(input.pickup, ""),
-      dropoff: dispatchPoint(input.dropoff, ""),
+      pickup: dispatchPoint(input.pickup, "", input.pickupPoint),
+      dropoff: dispatchPoint(input.dropoff, "", input.dropoffPoint),
       rideClass: engineRideClass(rideClass.id),
       scheduledFor: scheduledFor ?? undefined,
       paymentMethod,
@@ -852,6 +870,10 @@ export async function sendParcel(input: {
   quantity: number;
   pickup: string;
   dropoff: string;
+  pickupPoint?: GeoPoint;
+  dropoffPoint?: GeoPoint;
+  distanceKm?: number;
+  durationMinutes?: number;
   recipient: string;
   phone: string;
   details: string;
@@ -883,7 +905,11 @@ export async function sendParcel(input: {
 
   // Every parcel is charged on its own, so the count is what moves the price.
   const quantity = clampQuantity(input.quantity);
-  const quote = quoteParcel(type, input.parcelSize);
+  const distanceKm =
+    input.pickupPoint && input.dropoffPoint
+      ? Math.round(haversineKm(input.pickupPoint, input.dropoffPoint) * 10) / 10
+      : (input.distanceKm ?? parcelQuote.distanceKm);
+  const quote = quoteParcel(type, input.parcelSize, distanceKm);
   const price = quote.price * quantity;
   const client = createAdminClient();
 
@@ -938,8 +964,8 @@ export async function sendParcel(input: {
     payload: {
       requestType: "parcel",
       contact: await dispatchContact(client, userId, input.phone),
-      pickup: dispatchPoint(input.pickup, ""),
-      dropoff: dispatchPoint(input.dropoff, ""),
+      pickup: dispatchPoint(input.pickup, "", input.pickupPoint),
+      dropoff: dispatchPoint(input.dropoff, "", input.dropoffPoint),
       parcelTier: input.parcelSize,
       note: [
         input.details.trim(),

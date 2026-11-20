@@ -6,6 +6,8 @@ import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
 import type { Schedule } from "@/components/flash/SchedulePicker";
 import { LocationFields } from "@/components/flash/LocationFields";
+import { LiveMap } from "@/components/flash/LiveMap";
+import { estimateMinutes, haversineKm, type GeoPoint } from "@/lib/flash/geo";
 import { SchedulePicker, scheduleInstant, scheduleLabel } from "@/components/flash/SchedulePicker";
 import { SegmentedControl } from "@/components/flash/SegmentedControl";
 import { Sheet } from "@/components/flash/Sheet";
@@ -45,8 +47,10 @@ export function ParcelBooking({
   const [size, setSize] = useState<ParcelSize>("small");
   const [quantity, setQuantity] = useState(1);
   const [schedule, setSchedule] = useState<Schedule>({ mode: "now" });
-  const [pickup, setPickup] = useState("Oxford Street, Osu");
-  const [dropoff, setDropoff] = useState("Ring Road, Ridge");
+  const [pickup, setPickup] = useState("");
+  const [dropoff, setDropoff] = useState("");
+  const [pickupPoint, setPickupPoint] = useState<GeoPoint | null>(null);
+  const [dropoffPoint, setDropoffPoint] = useState<GeoPoint | null>(null);
   const [recipient, setRecipient] = useState("");
   const [phone, setPhone] = useState("");
   const [details, setDetails] = useState("");
@@ -55,7 +59,12 @@ export function ParcelBooking({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const quote = quoteParcel(type, size, parcelQuote.distanceKm);
+  const distanceKm =
+    pickupPoint && dropoffPoint
+      ? Math.round(haversineKm(pickupPoint, dropoffPoint) * 10) / 10
+      : parcelQuote.distanceKm;
+  const durationMinutes = estimateMinutes(distanceKm, 24);
+  const quote = quoteParcel(type, size, distanceKm);
   // Every parcel is charged on its own, so the count is what moves the price.
   const total = quote.price * quantity;
 
@@ -69,6 +78,10 @@ export function ParcelBooking({
         quantity,
         pickup,
         dropoff,
+        pickupPoint: pickupPoint ?? undefined,
+        dropoffPoint: dropoffPoint ?? undefined,
+        distanceKm,
+        durationMinutes,
         recipient,
         phone,
         details,
@@ -119,6 +132,15 @@ export function ParcelBooking({
               <span className="text-[12px] text-muted">Drop-off</span>
               <span className="truncate text-[12.5px] font-semibold text-ink">{dropoff}</span>
             </div>
+            <div className="mt-1.5 flex items-center justify-between gap-3">
+              <span className="text-[12px] text-muted">Distance</span>
+              <span className="text-[12.5px] font-semibold text-ink">
+                {distance(distanceKm)} · about {durationMinutes} min
+              </span>
+            </div>
+            {pickupPoint && dropoffPoint ? (
+              <LiveMap from={pickupPoint} to={dropoffPoint} className="mt-3 h-40 w-full rounded-[12px]" />
+            ) : null}
             <div className="mt-1.5 flex items-center justify-between gap-3">
               <span className="text-[12px] text-muted">When</span>
               <span className="truncate text-[12.5px] font-semibold text-ink">
@@ -201,8 +223,14 @@ export function ParcelBooking({
       <LocationFields
         pickup={pickup}
         dropoff={dropoff}
-        onPickupChange={setPickup}
-        onDropoffChange={setDropoff}
+        onPickupChange={(value, point) => {
+          setPickup(value);
+          setPickupPoint(point ?? null);
+        }}
+        onDropoffChange={(value, point) => {
+          setDropoff(value);
+          setDropoffPoint(point ?? null);
+        }}
         savedPlaces={savedPlaces}
         onSavedPlace={(place) => setDropoff(place.detail)}
       />

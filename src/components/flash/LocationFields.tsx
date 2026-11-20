@@ -1,19 +1,16 @@
 "use client";
 
+import { SearchableSelect } from "@/components/flash/SearchableSelect";
+import type { GeoPoint } from "@/lib/flash/geo";
 import type { SavedPlace } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
 
 /**
  * The where-to block: the two addresses every trip needs, in one white card.
  *
- * Ride and parcel open with the same two questions — where does it start and
- * where does it end — so they share one component and one field order. The
- * pick-up row carries the filled brand dot (the origin on the route diagram)
- * and the drop-off row the hollow one (the destination). Saved places sit
- * under the drop-off and fill it in a tap.
- *
- * Both rows are real inputs: a booking is only as good as the two addresses
- * the customer typed, so nothing here is a fixed line of text.
+ * Both rows are searchable so a rider can start or end somewhere other than
+ * where they are standing. "Use precise location" fills the row with the
+ * device's real position, which is what distance pricing uses.
  */
 export function LocationFields({
   id,
@@ -28,8 +25,8 @@ export function LocationFields({
   id?: string;
   pickup: string;
   dropoff: string;
-  onPickupChange: (value: string) => void;
-  onDropoffChange: (value: string) => void;
+  onPickupChange: (value: string, point?: GeoPoint) => void;
+  onDropoffChange: (value: string, point?: GeoPoint) => void;
   savedPlaces?: SavedPlace[];
   onSavedPlace?: (place: SavedPlace) => void;
   className?: string;
@@ -44,17 +41,13 @@ export function LocationFields({
     >
       <div className="flex items-start gap-3 px-3.5 py-3">
         <span className="mt-[9px] h-2.5 w-2.5 shrink-0 rounded-full bg-brand" aria-hidden="true" />
-        <label className="min-w-0 flex-1">
-          <span className="block text-[12px] font-semibold leading-tight text-muted">Pick-up</span>
-          <input
-            value={pickup}
-            onChange={(event) => onPickupChange(event.target.value)}
-            placeholder="Add a pick-up address"
-            aria-label="Pick-up address"
-            autoComplete="street-address"
-            className="mt-1 w-full bg-transparent text-[16px] leading-snug text-ink placeholder:text-muted focus:outline-none"
-          />
-        </label>
+        <SearchableSelect
+          label="Pick-up"
+          value={pickup}
+          onChange={onPickupChange}
+          placeholder="Search a town or street"
+          precise
+        />
       </div>
 
       <div className="flex items-start gap-3 border-t border-line/80 px-3.5 py-3">
@@ -62,17 +55,13 @@ export function LocationFields({
           className="mt-[9px] h-2.5 w-2.5 shrink-0 rounded-full border-2 border-muted-soft"
           aria-hidden="true"
         />
-        <label className="min-w-0 flex-1">
-          <span className="block text-[12px] font-semibold leading-tight text-muted">Drop-off</span>
-          <input
-            value={dropoff}
-            onChange={(event) => onDropoffChange(event.target.value)}
-            placeholder="Add a drop-off address"
-            aria-label="Drop-off address"
-            autoComplete="off"
-            className="mt-1 w-full bg-transparent text-[16px] leading-snug text-ink placeholder:text-muted focus:outline-none"
-          />
-        </label>
+        <SearchableSelect
+          label="Drop-off"
+          value={dropoff}
+          onChange={onDropoffChange}
+          placeholder="Where are you going?"
+          precise
+        />
       </div>
 
       {savedPlaces && savedPlaces.length > 0 && onSavedPlace ? (
