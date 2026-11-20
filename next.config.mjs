@@ -68,6 +68,21 @@ const nextConfig = {
         staticGenerationMaxConcurrency: 2,
       },
 
+  async rewrites() {
+    const adminHost = (process.env.ADMIN_HOST ?? "admin.flash.scalmint.com").replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&",
+    );
+
+    return [
+      {
+        source: "/",
+        destination: "/admin",
+        has: [{ type: "host", value: adminHost }],
+      },
+    ];
+  },
+
   async headers() {
     const headers = [
       { source: "/:path*", headers: securityHeaders },
