@@ -24,7 +24,7 @@ export default async function AdminBookingsPage() {
     id: row.id,
     search: `${row.reference} ${row.kind} ${row.status} ${row.customer} ${row.detail}`,
     filterValue: row.kind,
-    export: [row.reference, row.kind, row.status, row.amount, row.commission, row.customer, row.createdAt],
+    export: [row.reference, row.kind, row.status, row.amount, row.commission, row.customer, row.business ?? "", row.detail, row.createdAt],
     details: (
       <DetailGrid
         items={[
@@ -34,6 +34,7 @@ export default async function AdminBookingsPage() {
           { label: "Amount", value: cedis(row.amount) },
           { label: "Commission", value: cedis(row.commission) },
           { label: "Customer", value: row.customer },
+          { label: "Business", value: row.business ?? "—" },
           { label: "Detail", value: row.detail },
           { label: "Driver", value: row.driver ?? "Unassigned" },
           { label: "Created", value: row.createdAt.slice(0, 16).replace("T", " ") },

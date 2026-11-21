@@ -5,10 +5,12 @@ import { DonutChart } from "@/components/admin/DonutChart";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { KpiCards } from "@/components/dashboard/KpiCards";
 import { Icon } from "@/components/flash/Icon";
-import { cedis } from "@/lib/flash/format";
 import { getAdminOverview, listAdminBookings } from "@/lib/flash/admin-repository";
 
 export const metadata: Metadata = { title: "Analytics" };
+
+/** Money to two decimals (cedis() elsewhere is a plain concat). */
+const money = (amount: number) => `GHC${amount.toFixed(2)}`;
 
 const SERVICE_COLORS: Record<string, string> = {
   ride: "#fc5303",
@@ -34,14 +36,14 @@ export default async function AdminAnalyticsPage() {
     },
     {
       label: "Gross revenue",
-      value: cedis(totalRevenue),
+      value: money(totalRevenue),
       icon: "banknote" as const,
       tone: "success" as const,
       delta: { value: "collected", direction: "up" as const },
     },
     {
       label: "Platform commission",
-      value: cedis(totalCommission),
+      value: money(totalCommission),
       icon: "wallet" as const,
       tone: "warning" as const,
       delta: { value: "3–6%", direction: "up" as const },
@@ -84,8 +86,8 @@ export default async function AdminAnalyticsPage() {
     cells: [
       <span key="kind" className="font-semibold text-ink capitalize">{kind}</span>,
       <span key="count">{v.count}</span>,
-      <span key="amount" className="font-semibold text-ink">{cedis(v.amount)}</span>,
-      <span key="commission">{cedis(v.commission)}</span>,
+      <span key="amount" className="font-semibold text-ink">{money(v.amount)}</span>,
+      <span key="commission">{money(v.commission)}</span>,
     ],
   }));
 
@@ -109,21 +111,19 @@ export default async function AdminAnalyticsPage() {
         <span key="rank" className="text-muted">{i + 1}</span>,
         <span key="driver" className="font-semibold text-ink">{driver}</span>,
         <span key="count">{v.count}</span>,
-        <span key="amount" className="font-semibold text-ink">{cedis(v.amount)}</span>,
+        <span key="amount" className="font-semibold text-ink">{money(v.amount)}</span>,
       ],
     }));
 
-  // Top businesses by commission generated (orders + tickets carry a seller).
+  // Top businesses by revenue (kitchens and event planners).
   const byBusiness = new Map<string, { amount: number; commission: number; count: number }>();
   for (const b of bookings) {
-    if (b.kind !== "order" && b.kind !== "ticket") continue;
-    // detail holds the kitchen/tier label for orders and tickets.
-    const key = b.detail.split(" · ")[0] || "Kitchen";
-    const cur = byBusiness.get(key) ?? { amount: 0, commission: 0, count: 0 };
+    if ((b.kind !== "order" && b.kind !== "ticket") || !b.business) continue;
+    const cur = byBusiness.get(b.business) ?? { amount: 0, commission: 0, count: 0 };
     cur.amount += b.amount;
     cur.commission += b.commission;
     cur.count += 1;
-    byBusiness.set(key, cur);
+    byBusiness.set(b.business, cur);
   }
   const businessRows = [...byBusiness.entries()]
     .sort((a, b) => b[1].amount - a[1].amount)
@@ -135,8 +135,8 @@ export default async function AdminAnalyticsPage() {
         <span key="rank" className="text-muted">{i + 1}</span>,
         <span key="name" className="font-semibold text-ink">{name}</span>,
         <span key="count">{v.count}</span>,
-        <span key="amount" className="font-semibold text-ink">{cedis(v.amount)}</span>,
-        <span key="commission">{cedis(v.commission)}</span>,
+        <span key="amount" className="font-semibold text-ink">{money(v.amount)}</span>,
+        <span key="commission">{money(v.commission)}</span>,
       ],
     }));
 
@@ -184,26 +184,30 @@ export default async function AdminAnalyticsPage() {
               <p className="mt-1 text-[12px] text-muted">Orders and tickets by day</p>
             </div>
           </div>
-          <div className="mt-5 flex h-40 items-end gap-1.5 overflow-hidden">
-            {series.map((point, index) => (
-              <div key={`${point.label}-${index}`} className="flex h-full min-w-2 flex-1 flex-col justify-end">
-                <div className="flex h-full items-end gap-0.5">
+          <div className="mt-5">
+            <div className="flex h-40 items-end gap-1.5 border-b border-line/70">
+              {series.map((point, index) => (
+                <div key={`${point.label}-${index}`} className="flex h-full min-w-1.5 flex-1 items-end gap-0.5">
                   <span
                     className="flex-1 rounded-t-[3px] bg-brand-solid"
-                    style={{ height: `${(point.orders / barMax) * 100}%` }}
+                    style={{ height: `${Math.max(point.orders ? 4 : 0, (point.orders / barMax) * 100)}%` }}
                     title={`${point.label}: ${point.orders} orders`}
                   />
                   <span
                     className="flex-1 rounded-t-[3px] bg-brand-soft"
-                    style={{ height: `${(point.tickets / barMax) * 100}%` }}
+                    style={{ height: `${Math.max(point.tickets ? 4 : 0, (point.tickets / barMax) * 100)}%` }}
                     title={`${point.label}: ${point.tickets} tickets`}
                   />
                 </div>
-                {index % Math.max(1, Math.round(series.length / 6)) === 0 ? (
-                  <span className="mt-1.5 truncate text-[10px] text-muted-soft">{point.label}</span>
-                ) : null}
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="mt-1.5 flex justify-between text-[10px] text-muted-soft">
+              {series
+                .filter((_, index) => index % Math.max(1, Math.round(series.length / 5)) === 0)
+                .map((point, index) => (
+                  <span key={`${point.label}-axis-${index}`}>{point.label}</span>
+                ))}
+            </div>
           </div>
           <div className="mt-3 flex gap-4 text-[11.5px] text-muted">
             <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-brand-solid" /> Orders</span>

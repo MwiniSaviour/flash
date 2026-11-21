@@ -249,6 +249,7 @@ export type AdminBooking = {
   customer: string;
   detail: string;
   driver?: string;
+  business?: string;
 };
 
 export async function listAdminBookings(): Promise<AdminBooking[]> {
@@ -285,7 +286,7 @@ export async function listAdminBookings(): Promise<AdminBooking[]> {
       commission: commissionFor("ride", r.id),
       createdAt: r.requested_at ?? r.scheduled_for ?? new Date().toISOString(),
       customer: r.user_id,
-      detail: `${r.pickup} → ${r.dropoff}${r.scheduled_for ? " (scheduled)" : ""}`,
+      detail: `${r.pickup} to ${r.dropoff}${r.scheduled_for ? " (scheduled)" : ""}`,
       driver: r.rider_id ?? undefined,
     });
   }
@@ -300,7 +301,7 @@ export async function listAdminBookings(): Promise<AdminBooking[]> {
       commission: commissionFor("parcel", p.id),
       createdAt: p.requested_at,
       customer: p.user_id,
-      detail: `${p.pickup} → ${p.dropoff}`,
+      detail: `${p.pickup} to ${p.dropoff}`,
       driver: p.courier_id ?? undefined,
     });
   }
@@ -315,7 +316,8 @@ export async function listAdminBookings(): Promise<AdminBooking[]> {
       commission: commissionFor("order", o.id),
       createdAt: o.placed_at,
       customer: o.user_id,
-      detail: `${o.fulfilment} · ${o.address || "collected at kitchen"}`,
+      detail: `${o.fulfilment} - ${o.address || "collected at kitchen"}`,
+      business: restaurants.find((r) => r.id === o.restaurant_id)?.name ?? undefined,
     });
   }
 
@@ -329,7 +331,8 @@ export async function listAdminBookings(): Promise<AdminBooking[]> {
       commission: commissionFor("ticket", t.id),
       createdAt: t.purchased_at,
       customer: t.user_id,
-      detail: `${t.tier_name} × ${t.quantity}`,
+      detail: `${t.tier_name} x ${t.quantity}`,
+      business: events.find((e) => e.id === t.event_id)?.title ?? undefined,
     });
   }
 
