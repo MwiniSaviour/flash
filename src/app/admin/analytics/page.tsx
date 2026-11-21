@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 
+import { AnalyticsExportButton, type AnalyticsExportRow } from "@/components/admin/AnalyticsExportButton";
 import { DonutChart } from "@/components/admin/DonutChart";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { KpiCards } from "@/components/dashboard/KpiCards";
+import { Icon } from "@/components/flash/Icon";
 import { cedis } from "@/lib/flash/format";
 import { getAdminOverview, listAdminBookings } from "@/lib/flash/admin-repository";
 
@@ -153,14 +155,20 @@ export default async function AdminAnalyticsPage() {
         </div>
         <div className="flex items-center gap-2">
           <span className="flex h-10 items-center gap-2 rounded-[11px] border border-line bg-surface px-3 text-[12.5px] font-semibold text-ink">
-            <span aria-hidden="true">▦</span> Last 30 days
+            <Icon name="calendar" size={15} /> Last 30 days
           </span>
-          <a
-            href="/admin/analytics?export=1"
-            className="flex h-10 items-center gap-2 rounded-[11px] border border-line bg-surface px-3 text-[12.5px] font-semibold text-ink transition hover:border-line-strong"
-          >
-            <span aria-hidden="true">↓</span> Export
-          </a>
+          <AnalyticsExportButton
+            rows={bookings.map<AnalyticsExportRow>((b) => ({
+              reference: b.reference,
+              kind: b.kind,
+              status: b.status,
+              amount: b.amount,
+              commission: b.commission,
+              customer: b.customer,
+              detail: b.detail,
+              createdAt: b.createdAt,
+            }))}
+          />
         </div>
       </div>
 
