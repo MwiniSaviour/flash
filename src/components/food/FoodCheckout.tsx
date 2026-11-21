@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
+import { SearchableSelect } from "@/components/flash/SearchableSelect";
 import { SegmentedControl } from "@/components/flash/SegmentedControl";
 import { EmptyState, Price } from "@/components/flash/ui";
 import { useCart } from "@/lib/cart";
@@ -251,16 +252,12 @@ export function FoodCheckout({
             <span className="mb-1.5 block text-[15px] font-bold tracking-[-0.01em] text-ink">
               Where should it go?
             </span>
-            <span className="flex h-[46px] items-center gap-2 rounded-[12px] border border-line bg-surface px-3 focus-within:border-brand/50">
-              <Icon name="map-pin" size={17} className="shrink-0 text-muted" />
-              <input
-                value={address}
-                onChange={(event) => setAddress(event.target.value)}
-                aria-label="Delivery address"
-                placeholder="Where are you going?"
-                className="w-full bg-transparent text-[13.5px] text-ink placeholder:text-muted focus:outline-none"
-              />
-            </span>
+            <SearchableSelect
+              label="Delivery address"
+              value={address}
+              onChange={(value) => setAddress(value)}
+              placeholder="Where are you going?"
+            />
           </label>
         ) : (
           <p className="mt-3 flex items-start gap-2 rounded-[12px] border border-line/90 bg-surface px-3.5 py-3 text-[13px] leading-snug text-muted">
