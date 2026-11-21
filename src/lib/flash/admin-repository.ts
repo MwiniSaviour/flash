@@ -45,6 +45,7 @@ export type AdminPayment = {
   kind: string;
   status: string;
   amount: number;
+  commission: number;
   createdAt: string;
 };
 
@@ -185,7 +186,7 @@ export async function getAdminOverview(days: number): Promise<AdminOverview> {
     collected: paid.reduce((total, row) => total + row.amount_pesewas, 0) / 100,
     commission: paid.reduce((total, row) => total + row.commission_pesewas, 0) / 100,
     series: buildSeries(
-      days,
+      30,
       (orderRows.data ?? []).map((row) => row.placed_at),
       (ticketRows.data ?? []).map((row) => row.purchased_at),
     ),
@@ -221,7 +222,7 @@ export async function listAdminPayments(): Promise<AdminPayment[]> {
 
   const { data, error } = await client
     .from("payments")
-    .select("id, reference, kind, status, amount_pesewas, created_at")
+    .select("id, reference, kind, status, amount_pesewas, commission_pesewas, created_at")
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -232,8 +233,107 @@ export async function listAdminPayments(): Promise<AdminPayment[]> {
     kind: row.kind,
     status: row.status,
     amount: row.amount_pesewas / 100,
+    commission: row.commission_pesewas / 100,
     createdAt: row.created_at,
   }));
+}
+
+export type AdminBooking = {
+  id: string;
+  kind: "ride" | "parcel" | "order" | "ticket";
+  reference: string;
+  status: string;
+  amount: number;
+  commission: number;
+  createdAt: string;
+  customer: string;
+  detail: string;
+  driver?: string;
+};
+
+export async function listAdminBookings(): Promise<AdminBooking[]> {
+  const client = createAdminClient();
+  if (!client) return [];
+
+  const [rides, parcels, orders, tickets, payments] = await Promise.all([
+    client.from("rides").select("id, number, reference, status, price, user_id, rider_id, requested_at, scheduled_for, pickup, dropoff"),
+    client.from("parcels").select("id, tracking_number, status, price, user_id, courier_id, requested_at, pickup, dropoff"),
+    client.from("orders").select("id, number, reference, status, subtotal, discount, delivery_fee, user_id, restaurant_id, fulfilment, placed_at, address"),
+    client.from("tickets").select("id, reference, tier_name, quantity, status, user_id, unit_price_pesewas, purchased_at, event_id"),
+    client.from("payments").select("reference, kind, amount_pesewas, commission_pesewas, status, order_id, ticket_id, ride_id, parcel_id, user_id"),
+  ]);
+
+  const rows: AdminBooking[] = [];
+
+  const commissionFor = (kind: string, id: string) => {
+    const payment = (payments.data ?? []).find((p) =>
+      (kind === "ride" && p.ride_id === id) ||
+      (kind === "parcel" && p.parcel_id === id) ||
+      (kind === "order" && p.order_id === id) ||
+      (kind === "ticket" && p.ticket_id === id),
+    );
+    return payment ? Number(payment.commission_pesewas ?? 0) / 100 : 0;
+  };
+
+  for (const r of rides.data ?? []) {
+    rows.push({
+      id: r.id,
+      kind: "ride",
+      reference: r.reference || r.number,
+      status: r.status,
+      amount: Number(r.price ?? 0),
+      commission: commissionFor("ride", r.id),
+      createdAt: r.requested_at ?? r.scheduled_for ?? new Date().toISOString(),
+      customer: r.user_id,
+      detail: `${r.pickup} → ${r.dropoff}${r.scheduled_for ? " (scheduled)" : ""}`,
+      driver: r.rider_id ?? undefined,
+    });
+  }
+
+  for (const p of parcels.data ?? []) {
+    rows.push({
+      id: p.id,
+      kind: "parcel",
+      reference: p.tracking_number,
+      status: p.status,
+      amount: Number(p.price ?? 0),
+      commission: commissionFor("parcel", p.id),
+      createdAt: p.requested_at,
+      customer: p.user_id,
+      detail: `${p.pickup} → ${p.dropoff}`,
+      driver: p.courier_id ?? undefined,
+    });
+  }
+
+  for (const o of orders.data ?? []) {
+    rows.push({
+      id: o.id,
+      kind: "order",
+      reference: o.reference || o.number,
+      status: o.status,
+      amount: (Number(o.subtotal ?? 0) - Number(o.discount ?? 0) + Number(o.delivery_fee ?? 0)) / 100,
+      commission: commissionFor("order", o.id),
+      createdAt: o.placed_at,
+      customer: o.user_id,
+      detail: `${o.fulfilment} · ${o.address || "collected at kitchen"}`,
+    });
+  }
+
+  for (const t of tickets.data ?? []) {
+    rows.push({
+      id: t.id,
+      kind: "ticket",
+      reference: t.reference,
+      status: t.status,
+      amount: (Number(t.unit_price_pesewas ?? 0) * Number(t.quantity ?? 1)) / 100,
+      commission: commissionFor("ticket", t.id),
+      createdAt: t.purchased_at,
+      customer: t.user_id,
+      detail: `${t.tier_name} × ${t.quantity}`,
+    });
+  }
+
+  return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function listPayouts(): Promise<AdminPayment[]> {
@@ -253,6 +353,7 @@ export async function listPayouts(): Promise<AdminPayment[]> {
     kind: row.kind,
     status: row.status,
     amount: row.amount_pesewas / 100,
+    commission: 0,
     createdAt: row.created_at,
   }));
 }
@@ -263,4 +364,30 @@ export async function getAdminSettings(): Promise<PlatformSettings> {
 
 export function adminCatalogueCounts() {
   return { restaurants: restaurants.length, events: events.length };
+}
+
+export async function reassignRideDriver(rideId: string, driverId: string): Promise<{ ok: boolean; error?: string }> {
+  const client = createAdminClient();
+  if (!client) return { ok: false, error: "No database connected." };
+
+  const { error } = await client
+    .from("rides")
+    .update({ rider_id: driverId, status: "requested" })
+    .eq("id", rideId);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function listDrivers(): Promise<{ id: string; name: string }[]> {
+  const client = createAdminClient();
+  if (!client) return [];
+
+  const { data, error } = await client
+    .from("drivers")
+    .select("id, name")
+    .order("name");
+
+  if (error) return [];
+  return (data ?? []).map((d) => ({ id: d.id, name: d.name }));
 }

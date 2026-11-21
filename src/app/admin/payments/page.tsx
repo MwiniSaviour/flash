@@ -10,25 +10,27 @@ export const metadata: Metadata = { title: "Payments" };
 function ledgerRows(rows: AdminPayment[]) {
   return rows.map((row) => ({
     id: row.id,
-    search: `${row.reference} ${row.kind} ${row.status}`,
-    filterValue: row.status,
-    export: [row.reference, row.kind, row.status, row.amount, row.createdAt],
-    details: (
-      <DetailGrid
-        items={[
-          { label: "Reference", value: row.reference },
-          { label: "Type", value: row.kind },
-          { label: "Status", value: row.status },
-          { label: "Amount", value: cedis(row.amount) },
-          { label: "Created", value: row.createdAt.slice(0, 16).replace("T", " ") },
-        ]}
-      />
-    ),
-    cells: [
-      <span key="ref" className="font-semibold text-ink">{row.reference}</span>,
-      <span key="kind">{row.kind}</span>,
-      <span key="amount" className="font-semibold text-ink">{cedis(row.amount)}</span>,
-      <span key="status">
+  search: `${row.reference} ${row.kind} ${row.status}`,
+  filterValue: row.status,
+  export: [row.reference, row.kind, row.status, row.amount, row.commission, row.createdAt],
+  details: (
+    <DetailGrid
+      items={[
+        { label: "Reference", value: row.reference },
+        { label: "Type", value: row.kind },
+        { label: "Status", value: row.status },
+        { label: "Amount", value: cedis(row.amount) },
+        { label: "Commission", value: cedis(row.commission) },
+        { label: "Created", value: row.createdAt.slice(0, 16).replace("T", " ") },
+      ]}
+    />
+  ),
+  cells: [
+    <span key="ref" className="font-semibold text-ink">{row.reference}</span>,
+    <span key="kind">{row.kind}</span>,
+    <span key="amount" className="font-semibold text-ink">{cedis(row.amount)}</span>,
+    <span key="commission" className="text-muted">{cedis(row.commission)}</span>,
+    <span key="status">
         <StatusBadge
           tone={
             row.status === "success" || row.status === "paid"
@@ -50,6 +52,7 @@ const COLUMNS = [
   { label: "Reference" },
   { label: "Type" },
   { label: "Amount" },
+  { label: "Commission" },
   { label: "Status" },
 ];
 

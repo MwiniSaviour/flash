@@ -13,7 +13,9 @@ export const ADMIN_GROUPS: { label: string; sections: AdminSection[] }[] = [
       { path: "", label: "Overview", icon: "dashboard" },
       { path: "approvals", label: "Approvals", icon: "check-circle" },
       { path: "payments", label: "Payments", icon: "banknote" },
+      { path: "bookings", label: "Bookings", icon: "receipt" },
       { path: "requests", label: "Ticket requests", icon: "ticket" },
+      { path: "analytics", label: "Analytics", icon: "dashboard" },
     ],
   },
   {

@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { businesses } from "@/lib/flash/data/business";
 import { DEMO_SETTINGS } from "@/lib/payments/commission";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { reassignRideDriver } from "@/lib/flash/admin-repository";
 
 export type AdminActionResult = { ok: true } | { ok: false; error: string };
 
@@ -131,5 +132,17 @@ export async function decideTicketRequestAsAdmin(input: {
   if (error) return { ok: false, error: "The decision could not be saved." };
 
   revalidatePath("/admin/requests");
+  return { ok: true };
+}
+
+/** Reassign a ride to a different driver. */
+export async function reassignRide(rideId: string, driverId: string): Promise<AdminActionResult> {
+  const admin = await requireAdmin();
+  if (!admin) return { ok: false, error: "You do not have access to this action." };
+
+  const result = await reassignRideDriver(rideId, driverId);
+  if (!result.ok) return { ok: false, error: result.error ?? "The reassignment could not be saved." };
+
+  revalidatePath("/admin/bookings");
   return { ok: true };
 }
