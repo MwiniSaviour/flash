@@ -13,9 +13,11 @@ export interface ParcelType {
   id: string;
   name: string;
   detail: string;
-  /** Whole cedis for the standard size. */
+  /** Whole cedis for the standard size - kept for older stored quotes. */
   price: number;
   etaMinutes: number;
+  /** How dearer this type is than sending documents, before distance. */
+  fareFactor: number;
   icon: IconName;
 }
 
@@ -26,6 +28,7 @@ export const parcelTypes: ParcelType[] = [
     detail: "Passport, contract, keys, a folder",
     price: 18,
     etaMinutes: 25,
+    fareFactor: 1,
     icon: "receipt",
   },
   {
@@ -34,6 +37,7 @@ export const parcelTypes: ParcelType[] = [
     detail: "Padded, sealed and tracked end to end",
     price: 35,
     etaMinutes: 35,
+    fareFactor: 1.6,
     icon: "package",
   },
   {
@@ -42,6 +46,7 @@ export const parcelTypes: ParcelType[] = [
     detail: "Folded, bagged and handed over sealed",
     price: 25,
     etaMinutes: 30,
+    fareFactor: 1.3,
     icon: "bag",
   },
   {
@@ -50,6 +55,7 @@ export const parcelTypes: ParcelType[] = [
     detail: "Chilled where it needs to be",
     price: 30,
     etaMinutes: 30,
+    fareFactor: 1.45,
     icon: "food",
   },
   {
@@ -58,6 +64,7 @@ export const parcelTypes: ParcelType[] = [
     detail: "Anything that needs two hands",
     price: 55,
     etaMinutes: 45,
+    fareFactor: 2.2,
     icon: "van",
   },
 ];
@@ -109,7 +116,7 @@ export function quoteParcel(
   return {
     distanceKm,
     durationMinutes: Math.round(parcelQuote.durationMinutes + (distanceKm - 4.6) * 1.4),
-    price: parcelFareCedis(type.price, multiplier, distanceKm, rates),
+    price: parcelFareCedis(type.fareFactor, multiplier, distanceKm, rates),
     etaMinutes: Math.round(type.etaMinutes + (distanceKm - 4.6) * 1.4),
     courier: {
       name: "Flash Courier",

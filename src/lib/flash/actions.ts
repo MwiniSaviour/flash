@@ -24,6 +24,9 @@ import { createAdminClient, type AdminClient } from "@/lib/supabase/admin";
 
 import { haversineKm, type GeoPoint } from "./geo";
 import { findCover } from "./covers";
+import { events } from "./data/events";
+import { restaurants } from "./data/food";
+import { rideClasses } from "./data/rides";
 import {
   parcelQuote,
   parcelTrackingNumber,
@@ -128,6 +131,39 @@ function clampQuantity(quantity: number): number {
 /** The party size a ride can carry. */
 function clampPassengers(passengers: number): number {
   return Math.min(6, Math.max(1, Math.floor(passengers) || 1));
+}
+
+/* Demo-mode totals: the same story as the fixtures, used when no database is
+ * connected so a purchase still confirms instead of failing. */
+function demoTierPrice(tierId: string): number {
+  for (const event of events) {
+    const tier = event.tiers.find((item) => item.id === tierId);
+    if (tier) return tier.price;
+  }
+  return 0;
+}
+
+function demoRidePrice(rideClassId: string): number {
+  return rideClasses.find((item) => item.id === rideClassId)?.price ?? 0;
+}
+
+function demoOrderTotal(
+  restaurantId: string,
+  lines: { menuItemId: string; size: string; quantity: number }[],
+  fulfilment: Fulfilment,
+): number {
+  const kitchen = restaurants.find((item) => item.id === restaurantId);
+  let subtotal = 0;
+  for (const line of lines) {
+    const item = kitchen?.menu.find((entry) => entry.id === line.menuItemId);
+    if (!item) continue;
+    const size = item.sizes.find((entry) => entry.id === line.size) ?? item.sizes[0];
+    subtotal += (size?.price ?? item.price) * line.quantity;
+  }
+  const fee = kitchen
+    ? Math.round(kitchen.deliveryFee * 10) / 10
+    : 0;
+  return subtotal + (fulfilment === "delivery" ? fee : 0);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -281,13 +317,20 @@ export async function bookTicket(input: {
   const quantity = clampQuantity(input.quantity);
   const client = createAdminClient();
 
-  if (!client) {
-    return { ok: false, error: "Something went wrong. Please try again." };
-  }
-
-
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to book a ticket." };
+
+  if (!client) {
+    return {
+      ok: true,
+      data: {
+        id: mintId("tkt"),
+        reference: mintReference(),
+        total: demoTierPrice(input.tierId) * quantity,
+        demo: true,
+      },
+    };
+  }
 
   // Every row that carries a user_id needs the profile row to exist first.
   await ensureProfile(client, userId);
@@ -511,13 +554,22 @@ export async function placeOrder(input: {
     };
   }
 
-  if (!client) {
-    return { ok: false, error: "Something went wrong. Please try again." };
-  }
-
-
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to place an order." };
+
+  if (!client) {
+    return {
+      ok: true,
+      data: {
+        id: mintId("ord"),
+        reference: mintReference(),
+        number: mintNumber(),
+        total: demoOrderTotal(input.restaurantId, lines, fulfilment),
+        etaMinutes: restaurants.find((item) => item.id === input.restaurantId)?.etaMinutes ?? 30,
+        demo: true,
+      },
+    };
+  }
 
   await ensureProfile(client, userId);
 
@@ -724,15 +776,24 @@ export async function requestRide(input: {
   const paymentMethod = input.paymentMethod ?? "pod";
   const client = createAdminClient();
 
-  if (!client) {
-    return { ok: false, error: "Something went wrong. Please try again." };
-  }
-
-
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to book a ride." };
   if (!input.phone?.trim()) {
     return { ok: false, error: "Add a phone number so the rider can reach you." };
+  }
+
+  if (!client) {
+    return {
+      ok: true,
+      data: {
+        id: mintId("ride"),
+        reference: mintReference(),
+        number: mintNumber(),
+        price: demoRidePrice(input.rideClass),
+        etaMinutes: rideClasses.find((item) => item.id === input.rideClass)?.etaMinutes ?? 8,
+        demo: true,
+      },
+    };
   }
 
   await ensureProfile(client, userId);
@@ -768,7 +829,7 @@ export async function requestRide(input: {
       : 3.8;
   const durationMinutes = input.durationMinutes ?? Math.max(1, Math.round((distanceKm / 28) * 60 + 3));
   const settings = await platformSettings();
-  const fare = rideFareCedis(rideClass.price, distanceKm, settings);
+  const fare = rideFareCedis(rideClass.id, distanceKm, settings);
 
   const { error } = await client.from("rides").insert({
     id,
@@ -835,7 +896,7 @@ export async function requestRide(input: {
       reference,
       number,
       price: handoff?.fare ?? fare,
-      etaMinutes: handoff?.etaMinutes ?? rideClass.eta_minutes,
+      etaMinutes: handoff?.etaMinutes ?? durationMinutes,
       demo: false,
       checkoutUrl: checkout?.checkoutUrl ?? null,
       checkout: checkout ?? undefined,
@@ -957,15 +1018,23 @@ export async function sendParcel(input: {
   const price = quote.price * quantity;
   const client = createAdminClient();
 
-  if (!client) {
-    return { ok: false, error: "Something went wrong. Please try again." };
-  }
-
-
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to send a parcel." };
   if (!input.phone?.trim()) {
     return { ok: false, error: "Add a phone number so the courier can reach the recipient." };
+  }
+
+  if (!client) {
+    return {
+      ok: true,
+      data: {
+        id: mintId("par"),
+        trackingNumber: parcelTrackingNumber(Math.floor(Math.random() * 9000) + 1000),
+        price,
+        etaMinutes: quote.etaMinutes,
+        demo: true,
+      },
+    };
   }
 
   await ensureProfile(client, userId);
@@ -1077,7 +1146,7 @@ export async function confirmDeliveryAction(input: {
 export async function bookTicketBatch(input: {
   lines: { tierId: string; quantity: number }[];
   paymentMethod?: "online" | "cash";
-}): Promise<ActionResult<{ references: string[]; total: number; checkoutUrl: string | null; checkout?: CheckoutIntent }>> {
+}): Promise<ActionResult<{ references: string[]; total: number; checkoutUrl: string | null; checkout?: CheckoutIntent; demo?: boolean }>> {
   const lines = input.lines
     .map((line) => ({ tierId: line.tierId, quantity: clampQuantity(line.quantity) }))
     .filter((line) => line.quantity > 0);
@@ -1085,13 +1154,20 @@ export async function bookTicketBatch(input: {
   if (lines.length === 0) return { ok: false, error: "Choose at least one ticket." };
 
   const client = createAdminClient();
-  if (!client) {
-    return { ok: false, error: "Something went wrong. Please try again." };
-  }
-
-
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to book tickets." };
+
+  if (!client) {
+    return {
+      ok: true,
+      data: {
+        references: lines.map(() => mintReference()),
+        total: lines.reduce((sum, line) => sum + demoTierPrice(line.tierId) * line.quantity, 0),
+        checkoutUrl: null,
+        demo: true,
+      },
+    };
+  }
 
   await ensureProfile(client, userId);
   const settings = await platformSettings();

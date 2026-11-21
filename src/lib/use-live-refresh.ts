@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 /**
  * Keep a screen fresh while the customer is looking at it.
  *
- * Flash has no realtime channel yet, so the Track screen polls: the server
- * re-reads the delivery rows and the router swaps in the new markup. The
+ * This is the fallback for the realtime delivery channel: the server re-reads
+ * the rows and the router swaps in the new markup. The
  * interval stops while the tab is hidden, so a phone in a pocket does not
  * spend its battery refreshing a screen nobody is watching.
  */

@@ -27,7 +27,7 @@ export async function platformSettings(): Promise<PlatformSettings> {
     deliveryCommissionBps: Number(data.delivery_commission_bps),
     payoutHoldHours: Number(data.payout_hold_hours),
     freeEventAttendeeFeePesewas: Number(data.free_event_attendee_fee_pesewas ?? 100),
-    ridePerKmPesewas: Number(data.ride_per_km_pesewas ?? 120),
+    ridePerKmPesewas: Number(data.ride_per_km_pesewas ?? 100),
     parcelPerKmPesewas: Number(data.parcel_per_km_pesewas ?? 100),
     deliveryPerKmPesewas: Number(data.delivery_per_km_pesewas ?? 200),
     deliveryBaseKm: Number(data.delivery_base_km ?? 3),

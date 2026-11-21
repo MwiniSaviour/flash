@@ -248,7 +248,7 @@ export function FoodCheckout({
         />
 
         {fulfilment === "delivery" ? (
-          <label className="mt-3 block">
+          <div className="mt-3 block">
             <span className="mb-1.5 block text-[15px] font-bold tracking-[-0.01em] text-ink">
               Where should it go?
             </span>
@@ -258,7 +258,7 @@ export function FoodCheckout({
               onChange={(value) => setAddress(value)}
               placeholder="Where are you going?"
             />
-          </label>
+          </div>
         ) : (
           <p className="mt-3 flex items-start gap-2 rounded-[12px] border border-line/90 bg-surface px-3.5 py-3 text-[13px] leading-snug text-muted">
             <Icon

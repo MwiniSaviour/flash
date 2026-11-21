@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { ProfilePageHeader } from "@/components/dashboard/ProfilePageHeader";
 import { TicketRow } from "@/components/tickets/TicketRow";
-import { EmptyState } from "@/components/flash/ui";
+import { NoData } from "@/components/flash/NoData";
 import { listEvents, listTickets } from "@/lib/flash/repository";
 
 export const metadata: Metadata = { title: "My tickets" };
@@ -31,7 +31,7 @@ export default async function TicketsPage() {
             })}
           </ul>
         ) : (
-          <EmptyState
+          <NoData
             message="You have no tickets yet. Find an event and get a pass."
             action="Browse events"
             href="/events"

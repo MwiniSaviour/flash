@@ -51,14 +51,14 @@ import { releaseDriverPayoutForDispatch } from "@/lib/payments/service";
 import { createAdminClient, type AdminClient } from "@/lib/supabase/admin";
 
 import { accountStore } from "./account-store";
-import { activeOrder, bookings, tickets, user } from "./data/account";
+import { user } from "./data/account";
 import { demoStore } from "./data/demo-store";
 import { businesses, incomingOrders, incomingTickets } from "./data/business";
 import { events } from "./data/events";
 import { DEMO_USER_ID } from "./data/business";
 import { restaurants } from "./data/food";
-import { rideClasses, rideQuote, savedPlaces } from "./data/rides";
-import { deliveries, pastDeliveries, type Delivery, type PastDelivery } from "./data/tracking";
+import { rideClasses, rideQuote } from "./data/rides";
+import type { Delivery, PastDelivery } from "./data/tracking";
 import {
   doorsTime,
   orderToDelivery,
@@ -783,7 +783,7 @@ export async function getRideQuote(): Promise<RideQuote> {
 
 export async function getSavedPlaces(): Promise<SavedPlace[]> {
   const client = createAdminClient();
-  if (!client) return accountStore.savedPlaces ?? savedPlaces;
+  if (!client) return accountStore.savedPlaces ?? [];
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -805,7 +805,7 @@ export async function getSavedPlaces(): Promise<SavedPlace[]> {
 
 export async function listTickets(): Promise<Ticket[]> {
   const client = createAdminClient();
-  if (!client) return tickets;
+  if (!client) return [];
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -891,7 +891,7 @@ export async function listUserPayments(): Promise<
 
 export async function listBookings(): Promise<Booking[]> {
   const client = createAdminClient();
-  if (!client) return bookings;
+  if (!client) return [];
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -900,7 +900,7 @@ export async function listBookings(): Promise<Booking[]> {
 
 export async function getActiveOrder(): Promise<Order | undefined> {
   const client = createAdminClient();
-  if (!client) return activeOrder;
+  if (!client) return undefined;
 
   const userId = await currentUserId();
   if (!userId) return undefined;
@@ -912,7 +912,17 @@ export async function getActiveOrder(): Promise<Order | undefined> {
 
 export async function getCurrentUser(): Promise<FlashUser> {
   const client = createAdminClient();
-  if (!client) return { ...user, ...(accountStore.profile ?? {}) };
+  if (!client) {
+    return {
+      ...user,
+      id: "guest",
+      name: "Customer",
+      email: "",
+      avatarUrl: "",
+      memberSince: "",
+      ...(accountStore.profile ?? {}),
+    };
+  }
 
   const userId = await currentUserId();
   if (!userId) return user;
@@ -1276,7 +1286,7 @@ export async function listCustomers(
 /** Everything of the customer's that is still moving. */
 export async function listDeliveries(): Promise<Delivery[]> {
   const client = createAdminClient();
-  if (!client) return deliveries;
+  if (!client) return [];
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -1303,7 +1313,7 @@ export async function listDeliveries(): Promise<Delivery[]> {
 /** Everything that has already arrived. */
 export async function listPastDeliveries(): Promise<PastDelivery[]> {
   const client = createAdminClient();
-  if (!client) return pastDeliveries;
+  if (!client) return [];
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -1324,7 +1334,7 @@ export async function listPastDeliveries(): Promise<PastDelivery[]> {
 /** One delivery, for its own screen. */
 export async function getDelivery(id: string): Promise<Delivery | undefined> {
   const client = createAdminClient();
-  if (!client) return deliveries.find((delivery) => delivery.id === id);
+  if (!client) return undefined;
 
   const userId = await currentUserId();
   if (!userId) return undefined;

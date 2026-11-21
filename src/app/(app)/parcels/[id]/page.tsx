@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 import { BookingCode } from "@/components/flash/BookingCode";
+import { NoData } from "@/components/flash/NoData";
 import { Icon } from "@/components/flash/Icon";
 import { PassActions } from "@/components/flash/PassActions";
-import { Avatar, StatusBadge } from "@/components/flash/ui";
-import { RouteMap } from "@/components/track/RouteMap";
+import { StatusBadge } from "@/components/flash/ui";
+import { LiveDeliveryTracking } from "@/components/track/LiveDeliveryTracking";
 import { getDelivery } from "@/lib/flash/repository";
 
 export const metadata: Metadata = {
@@ -29,7 +29,18 @@ export default async function ParcelDetailPage({
   const delivery = await getDelivery(id);
   const parcel = delivery?.kind === "parcel" ? delivery : undefined;
 
-  if (!parcel) notFound();
+  if (!parcel) {
+    return (
+      <div className="px-5 pb-6 pt-3">
+        <NoData
+          title="No parcel yet"
+          message="There is no parcel at this reference. Send one and its live tracking will appear here."
+          action="Send a parcel"
+          href="/parcel"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="px-5 pb-6 pt-3">
@@ -61,38 +72,7 @@ export default async function ParcelDetailPage({
         </div>
 
         <div className="p-4">
-          <RouteMap
-            fromLabel={parcel.from}
-            toLabel={parcel.to}
-            fromPlace={parcel.fromPlace}
-            toPlace={parcel.toPlace}
-            progress={parcel.progress}
-            className="h-[180px]"
-          />
-
-          <div className="mt-3.5 flex items-center gap-3 rounded-[14px] bg-surface-2/70 p-3">
-            <Avatar
-              src={parcel.rider.photo.src}
-              alt={parcel.rider.photo.alt}
-              name={parcel.rider.name}
-              size={44}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-semibold text-ink">{parcel.rider.name}</p>
-              <p className="mt-0.5 truncate text-[12px] text-muted">
-                {parcel.rider.vehicle} · {parcel.rider.plate}
-              </p>
-            </div>
-            <button
-              type="button"
-              aria-label={`Call ${parcel.rider.name}`}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-surface text-ink transition active:scale-95"
-            >
-              <Icon name="phone" size={17} />
-            </button>
-          </div>
-
-          <div className="mt-3.5 border-t border-line/80 pt-3.5">
+          <div className="border-t border-line/80 pt-3.5">
             <div className="flex items-start gap-2.5">
               <Icon name="map-pin" size={16} className="mt-0.5 shrink-0 text-brand" />
               <div>
@@ -134,6 +114,9 @@ export default async function ParcelDetailPage({
           </div>
         </div>
       </article>
+
+      <LiveDeliveryTracking delivery={parcel} />
+
         <div className="mt-4">
         <PassActions
           reference={parcel.reference}

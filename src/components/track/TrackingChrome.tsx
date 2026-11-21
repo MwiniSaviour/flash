@@ -125,6 +125,10 @@ export function DeliveryCard({ delivery }: { delivery: Delivery }) {
   );
 }
 
+/** The number the customer reaches the rider on, in local and E.164 form. */
+const RIDER_PHONE = "0552703858";
+const RIDER_PHONE_E164 = `233${RIDER_PHONE.slice(1)}`;
+
 /**
  * The courier bar under the map: who is coming, and the two ways to reach them.
  */
@@ -145,21 +149,25 @@ export function CourierBar({ delivery }: { delivery: Delivery }) {
         </p>
       </div>
 
-      <button
-        type="button"
-        aria-label={`Call ${delivery.rider.name}`}
+      <a
+        href={`tel:+${RIDER_PHONE_E164}`}
+        aria-label={`Call ${delivery.rider.name} on ${RIDER_PHONE}`}
+        title={RIDER_PHONE}
         className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line text-ink transition active:scale-95"
       >
         <Icon name="phone" size={17} />
-      </button>
+      </a>
 
-      <button
-        type="button"
-        aria-label={`Message ${delivery.rider.name}`}
+      <a
+        href={`https://wa.me/${RIDER_PHONE_E164}?text=${encodeURIComponent(`Hello ${delivery.rider.name}, I'm your Flash customer on the ${delivery.title} trip.`)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Message ${delivery.rider.name} on WhatsApp`}
+        title={RIDER_PHONE}
         className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-solid text-white shadow-brand transition active:scale-95"
       >
         <Icon name="send" size={17} />
-      </button>
+      </a>
     </div>
   );
 }

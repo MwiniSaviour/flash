@@ -16,6 +16,7 @@ commercial release; the legal notes at the bottom are load-bearing.
 | Ride photography (`images/ride-*`) | 3 | Unsplash | **Unsplash licence.** |
 | Portrait photography (`images/avatar-*`) | 11 | Open portrait libraries, carried over from the reference app | **Unverified — prototype only.** |
 | Line icons | — | Lucide (npm), rendered inline as SVG | **ISC licence.** Owned by the project in use. |
+| Support avatar (`images/customer-support.svg`) | 1 | Drawn for this project | **Owned by this project.** |
 
 Total files under `public/`: **33**.
 

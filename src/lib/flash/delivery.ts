@@ -94,11 +94,11 @@ function dispatchEta(view: DispatchView, etaMinutes: number, scheduledFor: strin
   return view.active ? etaText(etaMinutes) : "";
 }
 
-/** A rider who has not been assigned yet still needs a name on the card. */
+/** While no rider is assigned, the customer reaches Flash support. */
 function unassignedRider(): Delivery["rider"] {
   return {
-    name: "Rider being assigned",
-    photo: { src: "", alt: "The rider being assigned to this delivery" },
+    name: "Costumer Support",
+    photo: { src: "/assets/images/customer-support.svg", alt: "Customer support agent with a headset" },
     vehicle: "",
     plate: "",
   };

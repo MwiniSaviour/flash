@@ -2,15 +2,11 @@
 
 import { BookingActions } from "@/components/booking/BookingActions";
 import { Icon } from "@/components/flash/Icon";
+import { NoData } from "@/components/flash/NoData";
 import { SectionHeading } from "@/components/flash/ui";
-import { RouteMap } from "@/components/track/RouteMap";
-import {
-  CourierBar,
-  DeliveryCard,
-  GreetingHeader,
-  RouteEndpoints,
-} from "@/components/track/TrackingChrome";
+import { DeliveryCard, GreetingHeader } from "@/components/track/TrackingChrome";
 import { useBooking } from "@/lib/booking";
+import { useLiveTracking } from "@/lib/flash/use-live-tracking";
 import type { Delivery } from "@/lib/flash/data/tracking";
 import type { FlashUser, SavedPlace } from "@/lib/flash/types";
 
@@ -32,6 +28,7 @@ export function RideScreen({
   savedPlaces: SavedPlace[];
 }) {
   const { open } = useBooking();
+  useLiveTracking(activeRide?.id, activeRide?.kind);
 
   return (
     <div className="pb-5">
@@ -48,33 +45,22 @@ export function RideScreen({
         />
       </div>
 
-      {activeRide ? (
-        <section className="mt-6" id="active">
-          <SectionHeading title="Active ride" className="px-5" />
+      <section className="mt-6" id="active">
+        <SectionHeading title="Active ride" className="px-5" />
+        {activeRide ? (
           <div className="mt-3 space-y-2.5 px-5">
             <DeliveryCard delivery={activeRide} />
           </div>
-
+        ) : (
           <div className="mt-3 px-5">
-            <RouteMap
-              fromLabel={activeRide.from}
-              toLabel={activeRide.to}
-              fromPlace={activeRide.fromPlace}
-              toPlace={activeRide.toPlace}
-              progress={activeRide.progress}
-              className="h-[210px]"
+            <NoData
+              message="You have no ride in progress. Book one and its live tracking will appear here."
+              action="Book a ride"
+              href="/ride"
             />
           </div>
-
-          <div className="mt-2.5 px-5">
-            <RouteEndpoints delivery={activeRide} />
-          </div>
-
-          <div className="mt-2.5 px-5">
-            <CourierBar delivery={activeRide} />
-          </div>
-        </section>
-      ) : null}
+        )}
+      </section>
 
       <section className="mt-7 px-5">
         <SectionHeading title="Saved places" />
@@ -82,6 +68,12 @@ export function RideScreen({
         <p className="mt-2 text-[12.5px] text-muted">
           Tap a place to book a ride there.
         </p>
+
+        {savedPlaces.length === 0 ? (
+          <div className="mt-3">
+            <NoData message="No saved places yet. Search for an address and save it for one-tap rides." />
+          </div>
+        ) : null}
 
         <ul className="mt-3 space-y-2">
           {savedPlaces.map((place) => (

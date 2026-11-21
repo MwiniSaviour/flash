@@ -5,7 +5,8 @@ import { useMemo, useState } from "react";
 
 import { Icon, type IconName } from "@/components/flash/Icon";
 import { SegmentedControl } from "@/components/flash/SegmentedControl";
-import { EmptyState, ScreenHeader, StatusBadge } from "@/components/flash/ui";
+import { NoData } from "@/components/flash/NoData";
+import { ScreenHeader, StatusBadge } from "@/components/flash/ui";
 import { cedis, relativeDay } from "@/lib/flash/format";
 import { TicketRow } from "@/components/tickets/TicketRow";
 import type { Booking, BookingKind, BookingStatus, Event, Ticket } from "@/lib/flash/types";
@@ -155,13 +156,13 @@ export function BookingLedger({
 
       {visible.length === 0 && filter !== "ticket" ? (
         <div className="px-5">
-          <EmptyState message="Nothing booked here yet." />
+          <NoData message="Nothing booked here yet. Your tickets, rides and orders will appear here." />
         </div>
       ) : null}
 
       {filter === "ticket" && ticketRows.length === 0 ? (
         <div className="px-5">
-          <EmptyState message="No tickets yet. Book an event and it lands here." href="/events" action="Browse events" />
+          <NoData message="No tickets yet. Book an event and it lands here." href="/events" action="Browse events" />
         </div>
       ) : null}
     </div>

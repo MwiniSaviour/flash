@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { NoData } from "@/components/flash/NoData";
 import {
   addSavedPlace,
   deleteSavedPlace,
@@ -47,6 +48,10 @@ export function SavedPlacesManager({ initial }: { initial: SavedPlace[] }) {
         <p role="alert" className="mb-3 text-[12.5px] text-danger-ink">
           {error}
         </p>
+      ) : null}
+
+      {initial.length === 0 && !adding ? (
+        <NoData message="No saved places yet. Add the addresses you use most for one-tap booking." />
       ) : null}
 
       {initial.length ? (

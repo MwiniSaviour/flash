@@ -1140,7 +1140,7 @@ comment on column public.businesses.transfer_recipient_code is
 -- supabase/migrations/20261120100000_transport_fares.sql
 -- Transport fare settings, adjustable from the superadmin console.
 alter table public.platform_settings
-  add column if not exists ride_per_km_pesewas integer not null default 120,
+  add column if not exists ride_per_km_pesewas integer not null default 100,
   add column if not exists parcel_per_km_pesewas integer not null default 100,
   add column if not exists delivery_per_km_pesewas integer not null default 200,
   add column if not exists delivery_base_km integer not null default 3;

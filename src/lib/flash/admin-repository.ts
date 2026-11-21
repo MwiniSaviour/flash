@@ -370,9 +370,11 @@ export async function reassignRideDriver(rideId: string, driverId: string): Prom
   const client = createAdminClient();
   if (!client) return { ok: false, error: "No database connected." };
 
+  // Only change the driver. A scheduled ride keeps its scheduled status so the
+  // new driver still picks it up at the requested time.
   const { error } = await client
     .from("rides")
-    .update({ rider_id: driverId, status: "requested" })
+    .update({ rider_id: driverId })
     .eq("id", rideId);
 
   if (error) return { ok: false, error: error.message };

@@ -3,17 +3,13 @@
 import { useMemo, useState } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { NoData } from "@/components/flash/NoData";
 import { SectionHeading } from "@/components/flash/ui";
-import { RouteMap } from "@/components/track/RouteMap";
-import {
-  CourierBar,
-  DeliveryCard,
-  GreetingHeader,
-  RouteEndpoints,
-} from "@/components/track/TrackingChrome";
+import { DeliveryCard, GreetingHeader } from "@/components/track/TrackingChrome";
 import { BookingActions } from "@/components/booking/BookingActions";
 import type { Delivery, PastDelivery } from "@/lib/flash/data/tracking";
 import type { FlashUser } from "@/lib/flash/types";
+import { useLiveTracking } from "@/lib/flash/use-live-tracking";
 import { cedis } from "@/lib/flash/format";
 import { useLiveRefresh } from "@/lib/use-live-refresh";
 
@@ -36,8 +32,10 @@ export function TrackingScreen({
 }) {
   const [query, setQuery] = useState("");
 
-  // The deliveries move on their own; the screen keeps up.
+  // The deliveries move on their own; the screen keeps up. Realtime changes
+  // refresh immediately, with the interval as a fallback.
   useLiveRefresh(15000);
+  useLiveTracking(deliveries[0]?.id, deliveries[0]?.kind);
 
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -51,7 +49,6 @@ export function TrackingScreen({
     );
   }, [deliveries, query]);
 
-  const selected = visible[0] ?? deliveries[0];
 
   return (
     <div className="pb-5">
@@ -91,60 +88,18 @@ export function TrackingScreen({
         </div>
 
         {visible.length === 0 ? (
-          <p className="mx-5 mt-3 rounded-[14px] border border-dashed border-line-strong/70 px-4 py-8 text-center text-[13px] leading-relaxed text-muted">
-            Nothing matches that number. Try the reference from your confirmation.
-          </p>
+          <div className="mt-3 px-5">
+            <NoData
+              message={
+                deliveries.length === 0
+                  ? "No deliveries yet. Book a ride or send a parcel and its live tracking will appear here."
+                  : "Nothing matches that number. Try the reference from your confirmation."
+              }
+            />
+          </div>
         ) : null}
       </section>
 
-      {selected ? (
-        <section className="mt-6 px-5">
-          <SectionHeading title="On the map" />
-
-          <RouteMap
-            fromLabel={selected.from}
-            toLabel={selected.to}
-            fromPlace={selected.fromPlace}
-            toPlace={selected.toPlace}
-            progress={selected.progress}
-            className="mt-3 h-[210px]"
-          />
-
-          <div className="mt-2.5">
-            <RouteEndpoints delivery={selected} />
-          </div>
-
-          <div className="mt-2.5">
-            <CourierBar delivery={selected} />
-          </div>
-
-          <ol className="mt-4 space-y-2.5">
-            {selected.steps.map((step) => (
-              <li key={step.label} className="flex items-center gap-2.5">
-                <span
-                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold ${
-                    step.done
-                      ? "bg-brand-solid text-white"
-                      : step.current
-                        ? "bg-brand-soft text-brand-ink"
-                        : "bg-surface-2 text-muted-soft"
-                  }`}
-                  aria-hidden="true"
-                >
-                  {step.done ? <Icon name="check" size={11} /> : null}
-                </span>
-                <span className={step.done ? "text-[13.5px] text-ink" : "text-[13.5px] text-muted"}>
-                  {step.label}
-                </span>
-              </li>
-            ))}
-          </ol>
-
-          <p className="mt-4 font-mono text-[11px] tracking-[0.06em] text-muted-soft">
-            Reference {selected.reference}
-          </p>
-        </section>
-      ) : null}
 
       <section className="mt-7">
         <SectionHeading title="Delivered" className="px-5" />

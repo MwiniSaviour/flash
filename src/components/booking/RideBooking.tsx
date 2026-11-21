@@ -69,7 +69,8 @@ export function RideBooking({
       ? Math.round(haversineKm(pickupPoint, dropoffPoint) * 10) / 10
       : quote.distanceKm;
   const durationMinutes = estimateMinutes(distanceKm);
-  const fareFor = (item: RideClass) => rideFareCedis(item.price, distanceKm, rates);
+  const hasDistance = Boolean(pickupPoint && dropoffPoint);
+  const fareFor = (item: RideClass) => rideFareCedis(item.id, distanceKm, rates);
 
   // The biggest party the classes can carry, capped by the product limit.
   const maxPassengers = Math.min(
@@ -222,7 +223,9 @@ export function RideBooking({
             <p className="truncate text-[11.5px] text-muted">
               {selected.name} · {passengers === 1 ? "1 passenger" : `${passengers} passengers`}
             </p>
-            <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">{cedis(selected.price)}</p>
+            <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">
+              {hasDistance ? cedis(fareFor(selected)) : "--"}
+            </p>
           </div>
           <SignInGate
             label="Sign in to book"
@@ -231,10 +234,14 @@ export function RideBooking({
             <button
               type="button"
               onClick={request}
-              disabled={searching || isPending}
+              disabled={!hasDistance || searching || isPending}
               className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed disabled:opacity-80"
             >
-              {searching || isPending ? "Finding a rider." : `Request ${selected.name}`}
+              {!hasDistance
+                ? "Add pick-up & drop-off"
+                : searching || isPending
+                  ? "Finding a rider."
+                  : `Request ${selected.name}`}
               {searching || isPending ? (
                 <Icon name="timer" size={16} />
               ) : (
@@ -315,7 +322,9 @@ export function RideBooking({
 
         <div className="mt-2 flex items-center gap-2 text-[12.5px] text-muted">
           <Icon name="route" size={15} className="text-muted-soft" />
-          {distance(distanceKm)} · about {durationMinutes} minutes · fare includes the distance
+          {hasDistance
+            ? `${distance(distanceKm)} · about ${durationMinutes} minutes · fare includes the distance`
+            : "Add a pick-up and drop-off to see the fare"}
         </div>
 
         <ul className="mt-3 space-y-2.5">
@@ -370,9 +379,11 @@ export function RideBooking({
 
                   <span className="shrink-0 text-right">
                     <span className="block text-[15px] font-bold tracking-[-0.01em] text-ink">
-                      {cedis(fareFor(item))}
+                      {hasDistance ? cedis(fareFor(item)) : "--"}
                     </span>
-                    <span className="mt-0.5 block text-[11.5px] text-muted">{item.etaMinutes} min</span>
+                    <span className="mt-0.5 block text-[11.5px] text-muted">
+                      {hasDistance ? `${durationMinutes} min` : "--"}
+                    </span>
                   </span>
                 </button>
               </li>

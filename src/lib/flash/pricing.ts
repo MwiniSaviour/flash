@@ -24,11 +24,16 @@ export const DELIVERY_BASE_KM = 3;
 /** What each kilometre beyond the base costs. */
 export const DELIVERY_PER_KM = 2;
 
-/** The kilometres a ride's class fare covers before the distance surcharge. */
-export const RIDE_BASE_KM = 3;
-
-/** The kilometres a parcel's base price covers before the distance surcharge. */
-export const PARCEL_BASE_KM = 4.6;
+/**
+ * How much dearer each ride class is than the base per-kilometre rate. These
+ * are ratios, not prices - the price comes from distance and the admin rate.
+ */
+const RIDE_CLASS_FACTOR: Record<string, number> = {
+  "flash-bike": 1,
+  "flash-go": 1.5,
+  "flash-xl": 1.7,
+  "flash-comfort": 2.1,
+};
 
 /**
  * The distance rates the superadmin can change. They are a subset of
@@ -44,7 +49,7 @@ export type TransportRates = {
 
 /** Defaults mirroring DEMO_SETTINGS, used when no database is connected. */
 export const demoTransportRates: TransportRates = {
-  ridePerKmPesewas: 120,
+  ridePerKmPesewas: 100,
   parcelPerKmPesewas: 100,
   deliveryPerKmPesewas: 200,
   deliveryBaseKm: 3,
@@ -79,25 +84,30 @@ export function deliveryQuote(
   );
 }
 
-/** A ride's fare: the class's base fare plus the distance beyond the base. */
+/**
+ * A ride's fare: whole kilometres travelled × the per-kilometre rate, scaled
+ * by the class. A class has no fixed base price, so an 11 km trip is about
+ * GHC11 in a keke instead of a base fare plus a surcharge.
+ */
 export function rideFareCedis(
-  baseFare: number,
+  classId: string,
   distanceKm: number,
   rates: TransportRates = demoTransportRates,
 ): number {
-  const extraKm = Math.max(0, Math.ceil(distanceKm) - RIDE_BASE_KM);
-  return baseFare + Math.round((extraKm * rates.ridePerKmPesewas) / 100);
+  const factor = RIDE_CLASS_FACTOR[classId] ?? 1;
+  const kilometres = Math.max(1, Math.floor(distanceKm));
+  return Math.round((kilometres * rates.ridePerKmPesewas * factor) / 100);
 }
 
-/** A parcel's fare: base price × size, plus the distance beyond the base. */
+/** A parcel's fare: whole km × per-km rate × type and size, with no base add-on. */
 export function parcelFareCedis(
-  basePrice: number,
-  multiplier: number,
+  fareFactor: number,
+  sizeMultiplier: number,
   distanceKm: number,
   rates: TransportRates = demoTransportRates,
 ): number {
-  const extraKm = Math.max(0, Math.ceil(distanceKm) - PARCEL_BASE_KM);
-  return Math.round(basePrice * multiplier + (extraKm * rates.parcelPerKmPesewas) / 100);
+  const kilometres = Math.max(1, Math.floor(distanceKm));
+  return Math.round((kilometres * rates.parcelPerKmPesewas * fareFactor * sizeMultiplier) / 100);
 }
 
 /** What a discount takes off, in whole cedis. */

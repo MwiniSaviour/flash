@@ -68,6 +68,7 @@ export function ParcelBooking({
       ? Math.round(haversineKm(pickupPoint, dropoffPoint) * 10) / 10
       : parcelQuote.distanceKm;
   const durationMinutes = estimateMinutes(distanceKm, 24);
+  const hasDistance = Boolean(pickupPoint && dropoffPoint);
   const quote = quoteParcel(type, size, distanceKm, rates);
   const sizeMultiplier = parcelSizes.find((entry) => entry.id === size)?.multiplier ?? 1;
   // Every parcel is charged on its own, so the count is what moves the price.
@@ -205,7 +206,9 @@ export function ParcelBooking({
             <p className="truncate text-[11.5px] text-muted">
               {type.name} · {quantity === 1 ? "1 parcel" : `${quantity} parcels`}
             </p>
-            <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">{cedis(total)}</p>
+            <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">
+              {hasDistance ? cedis(total) : "--"}
+            </p>
           </div>
           <SignInGate
             label="Sign in to send"
@@ -214,10 +217,14 @@ export function ParcelBooking({
             <button
               type="button"
               onClick={dispatch}
-              disabled={isPending}
+              disabled={!hasDistance || isPending}
               className="ml-auto inline-flex h-[48px] flex-1 items-center justify-center gap-2 rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover active:bg-brand-solid-pressed disabled:opacity-80"
             >
-              {isPending ? "Booking a courier." : "Send parcel"}
+              {!hasDistance
+                ? "Add pick-up & drop-off"
+                : isPending
+                  ? "Booking a courier."
+                  : "Send parcel"}
               <Icon name="arrow-right" size={16} />
             </button>
           </SignInGate>
@@ -319,12 +326,16 @@ export function ParcelBooking({
 
                   <span className="shrink-0 text-right">
                     <span className="block text-[14px] font-bold text-ink">
-                      {cedis(parcelFareCedis(item.price, sizeMultiplier, distanceKm, rates))}
+                      {hasDistance
+                        ? cedis(parcelFareCedis(item.fareFactor, sizeMultiplier, distanceKm, rates))
+                        : "--"}
                       {quantity > 1 ? (
                         <span className="text-[11px] font-medium text-muted"> each</span>
                       ) : null}
                     </span>
-                    <span className="mt-0.5 block text-[11.5px] text-muted">{item.etaMinutes} min</span>
+                    <span className="mt-0.5 block text-[11.5px] text-muted">
+                      {hasDistance ? `${durationMinutes} min` : "--"}
+                    </span>
                   </span>
                 </button>
               </li>

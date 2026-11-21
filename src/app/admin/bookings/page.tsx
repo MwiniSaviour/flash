@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { ReassignRideControl } from "@/components/admin/ReassignRideControl";
 import { DataTable, DetailGrid } from "@/components/dashboard/DataTable";
 import { StatusBadge } from "@/components/flash/ui";
 import { cedis } from "@/lib/flash/format";
@@ -13,6 +14,7 @@ const COLUMNS = [
   { label: "Amount" },
   { label: "Commission" },
   { label: "Status" },
+  { label: "" },
 ];
 
 export default async function AdminBookingsPage() {
@@ -58,6 +60,10 @@ export default async function AdminBookingsPage() {
         </StatusBadge>
       </span>,
     ],
+    actions:
+      row.kind === "ride" && drivers.length > 0 ? (
+        <ReassignRideControl rideId={row.id} currentDriver={row.driver} drivers={drivers} />
+      ) : undefined,
   }));
 
   return (

@@ -34,7 +34,7 @@ export const DEMO_SETTINGS: PlatformSettings =
     deliveryCommissionBps: 300,
   payoutHoldHours: 48,
   freeEventAttendeeFeePesewas: 100,
-  ridePerKmPesewas: 120,
+  ridePerKmPesewas: 100,
   parcelPerKmPesewas: 100,
   deliveryPerKmPesewas: 200,
   deliveryBaseKm: 3,

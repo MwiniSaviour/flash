@@ -79,15 +79,15 @@ export const deliveries: Delivery[] = [
     eta: "14 min",
     reference: "FLS-7712-0098",
     price: 129,
-    rider: {
-      name: "Ama Boateng",
-      photo: {
-        src: "/assets/images/avatar-fatima-ba-nyagse.jpg",
-        alt: "Portrait of Ama Boateng, the rider bringing your order",
+      rider: {
+        name: "Costumer Support",
+        photo: {
+          src: "/assets/images/customer-support.svg",
+          alt: "Customer support agent with a headset",
+        },
+        vehicle: "Delivery bike",
+        plate: "GR-1094-B",
       },
-      vehicle: "Delivery bike",
-      plate: "GR-1094-B",
-    },
     image: {
       src: "/assets/images/dish-fried-rice.jpg",
       alt: "Fried rice with chicken, sweetcorn and spring onion on a square plate",

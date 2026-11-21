@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 import { BookingCode } from "@/components/flash/BookingCode";
+import { NoData } from "@/components/flash/NoData";
 import { ConfirmDeliveryButton } from "@/components/flash/ConfirmDeliveryButton";
 import { Icon } from "@/components/flash/Icon";
 import { PassActions } from "@/components/flash/PassActions";
-import { Avatar, StatusBadge } from "@/components/flash/ui";
+import { StatusBadge } from "@/components/flash/ui";
+import { LiveDeliveryTracking } from "@/components/track/LiveDeliveryTracking";
 import { cedis } from "@/lib/flash/format";
 import { getDelivery } from "@/lib/flash/repository";
 
@@ -26,7 +27,18 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const delivery = await getDelivery(id);
   const order = delivery?.kind === "order" ? delivery : undefined;
 
-  if (!order?.receipt) notFound();
+  if (!order?.receipt) {
+    return (
+      <div className="px-5 pb-6 pt-3">
+        <NoData
+          title="No order yet"
+          message="There is no order at this reference. Your food orders and their tracking will appear here."
+          action="Order food"
+          href="/food"
+        />
+      </div>
+    );
+  }
 
   const receipt = order.receipt;
   const awaitingConfirmation = order.status === "on the way";
@@ -108,27 +120,6 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 </p>
               </div>
             </div>
-            <div className="mt-3.5 flex items-center gap-3 rounded-[14px] bg-surface-2/70 p-3">
-              <Avatar
-                src={order.rider.photo.src}
-                alt={order.rider.photo.alt}
-                name={order.rider.name}
-                size={40}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13.5px] font-semibold text-ink">{order.rider.name}</p>
-                <p className="mt-0.5 truncate text-[12px] text-muted">
-                  {order.rider.vehicle} · {order.rider.plate}
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label={`Call ${order.rider.name}`}
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-surface text-ink transition active:scale-95"
-              >
-                <Icon name="phone" size={17} />
-              </button>
-            </div>
           </div>
 
           <div className="mt-4 border-t border-line/80 pt-4">
@@ -142,6 +133,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         {awaitingConfirmation ? <ConfirmDeliveryButton orderId={order.id} /> : null}
 
 </article>
+
+      <LiveDeliveryTracking delivery={order} />
+
         <div className="mt-4">
         <PassActions
           reference={order.reference}

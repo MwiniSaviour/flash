@@ -7,6 +7,8 @@ export type KpiCard = {
   icon: IconName;
   tone?: "brand" | "success" | "warning" | "neutral";
   note?: string;
+  /** A real comparison, shown as an up/down delta in the card corner. */
+  delta?: { value: string; direction: "up" | "down" };
 };
 
 const TONES: Record<NonNullable<KpiCard["tone"]>, string> = {
@@ -46,7 +48,15 @@ export function KpiCards({ cards }: { cards: KpiCard[] }) {
 
           <div className="mt-2 flex items-end justify-between gap-2">
             <p className="text-[12.5px] font-medium text-muted">{card.label}</p>
-            {card.note ? (
+            {card.delta ? (
+              <p
+                className={`shrink-0 text-[11px] font-bold ${
+                  card.delta.direction === "up" ? "text-success-ink" : "text-danger-ink"
+                }`}
+              >
+                {card.delta.direction === "up" ? "↑" : "↓"} {card.delta.value}
+              </p>
+            ) : card.note ? (
               <p className="shrink-0 text-[11px] font-semibold text-muted-soft">{card.note}</p>
             ) : null}
           </div>

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 import { BookingCode } from "@/components/flash/BookingCode";
 import { Icon } from "@/components/flash/Icon";
+import { NoData } from "@/components/flash/NoData";
 import { PassActions } from "@/components/flash/PassActions";
-import { Avatar, StatusBadge } from "@/components/flash/ui";
-import { RouteMap } from "@/components/track/RouteMap";
+import { StatusBadge } from "@/components/flash/ui";
+import { LiveDeliveryTracking } from "@/components/track/LiveDeliveryTracking";
 import { cedis, distance } from "@/lib/flash/format";
 import { getDelivery } from "@/lib/flash/repository";
 
@@ -26,7 +26,18 @@ export default async function RideDetailPage({ params }: { params: Promise<{ id:
   const delivery = await getDelivery(id);
   const ride = delivery?.kind === "ride" ? delivery : undefined;
 
-  if (!ride) notFound();
+  if (!ride) {
+    return (
+      <div className="px-5 pb-6 pt-3">
+        <NoData
+          title="No ride yet"
+          message="There is no ride at this reference. Book one and its live tracking will appear here."
+          action="Book a ride"
+          href="/ride"
+        />
+      </div>
+    );
+  }
 
   const fare = ride.price ?? 0;
 
@@ -60,38 +71,7 @@ export default async function RideDetailPage({ params }: { params: Promise<{ id:
         </div>
 
         <div className="p-4">
-          <RouteMap
-            fromLabel={ride.from}
-            toLabel={ride.to}
-            fromPlace={ride.fromPlace}
-            toPlace={ride.toPlace}
-            progress={ride.progress}
-            className="h-[180px]"
-          />
-
-          <div className="mt-3.5 flex items-center gap-3 rounded-[14px] bg-surface-2/70 p-3">
-            <Avatar
-              src={ride.rider.photo.src}
-              alt={ride.rider.photo.alt}
-              name={ride.rider.name}
-              size={44}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-semibold text-ink">{ride.rider.name}</p>
-              <p className="mt-0.5 truncate text-[12px] text-muted">
-                {ride.rider.vehicle} · {ride.rider.plate}
-              </p>
-            </div>
-            <button
-              type="button"
-              aria-label={`Call ${ride.rider.name}`}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-surface text-ink transition active:scale-95"
-            >
-              <Icon name="phone" size={17} />
-            </button>
-          </div>
-
-          <dl className="mt-3.5 grid grid-cols-3 gap-2 border-t border-line/80 pt-3.5 text-[13px]">
+          <dl className="grid grid-cols-3 gap-2 text-[13px]">
             <div>
               <dt className="text-[10.5px] font-bold uppercase tracking-[0.07em] text-muted">Fare</dt>
               <dd className="mt-1 font-semibold text-ink">{cedis(fare)}</dd>
@@ -115,6 +95,9 @@ export default async function RideDetailPage({ params }: { params: Promise<{ id:
           </div>
         </div>
       </article>
+
+      <LiveDeliveryTracking delivery={ride} />
+
         <div className="mt-4">
         <PassActions reference={ride.reference} title={`Flash ride ${ride.number}`} shareLabel="Share trip" />
       </div>

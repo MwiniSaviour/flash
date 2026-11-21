@@ -17,27 +17,27 @@ const rates: TransportRates = {
 };
 
 describe("rideFareCedis", () => {
-  it("charges the class base fare for a trip within the base distance", () => {
-    expect(rideFareCedis(28, 3, rates)).toBe(28);
+  it("charges distance times the per-km rate with no fixed base add-on", () => {
+    expect(rideFareCedis("flash-bike", 11.7, rates)).toBe(11);
   });
 
-  it("adds the per-km surcharge for the distance beyond the base", () => {
-    expect(rideFareCedis(28, 10, rates)).toBe(36);
+  it("scales the fare by the ride class", () => {
+    expect(rideFareCedis("flash-go", 11.7, rates)).toBe(17);
   });
 
   it("follows an adjusted rate from the admin console", () => {
-    const dearer = { ...rates, ridePerKmPesewas: 200 };
-    expect(rideFareCedis(28, 10, dearer)).toBe(42);
+    const dearer = { ...rates, ridePerKmPesewas: 150 };
+    expect(rideFareCedis("flash-bike", 11.7, dearer)).toBe(17);
   });
 });
 
 describe("parcelFareCedis", () => {
-  it("charges the base price times the size multiplier within the base distance", () => {
-    expect(parcelFareCedis(18, 1.35, 4, rates)).toBe(24);
+  it("charges distance times the per-km rate with no base add-on", () => {
+    expect(parcelFareCedis(1, 1, 11.7, rates)).toBe(11);
   });
 
-  it("adds the per-km surcharge for the distance beyond the base", () => {
-    expect(parcelFareCedis(18, 1, 8, rates)).toBe(21);
+  it("scales the fare by parcel type and size", () => {
+    expect(parcelFareCedis(1.6, 1.35, 8, rates)).toBe(17);
   });
 });
 
