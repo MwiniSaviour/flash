@@ -57,6 +57,11 @@ export function NotificationInbox({ items }: { items: AppNotification[] }) {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13.5px] font-semibold text-ink">{item.title}</p>
+                    {item.kind ? (
+                      <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-brand-ink">
+                        {item.kind.replace(/_/g, " ")}
+                      </p>
+                    ) : null}
                     <p className="mt-0.5 text-[12.5px] text-muted">{item.detail}</p>
                     <p className="mt-1 text-[11px] text-muted-soft">
                       {item.at.slice(0, 16).replace("T", " ")}

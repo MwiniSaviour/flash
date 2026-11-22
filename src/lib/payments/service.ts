@@ -1,6 +1,7 @@
 import "server-only";
 
 import { currentUserId } from "@/lib/auth/server";
+import { notifyCompletion, notifyPaymentReceived } from "@/lib/notifications/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { computeCommission, platformSettings } from "./commission";
@@ -162,6 +163,28 @@ export async function fulfilPayment(payload: PaystackWebhookPayload): Promise<bo
         status: "confirmed",
       })
       .eq("id", payment.ticket_id);
+  }
+
+  const refType = payment.order_id
+    ? "order"
+    : payment.ticket_id
+      ? "ticket"
+      : payment.ride_id
+        ? "ride"
+        : "parcel";
+  const refId =
+    payment.order_id ?? payment.ticket_id ?? payment.ride_id ?? payment.parcel_id ?? payment.id;
+
+  void notifyPaymentReceived({
+    userId: payment.user_id,
+    refType,
+    refId,
+    total: payment.amount_pesewas / 100,
+    reference,
+  });
+
+  if (refType !== "order") {
+    void notifyCompletion({ userId: payment.user_id, refType, refId, reference });
   }
 
   // Both payouts are held until delivery is confirmed. A ticket has no driver,

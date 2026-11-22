@@ -27,6 +27,13 @@ export type FlashEnv = {
   readonly dispatchBaseUrl: string | null;
   readonly dispatchApiKey: string | null;
   readonly dispatchAppId: string | null;
+  readonly vapidPublicKey: string | null;
+  readonly vapidPrivateKey: string | null;
+  readonly vapidSubject: string | null;
+  readonly fcmProjectId: string | null;
+  readonly fcmServiceAccountJson: string | null;
+  readonly resendApiKey: string | null;
+  readonly notificationsFromEmail: string | null;
 };
 
 const DEFAULT_SITE_URL = "http://localhost:3000";
@@ -84,6 +91,13 @@ export function getEnv(): FlashEnv {
     dispatchBaseUrl: clean(process.env.DISPATCH_BASE_URL),
     dispatchApiKey: clean(process.env.DISPATCH_API_KEY),
     dispatchAppId: clean(process.env.DISPATCH_APP_ID),
+    vapidPublicKey: clean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY),
+    vapidPrivateKey: clean(process.env.VAPID_PRIVATE_KEY),
+    vapidSubject: clean(process.env.VAPID_SUBJECT),
+    fcmProjectId: clean(process.env.FCM_PROJECT_ID),
+    fcmServiceAccountJson: clean(process.env.FCM_SERVICE_ACCOUNT_JSON),
+    resendApiKey: clean(process.env.RESEND_API_KEY),
+    notificationsFromEmail: clean(process.env.NOTIFICATIONS_FROM_EMAIL),
   });
 
   return cached;
@@ -122,6 +136,29 @@ export function hasPaystackEnv(): boolean {
 export function hasDispatchEnv(): boolean {
   const env = getEnv();
   return Boolean(env.dispatchBaseUrl && env.dispatchApiKey && env.dispatchAppId);
+}
+
+/** True when browser web push can be signed. */
+export function hasWebPushEnv(): boolean {
+  const env = getEnv();
+  return Boolean(env.vapidPublicKey && env.vapidPrivateKey && env.vapidSubject);
+}
+
+/** True when native FCM push can be sent. */
+export function hasFcmEnv(): boolean {
+  const env = getEnv();
+  return Boolean(env.fcmProjectId && env.fcmServiceAccountJson);
+}
+
+/** True when Resend can send mail. */
+export function hasResendEnv(): boolean {
+  const env = getEnv();
+  return Boolean(env.resendApiKey && env.notificationsFromEmail);
+}
+
+/** True when at least one notification channel is configured. */
+export function hasNotificationsEnv(): boolean {
+  return hasWebPushEnv() || hasFcmEnv() || hasResendEnv();
 }
 
 /**

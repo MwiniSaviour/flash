@@ -1,7 +1,9 @@
 import Link from "next/link";
 
-import { Avatar } from "@/components/flash/ui";
+import { ProfileControl } from "@/components/auth/ProfileControl";
+import { Icon } from "@/components/flash/Icon";
 import { getCurrentUser } from "@/lib/flash/repository";
+import { getBusinessUnreadCount } from "@/lib/notifications/inbox";
 import type { ConsoleKind } from "@/lib/flash/console";
 import type { Business } from "@/lib/flash/types";
 
@@ -34,7 +36,7 @@ export async function ConsoleTopbar({
   businesses?: Business[];
   currentId?: string;
 }) {
-  const user = await getCurrentUser();
+  const [user, unread] = await Promise.all([getCurrentUser(), getBusinessUnreadCount()]);
   const firstName = user.name.trim().split(/\s+/)[0] ?? user.name;
 
   return (
@@ -49,6 +51,18 @@ export async function ConsoleTopbar({
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
+        <Link
+          href="/dashboard/notifications"
+          aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+          className="relative grid h-9 w-9 place-items-center rounded-full border border-line bg-surface text-icon-idle"
+        >
+          <Icon name="bell" size={18} />
+          {unread ? (
+            <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand-solid px-1 text-[10px] font-bold text-white">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          ) : null}
+        </Link>
         {kind && businessId ? (
           <ConsoleMobileNav
             kind={kind}
@@ -58,19 +72,10 @@ export async function ConsoleTopbar({
           />
         ) : null}
 
-        <Link
-          href="/profile"
-          aria-label="Your account"
-          className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-surface-2"
-        >
-          <Avatar
-            src={user.avatarUrl}
-            alt={`${user.name}'s profile photo`}
-            name={user.name}
-            size={36}
-          />
+        <div className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2">
+          <ProfileControl user={user} size={36} />
           <span className="hidden text-[13px] font-semibold text-ink sm:block">Account</span>
-        </Link>
+        </div>
       </div>
     </header>
   );

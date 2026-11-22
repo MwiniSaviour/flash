@@ -2,6 +2,7 @@ import "server-only";
 
 import { currentUserId } from "@/lib/auth/server";
 import { accountStore } from "@/lib/flash/account-store";
+import { getPersistedNotifications } from "@/lib/notifications/inbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import {
@@ -18,6 +19,7 @@ export type AppNotification = {
   at: string;
   href: string;
   read: boolean;
+  kind?: string;
 };
 
 async function readKeys(userId: string | null): Promise<Set<string>> {
@@ -45,15 +47,23 @@ export async function getNotifications(): Promise<{
   unread: number;
 }> {
   const userId = await currentUserId();
-  const [tickets, order, businesses, payments, seen] = await Promise.all([
+  const [tickets, order, businesses, payments, seen, persisted] = await Promise.all([
     listTickets(),
     getActiveOrder(),
     listBusinesses(),
     listUserPayments(),
     readKeys(userId),
+    getPersistedNotifications(),
   ]);
 
-  const items: Omit<AppNotification, "read">[] = [];
+  const items: Omit<AppNotification, "read">[] = persisted.map((item) => ({
+    key: item.key,
+    title: item.title,
+    detail: item.detail,
+    at: item.at,
+    href: item.href,
+    kind: item.kind,
+  }));
 
   for (const ticket of tickets.filter((entry) => entry.status === "pending")) {
     items.push({
@@ -95,9 +105,15 @@ export async function getNotifications(): Promise<{
     });
   }
 
+  const seenPersisted = new Map(persisted.map((item) => [item.key, item.read]));
   const result = items
     .sort((a, b) => b.at.localeCompare(a.at))
-    .map((item) => ({ ...item, read: seen.has(item.key) }));
+    .map((item) => ({
+      ...item,
+      read: item.key.startsWith("ntf:")
+        ? (seenPersisted.get(item.key) ?? false)
+        : seen.has(item.key),
+    }));
 
   return { items: result, unread: result.filter((item) => !item.read).length };
 }

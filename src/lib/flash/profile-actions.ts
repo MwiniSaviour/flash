@@ -6,6 +6,7 @@ import { currentUserId } from "@/lib/auth/server";
 import { accountStore } from "@/lib/flash/account-store";
 import { savedPlaces as seededPlaces } from "@/lib/flash/data/rides";
 import { ensureProfile } from "@/lib/flash/profile";
+import { markPersistedRead } from "@/lib/notifications/inbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type AccountResult = { ok: true } | { ok: false; error: string };
@@ -192,18 +193,22 @@ export async function markNotificationsRead(keys: string[]): Promise<AccountResu
   if (!userId) return { ok: false, error: "Sign in to manage notifications." };
 
   const valid = keys.filter((key) => typeof key === "string" && key.length > 0 && key.length <= 200);
-  if (!valid.length) return { ok: true };
+  const persisted = valid.filter((key) => key.startsWith("ntf:")).map((key) => key.slice(4));
+  const derived = valid.filter((key) => !key.startsWith("ntf:"));
+  if (!persisted.length && !derived.length) return { ok: true };
+
+  if (persisted.length) await markPersistedRead(persisted);
 
   const client = createAdminClient();
-  if (!client) {
-    valid.forEach((key) => accountStore.readKeys.add(key));
+  if (!client || !derived.length) {
+    derived.forEach((key) => accountStore.readKeys.add(key));
     revalidatePath("/profile/notifications");
     revalidatePath("/profile");
     return { ok: true };
   }
 
   const { error } = await client.from("notification_reads").upsert(
-    valid.map((key) => ({ user_id: userId, notification_key: key })),
+    derived.map((key) => ({ user_id: userId, notification_key: key })),
     { onConflict: "user_id,notification_key", ignoreDuplicates: true },
   );
 

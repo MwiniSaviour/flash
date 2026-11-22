@@ -4,6 +4,7 @@ import {
   NotificationInbox,
   NotificationPreference,
 } from "@/components/dashboard/NotificationInbox";
+import { EnablePushButton } from "@/components/flash/EnablePushButton";
 import { ProfilePageHeader } from "@/components/dashboard/ProfilePageHeader";
 import { getCurrentUser } from "@/lib/flash/repository";
 import { getNotifications } from "@/lib/flash/notifications";
@@ -20,6 +21,9 @@ export default async function NotificationsPage() {
         subtitle="Things that need your attention across Flash."
       />
       <NotificationPreference enabled={user.notificationsEnabled} />
+      <div className="mt-3">
+        <EnablePushButton />
+      </div>
       <NotificationInbox items={items} />
     </>
   );

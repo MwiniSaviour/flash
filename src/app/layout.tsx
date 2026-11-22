@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/inter";
 import "./globals.css";
 
+import { PushRegistrationBridge } from "@/components/flash/PushRegistrationBridge";
 import { SessionProvider } from "@/lib/auth/session";
 import { getEnv } from "@/lib/env";
 
@@ -36,7 +37,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="min-h-dvh bg-paper text-ink antialiased">
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <PushRegistrationBridge />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );

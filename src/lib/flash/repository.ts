@@ -37,7 +37,7 @@ function demoTicketRequests(): TicketRequest[] {
  * signed-in customer — the service role bypasses Row Level Security.
  */
 
-import { currentUserId } from "@/lib/auth/server";
+import { currentRole, currentUserId } from "@/lib/auth/server";
 import { dispatchConfigured, getDispatchJob } from "@/lib/dispatch/client";
 import {
   canonicalState,
@@ -47,6 +47,7 @@ import {
 } from "@/lib/dispatch/status";
 import type { DispatchRequestType } from "@/lib/dispatch/types";
 import { getEnv } from "@/lib/env";
+import { notifyCompletion } from "@/lib/notifications/service";
 import { releaseDriverPayoutForDispatch } from "@/lib/payments/service";
 import { createAdminClient, type AdminClient } from "@/lib/supabase/admin";
 
@@ -59,6 +60,7 @@ import { DEMO_USER_ID } from "./data/business";
 import { restaurants } from "./data/food";
 import { rideClasses, rideQuote } from "./data/rides";
 import type { Delivery, PastDelivery } from "./data/tracking";
+import { canManageBusiness } from "./roles";
 import {
   doorsTime,
   orderToDelivery,
@@ -449,6 +451,19 @@ async function syncDispatchRows<T extends DispatchableRow>(
       // customer's confirmation in payments/service.ts.
       if (canonicalState(patch.dispatch_task_status) === "delivered") {
         await releaseDriverPayoutForDispatch({ jobId });
+        const { data: booking } = await client
+          .from(table)
+          .select("user_id, reference, tracking_number")
+          .eq("id", row.id)
+          .maybeSingle();
+        if (booking) {
+          void notifyCompletion({
+            userId: booking.user_id,
+            refType: kind,
+            refId: row.id,
+            reference: booking.reference ?? booking.tracking_number ?? row.id,
+          });
+        }
       }
 
       return { row, patch, driver: driverFromDispatchJob(job) };
@@ -1052,6 +1067,9 @@ export async function getApprovedBusiness(
  * fixtures never trip this — the rule only bites on the live path.
  */
 export async function isBusinessAccount(): Promise<boolean> {
+  const role = await currentRole();
+  if (canManageBusiness(role)) return true;
+
   const client = createAdminClient();
   if (!client) return false;
 

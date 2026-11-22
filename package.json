@@ -16,7 +16,8 @@
     "db:check": "node scripts/check-sql.mjs",
     "media:check": "node scripts/check-media.mjs",
     "payments:check": "node scripts/check-payments.mjs",
-    "events:check": "node scripts/check-events.mjs"
+    "events:check": "node scripts/check-events.mjs",
+    "notifications:check": "node scripts/check-notifications.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.10.0",
@@ -33,7 +34,8 @@
     "react-dom": "19.3.1",
     "server-only": "^0.0.1",
     "svix": "^2.10.0",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "web-push": "^4.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.5",
@@ -43,6 +45,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9.39.5",
     "eslint-config-next": "16.4.6",
     "jsdom": "^31.0.1",

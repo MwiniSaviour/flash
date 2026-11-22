@@ -38,6 +38,12 @@ import { ensureProfile } from "./profile";
 import { activeDiscountPercent, deliveryQuote, discountOn, rideFareCedis } from "./pricing";
 import { isBusinessAccount } from "./repository";
 import type { Fulfilment } from "./types";
+import {
+  notifyCompletion,
+  notifyManagerNewSale,
+  notifyPurchaseConfirmed,
+  notifyVendorNewOrder,
+} from "@/lib/notifications/service";
 /**
  * The writes.
  *
@@ -337,7 +343,7 @@ export async function bookTicket(input: {
 
   const { data: tier, error: tierError } = await client
     .from("event_tiers")
-    .select("id, name, price, event_id, available, sales_closed, events(owner_user_id)")
+    .select("id, name, price, event_id, available, sales_closed, events(owner_user_id, title, business_id)")
     .eq("id", input.tierId)
     .maybeSingle();
 
@@ -399,6 +405,30 @@ export async function bookTicket(input: {
 
   const total = tier.price * quantity;
   const identity = await currentClerkIdentity();
+  const tierEvent = (tier.events as unknown as {
+    title?: string;
+    owner_user_id?: string | null;
+    business_id?: string | null;
+  } | null) ?? {};
+
+  void notifyPurchaseConfirmed({
+    userId,
+    refType: "ticket",
+    refId: id,
+    reference,
+    total,
+    email: { to: identity?.email ?? "" },
+  });
+  if (tierEvent.owner_user_id) {
+    void notifyManagerNewSale({
+      ownerUserId: tierEvent.owner_user_id,
+      businessId: tierEvent.business_id ?? null,
+      ticketId: id,
+      event: tierEvent.title ?? "Event",
+      tier: tier.name,
+      quantity,
+    });
+  }
 
   if (!isFree && paystackConfigured()) {
     if (input.paymentMethod === "cash") {
@@ -575,7 +605,7 @@ export async function placeOrder(input: {
 
   const { data: restaurant, error: restaurantError } = await client
     .from("restaurants")
-    .select("id, name, delivery_fee, distance_km, eta_minutes, discount_percent")
+    .select("id, name, delivery_fee, distance_km, eta_minutes, discount_percent, owner_user_id, business_id")
     .eq("id", input.restaurantId)
     .maybeSingle();
 
@@ -677,6 +707,27 @@ export async function placeOrder(input: {
   });
 
   if (error) return { ok: false, error: "We could not place that order. Try again." };
+
+  const orderIdentity = await currentClerkIdentity();
+  const itemCount = orderLines.reduce((sum, line) => sum + line.quantity, 0);
+  void notifyPurchaseConfirmed({
+    userId,
+    refType: "order",
+    refId: id,
+    reference,
+    total: subtotal - discount + deliveryFee,
+    email: { to: orderIdentity?.email ?? "" },
+  });
+  if (restaurant.owner_user_id) {
+    void notifyVendorNewOrder({
+      ownerUserId: restaurant.owner_user_id,
+      businessId: restaurant.business_id ?? null,
+      orderId: id,
+      restaurant: restaurant.name,
+      itemCount,
+      orderNumber: number,
+    });
+  }
 
   const total = subtotal - discount + deliveryFee;
 
@@ -875,6 +926,15 @@ export async function requestRide(input: {
     console.error("[dispatch] handoff failed", handoffResult.error);
   }
   const handoff = handoffResult.ok ? handoffResult.job : null;
+
+  void notifyPurchaseConfirmed({
+    userId,
+    refType: "ride",
+    refId: id,
+    reference,
+    total: handoff?.fare ?? fare,
+    email: { to: identity?.email ?? "" },
+  });
 
   const checkout = await checkoutForDispatch({
     kind: "ride",
@@ -1096,6 +1156,15 @@ export async function sendParcel(input: {
 
   if (!handoffResult.ok) console.error("[dispatch] handoff failed", handoffResult.error);
 
+  void notifyPurchaseConfirmed({
+    userId,
+    refType: "parcel",
+    refId: id,
+    reference: trackingNumber,
+    total: price,
+    email: { to: identity?.email ?? "" },
+  });
+
   const checkout = await checkoutForDispatch({
     kind: "parcel",
     userId,
@@ -1132,6 +1201,13 @@ export async function confirmDeliveryAction(input: {
 
   const result = await confirmDelivery({ orderId: input.orderId, userId });
   if (!result.ok) return { ok: false, error: result.error ?? "We could not confirm that delivery." };
+
+  void notifyCompletion({
+    userId,
+    refType: "order",
+    refId: input.orderId,
+    reference: input.orderId,
+  });
 
   revalidatePath("/track");
   revalidatePath("/orders");
@@ -1171,6 +1247,7 @@ export async function bookTicketBatch(input: {
 
   await ensureProfile(client, userId);
   const settings = await platformSettings();
+  const identity = await currentClerkIdentity();
 
   let total = 0;
   const references: string[] = [];
@@ -1179,7 +1256,7 @@ export async function bookTicketBatch(input: {
   for (const line of lines) {
     const { data: tier } = await client
       .from("event_tiers")
-      .select("id, name, price, event_id, available, sales_closed, events(owner_user_id)")
+      .select("id, name, price, event_id, available, sales_closed, events(owner_user_id, title, business_id)")
       .eq("id", line.tierId)
       .maybeSingle();
 
@@ -1217,6 +1294,30 @@ export async function bookTicketBatch(input: {
     references.push(reference);
     total += tier.price * line.quantity;
 
+    const batchEvent = (tier.events as unknown as {
+      title?: string;
+      owner_user_id?: string | null;
+      business_id?: string | null;
+    } | null) ?? {};
+    void notifyPurchaseConfirmed({
+      userId,
+      refType: "ticket",
+      refId: id,
+      reference,
+      total: tier.price * line.quantity,
+      email: { to: identity?.email ?? "" },
+    });
+    if (batchEvent.owner_user_id) {
+      void notifyManagerNewSale({
+        ownerUserId: batchEvent.owner_user_id,
+        businessId: batchEvent.business_id ?? null,
+        ticketId: id,
+        event: batchEvent.title ?? "Event",
+        tier: tier.name,
+        quantity: line.quantity,
+      });
+    }
+
     if (unit === 0) {
       const owner =
         (tier.events as unknown as { owner_user_id: string | null } | null)?.owner_user_id ?? userId;
@@ -1238,7 +1339,6 @@ export async function bookTicketBatch(input: {
   let checkoutIntent: CheckoutIntent | null = null;
 
   if (total > 0 && paystackConfigured() && input.paymentMethod !== "cash") {
-    const identity = await currentClerkIdentity();
     const checkout = await startCheckout({
       kind: "ticket",
       userId,
