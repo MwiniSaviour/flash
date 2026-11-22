@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { ProfileControl } from "@/components/auth/ProfileControl";
 import { FlashLogo } from "@/components/flash/FlashLogo";
 import { Icon } from "@/components/flash/Icon";
 import { Sheet } from "@/components/flash/Sheet";
-import { Avatar } from "@/components/flash/ui";
 import type { AdminIdentity } from "@/lib/admin/auth";
 import { ADMIN_GROUPS, adminHref } from "@/lib/admin/navigation";
+import type { FlashUser } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
 
 const ROW =
@@ -114,6 +115,14 @@ export function AdminShell({
   children: React.ReactNode;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const accountUser: FlashUser = {
+    id: identity.id,
+    name: identity.name,
+    email: identity.email,
+    avatarUrl: identity.avatarUrl,
+    memberSince: "",
+    notificationsEnabled: false,
+  };
 
   return (
     <div className="min-h-dvh lg:flex">
@@ -127,23 +136,15 @@ export function AdminShell({
         </div>
 
         <div className="mt-auto border-t border-line/70 pt-4">
-          <Link
-            href="/profile"
-            className="flex items-center gap-3 rounded-[12px] px-2 py-2 transition-colors hover:bg-surface-2/70"
-          >
-            <Avatar
-              src={identity.avatarUrl}
-              alt={`${identity.name}'s profile photo`}
-              name={identity.name}
-              size={38}
-            />
+          <div className="flex items-center gap-3 rounded-[12px] px-2 py-2">
+            <ProfileControl user={accountUser} variant="row" />
             <span className="min-w-0">
               <span className="block truncate text-[13.5px] font-semibold text-ink">
                 {identity.name}
               </span>
-              <span className="block truncate text-[12px] text-muted">View profile</span>
+              <span className="block truncate text-[12px] text-muted">Manage account</span>
             </span>
-          </Link>
+          </div>
         </div>
       </aside>
 
@@ -168,14 +169,7 @@ export function AdminShell({
             >
               <Icon name="bell" size={19} />
             </Link>
-            <Link href="/profile" aria-label="Your account" className="rounded-full">
-              <Avatar
-                src={identity.avatarUrl}
-                alt={`${identity.name}'s profile photo`}
-                name={identity.name}
-                size={36}
-              />
-            </Link>
+            <ProfileControl user={accountUser} size={36} />
           </div>
         </header>
 
@@ -187,12 +181,7 @@ export function AdminShell({
       {menuOpen ? (
         <Sheet title="Admin" onClose={() => setMenuOpen(false)}>
           <div className="flex items-center gap-3 border-b border-line/80 pb-4">
-            <Avatar
-              src={identity.avatarUrl}
-              alt={`${identity.name}'s profile photo`}
-              name={identity.name}
-              size={40}
-            />
+            <ProfileControl user={accountUser} size={40} />
             <div className="min-w-0">
               <p className="truncate text-[14px] font-semibold text-ink">{identity.name}</p>
               <p className="truncate text-[12px] text-muted">{identity.email}</p>

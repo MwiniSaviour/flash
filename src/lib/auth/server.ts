@@ -3,6 +3,7 @@ import "server-only";
 import { auth, currentUser } from "@clerk/nextjs/server";
 
 import { getEnv } from "@/lib/env";
+import { DEFAULT_ROLE, roleOf, type UserRole } from "@/lib/flash/roles";
 
 /**
  * The server session.
@@ -21,6 +22,23 @@ export async function currentUserId(): Promise<string | null> {
 
   const { userId } = await auth();
   return userId ?? null;
+}
+
+/**
+ * The signed-in account's Flash role.
+ *
+ * Clerk public metadata is the source of truth; the session token claim is a
+ * faster fallback. Without Clerk, the demo account is a customer.
+ */
+export async function currentRole(): Promise<UserRole> {
+  if (!getEnv().clerkPublishableKey) return DEFAULT_ROLE;
+
+  const { sessionClaims } = await auth();
+  const claim = (sessionClaims?.publicMetadata as { role?: unknown } | undefined)?.role;
+  if (claim) return roleOf(claim);
+
+  const user = await currentUser();
+  return roleOf((user?.publicMetadata as { role?: unknown } | undefined)?.role);
 }
 
 /** Clerk's own details for the signed-in customer, used to seed a profile row. */

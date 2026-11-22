@@ -1,8 +1,10 @@
+import { clerkClient } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { Webhook } from "svix";
 
 import { getEnv } from "@/lib/env";
+import { DEFAULT_ROLE, roleOf } from "@/lib/flash/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -19,6 +21,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 type ClerkUser = {
   id?: string;
+  public_metadata?: { role?: unknown } | null;
   full_name?: string | null;
   first_name?: string | null;
   last_name?: string | null;
@@ -74,16 +77,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid signature." }, { status: 400 });
   }
 
-  const client = createAdminClient();
-  if (!client) {
-    return NextResponse.json({ error: "Data store is not configured." }, { status: 503 });
+  if (event.type === "user.created") {
+    const user = event.data;
+    if (!user.id) {
+      return NextResponse.json({ error: "No user id in the event." }, { status: 400 });
+    }
+
+    // Give every new account a labelled role. It is public metadata, so the
+    // "role" field is visible on the user's Clerk Dashboard profile.
+    const clerk = await clerkClient();
+    const role = roleOf(user.public_metadata?.role ?? DEFAULT_ROLE);
+    await clerk.users.updateUserMetadata(user.id, { publicMetadata: { role } });
   }
+
+  const client = createAdminClient();
 
   if (event.type === "user.created" || event.type === "user.updated") {
     const user = event.data;
     if (!user.id) {
       return NextResponse.json({ error: "No user id in the event." }, { status: 400 });
     }
+
+    if (!client) return NextResponse.json({ received: true });
 
     const { data: existing, error: readError } = await client
       .from("profiles")
@@ -116,6 +131,7 @@ export async function POST(request: Request) {
   }
 
   if (event.type === "user.deleted") {
+    if (!client) return NextResponse.json({ received: true });
     if (!event.data.id) {
       return NextResponse.json({ error: "No user id in the event." }, { status: 400 });
     }

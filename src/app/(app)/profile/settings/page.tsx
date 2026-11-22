@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SignOutButton } from "@clerk/nextjs";
-
+import { ProfileControl } from "@/components/auth/ProfileControl";
+import { SignOutControl } from "@/components/auth/SignOutControl";
 import { AccountSettingsForm } from "@/components/dashboard/AccountSettingsForm";
 import { ProfilePageHeader } from "@/components/dashboard/ProfilePageHeader";
 import { Icon } from "@/components/flash/Icon";
@@ -22,6 +22,13 @@ export default async function ProfileSettingsPage() {
 
       <section className="mt-6 px-5">
         <h2 className="text-[14px] font-bold text-ink">Your account</h2>
+        <div className="mt-3 flex items-center gap-3 rounded-[14px] border border-line/90 bg-surface p-3.5">
+          <Icon name="user" size={18} className="text-icon-idle" />
+          <span className="flex-1 text-[13.5px] font-semibold text-ink">
+            Manage account &amp; password
+          </span>
+          <ProfileControl user={user} variant="button" />
+        </div>
         <Link
           href="/profile/notifications"
           className="mt-3 flex items-center gap-3 rounded-[14px] border border-line/90 bg-surface p-3.5"
@@ -43,7 +50,7 @@ export default async function ProfileSettingsPage() {
           <Icon name="chevron-right" size={16} className="text-muted-soft" />
         </Link>
         <div className="mt-4 rounded-[14px] border border-line/90 bg-surface p-2">
-          <SignOutButton>Sign out</SignOutButton>
+          <SignOutControl />
         </div>
       </section>
     </>

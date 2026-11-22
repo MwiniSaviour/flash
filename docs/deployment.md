@@ -67,6 +67,23 @@ deployments are exempt. The Clerk `publicMetadata.role === "admin"` check in
 `requireAdmin()` still gates every admin page and action, so the subdomain alone
 never grants access. Sign in at `https://admin.flash.scalmint.com/sign-in`.
 
+If `/admin` returns 404 after signing in, the account has no admin role. Roles
+live in Clerk's **public metadata** so they are visible in the Clerk Dashboard:
+
+1. Open **Users → [the account] → Metadata → Public → Edit**.
+2. Set `{ "role": "admin" }` for staff who need the console.
+3. Set `{ "role": "business_owner" }` for kitchen and event owners who manage
+   the console at `/dashboard` - only this role (or an administrator) can open
+   it.
+4. Set `{ "role": "customer" }` for everyone else - this is the default Flash
+   assigns new accounts in the Clerk `user.created` webhook.
+
+The three role labels are `Administrator` (`admin`), `Business owner`
+(`business_owner`) and `Customer` (`customer`) (`src/lib/flash/roles.ts`). Each
+appears as the `role` value on the user's Clerk Dashboard profile. Changing a
+role applies to the next session token; sign out and back in if access does not
+update immediately.
+
 ## Database
 
 Apply `supabase/migrations/*.sql` to the Supabase project (in filename order),

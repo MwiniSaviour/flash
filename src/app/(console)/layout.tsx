@@ -1,4 +1,9 @@
+import { notFound } from "next/navigation";
+
 import { BottomNav } from "@/components/flash/BottomNav";
+import { currentRole } from "@/lib/auth/server";
+import { getEnv } from "@/lib/env";
+import { canManageBusiness } from "@/lib/flash/roles";
 
 /**
  * The console shell.
@@ -10,7 +15,12 @@ import { BottomNav } from "@/components/flash/BottomNav";
  */
 export const dynamic = "force-dynamic";
 
-export default function ConsoleLayout({ children }: { children: React.ReactNode }) {
+export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
+  // The business console is for the Business owner role. Keyless demo mode has
+  // no Clerk roles, so it keeps working; a connected deployment does not let a
+  // plain customer into a console by guessing a business id.
+  if (getEnv().clerkPublishableKey && !canManageBusiness(await currentRole())) notFound();
+
   return (
     <div className="min-h-dvh">
       {children}

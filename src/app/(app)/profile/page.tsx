@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ProfileControl } from "@/components/auth/ProfileControl";
 import { NotificationPreference } from "@/components/dashboard/NotificationInbox";
 import { AccountRow } from "@/components/flash/Account";
 import { Icon } from "@/components/flash/Icon";
-import { Avatar } from "@/components/flash/ui";
 import { getNotifications } from "@/lib/flash/notifications";
 import {
   getCurrentUser,
@@ -38,22 +38,13 @@ export default async function ProfilePage() {
       <h1 className="sr-only">Your profile</h1>
 
       <section className="flex items-center gap-4 px-5 pt-4">
-        <Avatar
-          src={user.avatarUrl}
-          alt={`${user.name}'s profile photo`}
-          name={user.name}
-          size={84}
-          className="ring-[2px] ring-white"
-        />
+        <ProfileControl user={user} size={84} className="ring-[2px] ring-white" />
         <div className="min-w-0">
           <p className="truncate text-[20px] font-bold tracking-[-0.02em] text-ink">{user.name}</p>
           <p className="mt-0.5 truncate text-[13px] text-muted">{user.email}</p>
-          <Link
-            href="/profile/settings"
-            className="mt-2 inline-block text-[13.5px] font-bold text-brand-ink transition-colors hover:text-brand"
-          >
-            Edit profile
-          </Link>
+          <div className="mt-2">
+            <ProfileControl user={user} variant="button" />
+          </div>
         </div>
       </section>
 

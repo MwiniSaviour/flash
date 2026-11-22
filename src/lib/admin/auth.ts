@@ -3,6 +3,7 @@ import "server-only";
 import { currentUser } from "@clerk/nextjs/server";
 
 import { getEnv } from "@/lib/env";
+import { roleOf } from "@/lib/flash/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type AdminIdentity = {
@@ -33,7 +34,7 @@ export async function requireAdmin(): Promise<AdminIdentity | null> {
     avatarUrl: user.imageUrl,
   };
 
-  const clerkRole = (user.publicMetadata as { role?: unknown } | undefined)?.role;
+  const clerkRole = roleOf((user.publicMetadata as { role?: unknown } | undefined)?.role);
   if (clerkRole === "admin") return identity;
 
   const client = createAdminClient();
