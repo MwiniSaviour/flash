@@ -54,10 +54,10 @@ export function PaymentMethods({
     : paymentMethods.filter((method) => method.id !== "cash");
 
   return (
-    <fieldset>
+    <fieldset className="min-w-0 max-w-full">
       <legend className="text-[15px] font-bold tracking-[-0.01em] text-ink">How are you paying?</legend>
 
-      <div className="mt-2.5 space-y-2">
+      <div className="mt-2.5 min-w-0 max-w-full space-y-2">
         {methods.map((method) => {
           const selected = method.id === value;
 
@@ -65,7 +65,7 @@ export function PaymentMethods({
             <label
               key={method.id}
               className={cn(
-                "flex cursor-pointer items-center gap-3 rounded-[14px] border p-3 transition",
+                "flex min-w-0 max-w-full cursor-pointer items-center gap-3 rounded-[14px] border p-3 transition",
                 selected ? "border-brand/45 bg-brand-soft/50" : "border-line/90 bg-surface",
               )}
             >

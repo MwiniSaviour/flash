@@ -8,6 +8,9 @@ const eslintConfig = [
   {
     ignores: [
       ".next/",
+      ".mobile-build/",
+      "android/",
+      "out/",
       "node_modules/",
       "next-env.d.ts",
       /*

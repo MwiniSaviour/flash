@@ -17,8 +17,9 @@ commercial release; the legal notes at the bottom are load-bearing.
 | Portrait photography (`images/avatar-*`) | 11 | Open portrait libraries, carried over from the reference app | **Unverified — prototype only.** |
 | Line icons | — | Lucide (npm), rendered inline as SVG | **ISC licence.** Owned by the project in use. |
 | Support avatar (`images/customer-support.svg`) | 1 | Drawn for this project | **Owned by this project.** |
+| Empty-state illustration (`images/no-data-found.png`) | 1 | Supplied for this project's interface pass | **Unverified — prototype only.** See §7. |
 
-Total files under `public/`: **33**.
+Total files under `public/`: **34**.
 
 ---
 
@@ -130,7 +131,17 @@ stays offline-safe for the Capacitor build.
 
 ---
 
-## 7. The route map
+## 7. Empty-state illustration
+
+`images/no-data-found.png` is the parcel-and-magnifier artwork shown by
+`src/components/flash/NoData.tsx` when a page has no records. It was supplied
+for this interface pass; its upstream licence has not been verified, so it is
+**prototype only** and must be cleared or replaced before a public launch. It
+is a local asset under `public/assets/`, not a Cloudinary upload.
+
+---
+
+## 8. The route map
 
 The map on the Ride and Track screens is **not a photograph and not a real tile
 layer**. It is a schematic diagram drawn as vector in

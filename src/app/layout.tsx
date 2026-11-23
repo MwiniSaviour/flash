@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/inter";
 import "./globals.css";
 
+import { CapacitorBackButton } from "@/components/CapacitorBackButton";
 import { PushRegistrationBridge } from "@/components/flash/PushRegistrationBridge";
 import { SessionProvider } from "@/lib/auth/session";
 import { getEnv } from "@/lib/env";
@@ -16,6 +17,11 @@ export const metadata: Metadata = {
   description:
     "Flash books event tickets, rides and food in one place. Find what is on in Accra, get a ride to it, and have dinner waiting when you arrive.",
   applicationName: "Flash",
+  appleWebApp: {
+    capable: true,
+    title: "Flash",
+    statusBarStyle: "default",
+  },
   openGraph: {
     type: "website",
     siteName: "Flash",
@@ -41,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PushRegistrationBridge />
           {children}
         </SessionProvider>
+        <CapacitorBackButton />
       </body>
     </html>
   );

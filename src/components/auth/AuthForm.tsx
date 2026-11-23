@@ -3,7 +3,7 @@
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useSyncExternalStore, useState, type FormEvent } from "react";
 
 import { FlashLogo } from "@/components/flash/FlashLogo";
 import { Icon } from "@/components/flash/Icon";
@@ -39,6 +39,21 @@ function clerkError(error: unknown): string {
 const INPUT =
   "h-11 w-full rounded-[11px] border border-line bg-paper px-3 text-[13.5px] text-ink placeholder:text-muted focus:border-brand/50 focus:outline-none";
 
+/* The bridge is installed before the page scripts, so this needs no subscription. */
+const noopSubscribe = () => () => {};
+
+function nativeAppSnapshot(): boolean {
+  if (typeof window === "undefined") return false;
+  const bridge = (
+    window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }
+  ).Capacitor;
+  return Boolean(bridge?.isNativePlatform?.());
+}
+
+function serverNativeAppSnapshot(): boolean {
+  return false;
+}
+
 /**
  * Flash's own account forms.
  *
@@ -63,6 +78,15 @@ export function AuthForm({
   const [stage, setStage] = useState<"form" | "code">("form");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Google's OAuth page refuses embedded WebViews. In the Capacitor shell we
+  // keep the user on the email/password + email-code flow instead of handing
+  // them to Chrome (which is what the cross-origin OAuth redirect would do).
+  // The snapshot is a boolean primitive, so it is stable between renders.
+  const nativeApp = useSyncExternalStore(
+    noopSubscribe,
+    nativeAppSnapshot,
+    serverNativeAppSnapshot,
+  );
 
   const isSignIn = mode === "sign-in";
   const signIn = signInAuth.signIn;
@@ -144,6 +168,10 @@ export function AuthForm({
 
   async function google() {
     setError(null);
+    if (nativeApp) {
+      setError("Google sign-in is available on the web. Use your email and password in the app.");
+      return;
+    }
     try {
       if (isSignIn) {
         const { error: failure } = await signIn.sso({
@@ -182,23 +210,30 @@ export function AuthForm({
               : "One account for tickets, rides and food."}
           </p>
 
-          <button
-            type="button"
-            onClick={() => void google()}
-            disabled={busy}
-            className="mt-6 flex h-11 w-full items-center justify-center gap-2.5 rounded-[11px] border border-line bg-surface text-[13.5px] font-semibold text-ink transition hover:bg-surface-2 disabled:opacity-60"
+          {!nativeApp ? (
+            <>
+              <button
+                type="button"
+                onClick={() => void google()}
+                disabled={busy}
+                className="mt-6 flex h-11 w-full items-center justify-center gap-2.5 rounded-[11px] border border-line bg-surface text-[13.5px] font-semibold text-ink transition hover:bg-surface-2 disabled:opacity-60"
+              >
+                <GoogleMark />
+                Continue with Google
+              </button>
+
+              <div className="my-5 flex items-center gap-3">
+                <span className="h-px flex-1 bg-line" />
+                <span className="text-[12px] text-muted-soft">or</span>
+                <span className="h-px flex-1 bg-line" />
+              </div>
+            </>
+          ) : null}
+
+          <form
+            onSubmit={(event) => void submit(event)}
+            className={`space-y-4 ${nativeApp ? "mt-6" : ""}`}
           >
-            <GoogleMark />
-            Continue with Google
-          </button>
-
-          <div className="my-5 flex items-center gap-3">
-            <span className="h-px flex-1 bg-line" />
-            <span className="text-[12px] text-muted-soft">or</span>
-            <span className="h-px flex-1 bg-line" />
-          </div>
-
-          <form onSubmit={(event) => void submit(event)} className="space-y-4">
             {stage === "code" ? (
               <label className="block">
                 <span className="mb-1.5 block text-[12px] font-semibold text-muted">

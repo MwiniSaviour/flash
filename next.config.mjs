@@ -35,6 +35,9 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   devIndicators: false,
+  // Capacitor consumes a fully static build. The web deployment keeps the
+  // server so reads/writes stay live; only the mobile build opts into export.
+  ...(process.env.FLASH_STATIC_EXPORT === "1" ? { output: "export" } : {}),
 
   allowedDevOrigins: [
     "*.e2b.app",

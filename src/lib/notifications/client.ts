@@ -2,6 +2,15 @@
 
 const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 
+/**
+ * Native push only works when Firebase is compiled into the Android app
+ * (google-services.json plus @capacitor/push-notifications). Without that,
+ * PushNotifications.register() throws on the native side and Capacitor
+ * rethrows the exception on the UI thread, which kills the app on launch.
+ * The flag stays off until that native setup exists.
+ */
+const nativePushEnabled = process.env.NEXT_PUBLIC_NATIVE_PUSH === "1";
+
 function urlBase64ToUint8Array(value: string): Uint8Array {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
   const raw = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -47,8 +56,13 @@ export async function subscribeWebPush(prompt: boolean): Promise<boolean> {
 }
 
 export async function registerNativePush(): Promise<void> {
+  if (!nativePushEnabled) return;
   const capacitor = (window as unknown as {
-    Capacitor?: { getPlatform?: () => string; Plugins?: Record<string, unknown> };
+    Capacitor?: {
+      getPlatform?: () => string;
+      isPluginAvailable?: (name: string) => boolean;
+      Plugins?: Record<string, unknown>;
+    };
   }).Capacitor;
   const plugin = capacitor?.Plugins?.PushNotifications as
     | {
@@ -58,6 +72,7 @@ export async function registerNativePush(): Promise<void> {
       }
     | undefined;
   if (!plugin || !capacitor?.getPlatform) return;
+  if (capacitor.isPluginAvailable && !capacitor.isPluginAvailable("PushNotifications")) return;
   const platform = capacitor.getPlatform();
   if (platform !== "android" && platform !== "ios") return;
   try {

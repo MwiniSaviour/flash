@@ -51,7 +51,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6 lg:px-6">
                 <main
                   id="main-content"
-                  className="mx-auto w-full max-w-[680px] pb-[calc(96px+env(safe-area-inset-bottom,0px))] lg:pb-16"
+                  className="mx-auto w-full min-w-0 max-w-[680px] overflow-x-hidden pb-[calc(96px+env(safe-area-inset-bottom,0px))] lg:pb-16"
                 >
                   {children}
                 </main>

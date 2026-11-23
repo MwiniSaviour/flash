@@ -26,8 +26,8 @@ export function BookingActions({
       {items.map((item) => (
         <SignInGate
           key={item.kind}
-          label={`Sign in to ${item.label.toLowerCase()}`}
-          className="flex h-[42px] flex-1 items-center justify-center rounded-full bg-brand-solid text-[13.5px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover"
+          label={item.kind === "ride" ? "Sign in to book" : "Sign in to send"}
+          className="flex h-[42px] min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-full bg-brand-solid px-3 text-[13px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover"
         >
           <button
             type="button"
