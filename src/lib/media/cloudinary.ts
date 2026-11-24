@@ -4,7 +4,11 @@ import { v2 as cloudinary } from "cloudinary";
 
 import { getEnv, hasCloudinaryEnv } from "@/lib/env";
 
+import { INCOMING_TRANSFORM } from "./transform";
+import { isOwnedCloudinaryUrl } from "./url";
 import type { Format } from "./validate";
+
+export { INCOMING_TRANSFORM, INCOMING_TRANSFORM_STRING } from "./transform";
 
 /**
  * Signed uploads to Cloudinary.
@@ -18,14 +22,6 @@ import type { Format } from "./validate";
  * f_auto is deliberately absent here: Cloudinary resolves it per request at
  * the CDN, which cannot happen at upload time.
  */
-
-const INCOMING = {
-  width: 2400,
-  height: 2400,
-  crop: "limit",
-  quality: "auto:good",
-  fetch_format: "webp",
-} as const;
 
 export type UploadedImage = {
   /** The public URL stored in image_src. */
@@ -63,18 +59,29 @@ export async function uploadImage(
   if (!client) throw new Error("Cloudinary is not configured.");
 
   const { cloudinaryFolder } = getEnv();
+  const expectedFolder = `${cloudinaryFolder}/${userId}/${kind}`;
 
   try {
     const result = await client.uploader.upload(
       `data:${format.mime};base64,${bytes.toString("base64")}`,
       {
-        folder: `${cloudinaryFolder}/${userId}/${kind}`,
+        folder: expectedFolder,
         resource_type: "image",
         overwrite: false,
         unique_filename: true,
-        transformation: INCOMING,
+        transformation: INCOMING_TRANSFORM,
       },
     );
+
+    // Fail closed: a URL outside the uploader's own folder would be rejected by
+    // every later write anyway, and leaving the asset behind wastes storage.
+    if (
+      !result.public_id?.startsWith(`${expectedFolder}/`) ||
+      !isOwnedCloudinaryUrl(result.secure_url, userId)
+    ) {
+      if (result.public_id) await destroyImage(result.public_id);
+      throw new Error("Uploaded outside the signed-in seller's folder.");
+    }
 
     return {
       url: result.secure_url,
@@ -83,10 +90,11 @@ export async function uploadImage(
       width: result.width ?? 0,
       height: result.height ?? 0,
     };
-  } catch (error) {
+  } catch {
     // The browser never sees a credential, a signed request or a provider
-    // message — only the fact that the upload did not work.
-    console.error("[media] upload failed", error);
+    // message — only the fact that the upload did not work. Provider errors are
+    // not logged verbatim: they can carry signed request details.
+    console.error("[media] upload failed");
     throw new Error("The photo could not be uploaded. Try again.");
   }
 }
@@ -98,8 +106,42 @@ export async function destroyImage(publicId: string): Promise<void> {
 
   try {
     await client.uploader.destroy(publicId, { invalidate: true });
-  } catch (error) {
+  } catch {
     // A leftover asset is recoverable; losing the user's write is not.
-    console.error("[media] cleanup failed", publicId, error);
+    console.error("[media] cleanup failed", publicId);
+  }
+}
+
+/**
+ * The write side of the upload boundary.
+ *
+ * Every image write goes through here so the asset lifecycle cannot drift:
+ * a replacement removes the previous asset only after the write succeeds, and
+ * a failed write removes the freshly uploaded asset instead of orphaning it.
+ * Cleanup is best-effort by design — losing a user's write is worse than a
+ * leftover asset — but it is always attempted.
+ */
+export async function commitImageWrite<T>({
+  newPublicId,
+  uploadedPublicId = newPublicId,
+  previousPublicId,
+  write,
+}: {
+  /** The effective public id after the write; null for a local catalogue photo. */
+  newPublicId: string | null;
+  /** The freshly uploaded asset, destroyed only if the write fails. */
+  uploadedPublicId?: string | null;
+  previousPublicId?: string | null;
+  write: () => Promise<T>;
+}): Promise<T> {
+  try {
+    const result = await write();
+    if (previousPublicId && previousPublicId !== newPublicId) {
+      await destroyImage(previousPublicId);
+    }
+    return result;
+  } catch (error) {
+    if (uploadedPublicId) await destroyImage(uploadedPublicId);
+    throw error;
   }
 }

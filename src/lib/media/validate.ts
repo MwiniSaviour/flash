@@ -7,7 +7,7 @@
  * excluded: it can carry scripts and has no place in a photo field.
  */
 
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
 export type Format = { name: string; mime: string };
 

@@ -15,7 +15,7 @@ import {
   type DispatchRequestType,
 } from "@/lib/dispatch/types";
 import { getEnv } from "@/lib/env";
-import { destroyImage } from "@/lib/media/cloudinary";
+import { commitImageWrite } from "@/lib/media/cloudinary";
 import { isOwnedCloudinaryUrl, publicIdFromUrl } from "@/lib/media/url";
 import { paystackConfigured } from "@/lib/payments/paystack";
 import { computeTicketCommission, platformSettings } from "@/lib/payments/commission";
@@ -937,16 +937,21 @@ export async function updateCover(input: {
     return { ok: false, error: "That kitchen is not yours to change." };
   }
 
-  const { error } = await client
-    .from("restaurants")
-    .update({ image_src: cover.src, image_alt: cover.alt })
-    .eq("id", input.restaurantId);
-
-  if (error) return { ok: false, error: "We could not change the cover. Try again." };
-
-  // Do not leave the replaced photograph sitting in storage.
-  const previous = publicIdFromUrl(kitchen.image_src ?? "");
-  if (previous && previous !== publicIdFromUrl(cover.src)) await destroyImage(previous);
+  try {
+    await commitImageWrite({
+      newPublicId: publicIdFromUrl(cover.src),
+      previousPublicId: publicIdFromUrl(kitchen.image_src ?? ""),
+      write: async () => {
+        const { error } = await client
+          .from("restaurants")
+          .update({ image_src: cover.src, image_alt: cover.alt })
+          .eq("id", input.restaurantId);
+        if (error) throw error;
+      },
+    });
+  } catch {
+    return { ok: false, error: "We could not change the cover. Try again." };
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/food");

@@ -3,7 +3,7 @@
 import { currentUserId } from "@/lib/auth/server";
 import { hasCloudinaryEnv } from "@/lib/env";
 import { uploadImage } from "@/lib/media/cloudinary";
-import { validateImageUpload } from "@/lib/media/validate";
+import { MAX_IMAGE_BYTES, validateImageUpload } from "@/lib/media/validate";
 
 import type { UploadedImage } from "./cloudinary";
 
@@ -37,6 +37,12 @@ export async function uploadImageAction(
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Choose a photo first." };
+  }
+
+  // Refuse the oversized file before reading it into memory or calling the
+  // provider. The byte validation below re-checks the same limit.
+  if (file.size > MAX_IMAGE_BYTES) {
+    return { ok: false, error: "Photos can be at most 8 MB. Try a smaller one." };
   }
 
   const bytes = Buffer.from(await file.arrayBuffer());

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { currentClerkIdentity, currentUserId } from "@/lib/auth/server";
-import { destroyImage } from "@/lib/media/cloudinary";
+import { commitImageWrite, destroyImage } from "@/lib/media/cloudinary";
 import { isAllowedImageUrl, publicIdFromUrl } from "@/lib/media/url";
 import { createTransferRecipient, listPaystackBanks } from "@/lib/payments/paystack";
 import { startCommissionCheckout } from "@/lib/payments/service";
@@ -874,21 +874,29 @@ export async function updateMenuItem(input: {
   }
 
   const uploaded = input.imageSrc ? publicIdFromUrl(input.imageSrc) : null;
-  const { error } = await client
-    .from("menu_items")
-    .update({
-      name,
-      description: input.description.trim(),
-      price,
-      image_src: input.imageSrc ?? item?.image_src ?? COVER_IMAGES[0].src,
-      image_alt: input.imageAlt ?? COVER_IMAGES[0].alt,
-      tags,
-      ...discountColumns(discount),
-    })
-    .eq("id", input.menuItemId);
-
-  if (error) {
-    if (uploaded && uploaded !== publicIdFromUrl(item?.image_src ?? "")) await destroyImage(uploaded);
+  const previousPublicId = publicIdFromUrl(item?.image_src ?? "");
+  try {
+    await commitImageWrite({
+      newPublicId: input.imageSrc ? uploaded : previousPublicId,
+      uploadedPublicId: uploaded,
+      previousPublicId,
+      write: async () => {
+        const { error } = await client
+          .from("menu_items")
+          .update({
+            name,
+            description: input.description.trim(),
+            price,
+            image_src: input.imageSrc ?? item?.image_src ?? COVER_IMAGES[0].src,
+            image_alt: input.imageAlt ?? COVER_IMAGES[0].alt,
+            tags,
+            ...discountColumns(discount),
+          })
+          .eq("id", input.menuItemId);
+        if (error) throw error;
+      },
+    });
+  } catch {
     return { ok: false, error: "We could not save that dish. Try again." };
   }
 
@@ -902,11 +910,6 @@ export async function updateMenuItem(input: {
     .update({ price: Math.round(price * 1.3) })
     .eq("menu_item_id", input.menuItemId)
     .eq("position", 2);
-
-  if (uploaded && uploaded !== publicIdFromUrl(item?.image_src ?? "")) {
-    const old = publicIdFromUrl(item?.image_src ?? "");
-    if (old) await destroyImage(old);
-  }
 
   revalidateConsole("restaurant", gate.business.id);
   revalidatePath(`/food/${owner.slug}`);

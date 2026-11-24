@@ -18,6 +18,8 @@
     "mobile:sync": "npm run mobile:build && cap sync android",
     "mobile:open": "cap open android",
     "media:check": "node scripts/check-media.mjs",
+    "media:migrate": "node scripts/migrate-images.mjs",
+    "media:check-migration": "node scripts/check-media-migration.mjs",
     "payments:check": "node scripts/check-payments.mjs",
     "events:check": "node scripts/check-events.mjs",
     "notifications:check": "node scripts/check-notifications.mjs"
