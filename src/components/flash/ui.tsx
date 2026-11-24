@@ -144,7 +144,7 @@ export function Tag({
   );
 }
 
-type StatusTone = "success" | "warning" | "neutral" | "danger" | "brand";
+export type StatusTone = "success" | "warning" | "neutral" | "danger" | "brand";
 
 const statusStyles: Record<StatusTone, string> = {
   success: "bg-success-soft text-success-ink",

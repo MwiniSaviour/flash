@@ -8,7 +8,7 @@
  * row actually carries.
  */
 
-import { adaptDispatchStatus, type DispatchView } from "@/lib/dispatch/status";
+import { adaptDispatchStatus } from "@/lib/dispatch/status";
 
 import { clock, dayMonth } from "./format";
 import type {
@@ -46,9 +46,22 @@ const ORDER_PROGRESS: Record<string, number> = {
   delivered: 1,
 };
 
+/** Order rows carry database words; the card only renders DeliveryStage values. */
+const ORDER_STAGE: Record<string, DeliveryStage> = {
+  "awaiting confirmation": "pending delivery",
+  confirmed: "confirmed",
+  preparing: "preparing",
+  "on the way": "on the way",
+  arriving: "arriving",
+  delivered: "delivered",
+};
+
 const ORDER_LABEL: Record<string, string> = {
+  "awaiting confirmation": "Awaiting confirmation",
+  confirmed: "Confirmed",
   preparing: "Preparing",
   "on the way": "On the way",
+  arriving: "Arriving",
   delivered: "Delivered",
 };
 
@@ -73,25 +86,30 @@ function etaText(minutes: number): string {
 }
 
 /**
- * A future job shows its window, never a countdown. The route is not live
- * until the engine promotes the task out of `scheduled`.
+ * Only these stages describe a rider actually covering a route. Scheduled,
+ * looking-for-a-rider and failed jobs are commitments, not live progress —
+ * their DispatchView progress values are engine bookkeeping, not distance a
+ * customer has seen covered.
  */
-function dispatchEta(view: DispatchView, etaMinutes: number, scheduledFor: string | null): string {
-  if (view.stage === "scheduled") {
-    if (!scheduledFor) return "Scheduled";
-    const moment = new Date(scheduledFor);
-    if (Number.isNaN(moment.getTime())) return "Scheduled";
-    const date = moment.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
-    const time = moment.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: "UTC",
-    });
-    return `${date}, ${time}`;
-  }
+const LIVE_STAGES: ReadonlySet<DeliveryStage> = new Set([
+  "on the way",
+  "arriving",
+  "delivered",
+]);
 
-  return view.active ? etaText(etaMinutes) : "";
+function liveJourney(stage: DeliveryStage, hasRider: boolean): boolean {
+  return hasRider && LIVE_STAGES.has(stage);
+}
+
+/** A finished journey has no countdown left; a scheduled window is not an ETA. */
+function liveEta(stage: DeliveryStage, hasRider: boolean, etaMinutes: number): string {
+  if (!liveJourney(stage, hasRider) || stage === "delivered") return "";
+  return etaText(etaMinutes);
+}
+
+/** The one progress predicate shared by the mappers and the tracking card. */
+export function hasLiveProgress(delivery: Delivery): boolean {
+  return liveJourney(delivery.status, delivery.riderAssigned);
 }
 
 /** While no rider is assigned, the customer reaches ScalDive support. */
@@ -125,22 +143,26 @@ export function orderToDelivery(order: OrderWithLinesRow): Delivery {
   const restaurant = order.restaurants;
   const { street, area } = splitAddress(order.address);
   const lines = order.order_lines ?? [];
+  const status: DeliveryStage = ORDER_STAGE[order.status] ?? "pending delivery";
+  const hasRider = Boolean(order.drivers);
+  const live = liveJourney(status, hasRider);
 
   return {
     id: order.id,
     kind: "order",
     number: order.number,
     title: restaurant?.name ?? "Your order",
-    status: (order.status as DeliveryStage) ?? "preparing",
-    statusLabel: ORDER_LABEL[order.status] ?? "Preparing",
+    status,
+    statusLabel: ORDER_LABEL[order.status] ?? "Pending delivery",
     from: restaurant?.name ?? "The kitchen",
     fromPlace: restaurant?.neighbourhood ?? "Accra",
     to: street,
     toPlace: area,
-    progress: ORDER_PROGRESS[order.status] ?? 0.18,
-    eta: etaText(order.eta_minutes),
+    progress: live ? (ORDER_PROGRESS[order.status] ?? 0) : 0,
+    eta: liveEta(status, hasRider, order.eta_minutes),
     reference: order.reference,
     price: order.subtotal + order.delivery_fee,
+    riderAssigned: hasRider,
     rider: riderOf(order.drivers),
     image: restaurant
       ? { src: restaurant.image_src, alt: restaurant.image_alt }
@@ -165,6 +187,8 @@ export function orderToDelivery(order: OrderWithLinesRow): Delivery {
 export function rideToDelivery(ride: RideWithRiderRow): Delivery {
   const className = ride.ride_classes?.name ?? "Taxi";
   const view = adaptDispatchStatus(ride.dispatch_task_status ?? ride.status, ride.scheduled_for);
+  const hasRider = Boolean(ride.drivers);
+  const live = liveJourney(view.stage, hasRider);
 
   return {
     id: ride.id,
@@ -177,12 +201,13 @@ export function rideToDelivery(ride: RideWithRiderRow): Delivery {
     fromPlace: ride.pickup_area,
     to: ride.dropoff,
     toPlace: ride.dropoff_area,
-    progress: view.progress,
-    eta: dispatchEta(view, ride.eta_minutes, ride.scheduled_for),
+    progress: live ? view.progress : 0,
+    eta: liveEta(view.stage, hasRider, ride.eta_minutes),
     reference: ride.reference,
     price: ride.price,
-    distanceKm: ride.distance_km,
-    durationMinutes: ride.duration_minutes,
+    distanceKm: live ? ride.distance_km : undefined,
+    durationMinutes: live ? ride.duration_minutes : undefined,
+    riderAssigned: hasRider,
     rider: riderOf(ride.drivers),
     image: RIDE_CARD_IMAGE,
     steps: buildSteps(RIDE_STEPS, view.step),
@@ -191,6 +216,8 @@ export function rideToDelivery(ride: RideWithRiderRow): Delivery {
 
 export function parcelToDelivery(parcel: ParcelWithCourierRow): Delivery {
   const view = adaptDispatchStatus(parcel.dispatch_task_status ?? parcel.status, parcel.scheduled_for);
+  const hasRider = Boolean(parcel.drivers);
+  const live = liveJourney(view.stage, hasRider);
 
   return {
     id: parcel.id,
@@ -210,11 +237,12 @@ export function parcelToDelivery(parcel: ParcelWithCourierRow): Delivery {
     fromPlace: parcel.pickup_area,
     to: parcel.dropoff,
     toPlace: parcel.dropoff_area,
-    progress: view.progress,
-    eta: dispatchEta(view, parcel.eta_minutes, parcel.scheduled_for),
+    progress: live ? view.progress : 0,
+    eta: liveEta(view.stage, hasRider, parcel.eta_minutes),
     reference: parcel.tracking_number,
     price: parcel.price,
-    distanceKm: parcel.distance_km,
+    distanceKm: live ? parcel.distance_km : undefined,
+    riderAssigned: hasRider,
     rider: riderOf(parcel.drivers),
     image: PARCEL_CARD_IMAGE,
     steps: buildSteps(PARCEL_STEPS, view.step),

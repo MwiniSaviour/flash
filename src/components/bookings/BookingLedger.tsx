@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { Icon, type IconName } from "@/components/flash/Icon";
 import { SegmentedControl } from "@/components/flash/SegmentedControl";
 import { NoData } from "@/components/flash/NoData";
-import { ScreenHeader, StatusBadge } from "@/components/flash/ui";
+import { ScreenHeader, StatusBadge, type StatusTone } from "@/components/flash/ui";
 import { cedis, relativeDay } from "@/lib/flash/format";
 import { TicketRow } from "@/components/tickets/TicketRow";
 import type { Booking, BookingKind, BookingStatus, Event, Ticket } from "@/lib/flash/types";
@@ -20,7 +20,8 @@ const kindIcons: Record<BookingKind, IconName> = {
   order: "bag",
 };
 
-const statusMap: Record<BookingStatus, { tone: "success" | "warning" | "neutral" | "danger"; label: string; icon: IconName }> = {
+/** Every booking state carries a word and an icon — no colour-only status. */
+const statusMap: Record<BookingStatus, { tone: StatusTone; label: string; icon: IconName }> = {
   confirmed: { tone: "success", label: "Confirmed", icon: "check-circle" },
   pending: { tone: "warning", label: "Pending", icon: "clock" },
   completed: { tone: "neutral", label: "Completed", icon: "check" },

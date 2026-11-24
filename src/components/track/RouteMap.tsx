@@ -48,7 +48,14 @@ export function RouteProgress({
 
   return (
     <div className={className}>
-      <div className="relative h-[6px] rounded-full bg-surface-3">
+      <div
+        role="progressbar"
+        aria-label="Route progress"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+        className="relative h-[6px] rounded-full bg-surface-3"
+      >
         <div
           className="absolute inset-y-0 left-0 rounded-full bg-brand"
           style={{ width: `${pct}%` }}

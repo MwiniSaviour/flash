@@ -44,9 +44,12 @@ export interface Delivery {
   /** Where it is going. */
   to: string;
   toPlace: string;
-  /** 0 → 1 along the route. */
+  /** 0 → 1 along the route; zero until a rider is assigned and moving. */
   progress: number;
+  /** Empty until live tracking is real; never a scheduled-window stand-in. */
   eta: string;
+  /** True only when a real rider row is attached to the booking. */
+  riderAssigned: boolean;
   reference: string;
   /** What it costs, in whole cedis. */
   price?: number;
@@ -86,6 +89,7 @@ export const deliveries: Delivery[] = [
     eta: "14 min",
     reference: "FLS-7712-0098",
     price: 129,
+    riderAssigned: false,
       rider: {
         name: "Costumer Support",
         photo: {
@@ -130,6 +134,7 @@ export const deliveries: Delivery[] = [
     progress: 0.18,
     eta: "34 min",
     reference: "FLS-7713-4420",
+    riderAssigned: true,
     rider: {
       name: "Yaw Osei",
       photo: {
@@ -170,6 +175,7 @@ export const deliveries: Delivery[] = [
     reference: "FLS-P-7002-4901",
     price: 18,
     distanceKm: 4.6,
+    riderAssigned: true,
     rider: {
       name: "Nii Lartey",
       photo: {
@@ -207,6 +213,7 @@ export const deliveries: Delivery[] = [
     price: 28,
     distanceKm: 3.8,
     durationMinutes: 14,
+    riderAssigned: true,
     rider: {
       name: "Kojo Mensah",
       photo: {

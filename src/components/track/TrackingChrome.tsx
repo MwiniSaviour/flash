@@ -1,9 +1,10 @@
 import Link from "next/link";
 
-import { Icon } from "@/components/flash/Icon";
+import { Icon, type IconName } from "@/components/flash/Icon";
 import { RouteProgress } from "@/components/track/RouteMap";
-import { Avatar, StatusBadge } from "@/components/flash/ui";
-import type { Delivery } from "@/lib/flash/data/tracking";
+import { Avatar, StatusBadge, type StatusTone } from "@/components/flash/ui";
+import type { Delivery, DeliveryStage } from "@/lib/flash/data/tracking";
+import { hasLiveProgress } from "@/lib/flash/delivery";
 import type { FlashUser } from "@/lib/flash/types";
 
 /**
@@ -47,14 +48,15 @@ export function GreetingHeader({ user }: { user: FlashUser }) {
   );
 }
 
-const stageTone = {
-  confirmed: { tone: "success" as const, icon: "check-circle" as const },
-  "pending delivery": { tone: "warning" as const, icon: "clock" as const },
-  scheduled: { tone: "brand" as const, icon: "calendar" as const },
-  preparing: { tone: "warning" as const, icon: "clock" as const },
-  "on the way": { tone: "brand" as const, icon: "truck" as const },
-  arriving: { tone: "success" as const, icon: "navigation" as const },
-  delivered: { tone: "neutral" as const, icon: "check" as const },
+/** Every DeliveryStage has a word and an icon; status is never colour alone. */
+const stageTone: Record<DeliveryStage, { tone: StatusTone; icon: IconName }> = {
+  confirmed: { tone: "success", icon: "check-circle" },
+  "pending delivery": { tone: "warning", icon: "clock" },
+  scheduled: { tone: "brand", icon: "calendar" },
+  preparing: { tone: "warning", icon: "clock" },
+  "on the way": { tone: "brand", icon: "truck" },
+  arriving: { tone: "success", icon: "navigation" },
+  delivered: { tone: "neutral", icon: "check" },
 };
 
 /** Where a delivery's own detail and proof live. */
@@ -113,7 +115,7 @@ export function DeliveryCard({ delivery }: { delivery: Delivery }) {
         )}
       </span>
 
-      {delivery.status === "on the way" || delivery.status === "arriving" || delivery.status === "delivered" ? (
+      {hasLiveProgress(delivery) ? (
         <>
           <RouteProgress progress={delivery.progress} className="mt-3" />
           <span className="mt-2.5 flex items-center justify-between gap-2 text-[11.5px] text-muted">
