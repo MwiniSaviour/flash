@@ -31,6 +31,7 @@ import {
   quoteParcel,
   type ParcelSize,
 } from "./data/parcels";
+import { assertSellerOwns } from "./ownership";
 import { ensureProfile } from "./profile";
 import { activeDiscountPercent, deliveryQuote, discountOn, rideFareCedis } from "./pricing";
 import { isBusinessAccount } from "./repository";
@@ -50,7 +51,7 @@ import {
  * screens only ever see the reference that comes back.
  *
  * With Supabase connected the action writes a row. Without it, the action
- * throw when the database is not configured; no fixture result is returned.
+ * answers from the demo fixtures and says so, which keeps the demo honest
  * instead of pretending something was saved.
  */
 
@@ -290,7 +291,7 @@ export async function bookTicket(input: {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to book a ticket." };
 
-  if (!client) throw new Error("Database is not configured.");
+  if (!client) throw new Error("Database is not configured");
 
   // Every row that carries a user_id needs the profile row to exist first.
   await ensureProfile(client, userId);
@@ -456,7 +457,7 @@ export async function requestTickets(input: {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to ask for a ticket." };
 
-  if (!client) throw new Error("Database is not configured.");
+  if (!client) throw new Error("Database is not configured");
 
   const { data: existing } = userId
     ? await client
@@ -539,7 +540,7 @@ export async function placeOrder(input: {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to place an order." };
 
-  if (!client) throw new Error("Database is not configured.");
+  if (!client) throw new Error("Database is not configured");
 
   await ensureProfile(client, userId);
 
@@ -773,7 +774,7 @@ export async function requestRide(input: {
     return { ok: false, error: "Add a phone number so the rider can reach you." };
   }
 
-  if (!client) throw new Error("Database is not configured.");
+  if (!client) throw new Error("Database is not configured");
 
   await ensureProfile(client, userId);
 
@@ -920,17 +921,19 @@ export async function updateCover(input: {
 
   if (!cover) return { ok: false, error: "That photograph is not yours to use." };
 
-  if (!client) throw new Error("Database is not configured.");
+  if (!client) throw new Error("Database is not configured");
 
   const { data: kitchen, error: kitchenError } = await client
     .from("restaurants")
-    .select("id, owner_user_id, image_src")
+    .select("id, seller_user_id, owner_user_id, image_src")
     .eq("id", input.restaurantId)
     .maybeSingle();
 
   if (kitchenError) throw kitchenError;
   if (!kitchen) return { ok: false, error: "That kitchen is no longer here." };
-  if (kitchen.owner_user_id !== userId) {
+  try {
+    assertSellerOwns((kitchen as { seller_user_id?: string | null }).seller_user_id ?? kitchen.owner_user_id, userId, "business_owner");
+  } catch {
     return { ok: false, error: "That kitchen is not yours to change." };
   }
 
@@ -1011,7 +1014,7 @@ export async function sendParcel(input: {
     return { ok: false, error: "Add a phone number so the courier can reach the recipient." };
   }
 
-  if (!client) throw new Error("Database is not configured.");
+  if (!client) throw new Error("Database is not configured");
 
   await ensureProfile(client, userId);
 
@@ -1148,7 +1151,7 @@ export async function bookTicketBatch(input: {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to book tickets." };
 
-  if (!client) throw new Error("Database is not configured.");
+  if (!client) throw new Error("Database is not configured");
 
   await ensureProfile(client, userId);
   const settings = await platformSettings();

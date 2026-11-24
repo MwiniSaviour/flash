@@ -10,11 +10,9 @@ import { startCommissionCheckout } from "@/lib/payments/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { COVER_IMAGES, EVENT_COVERS } from "./covers";
-import { businesses, incomingOrders, incomingTickets } from "./data/business";
-import { events } from "./data/events";
-import { restaurants, sizesFor, toppingsFor } from "./data/food";
+import { assertSellerOwns } from "./ownership";
 import { getApprovedBusiness, getOwnedBusiness } from "./repository";
-import type { Business, BusinessKind, BusinessStatus, Restaurant } from "./types";
+import type { Business, BusinessKind, BusinessStatus } from "./types";
 
 /**
  * The business actions.
@@ -31,9 +29,7 @@ import type { Business, BusinessKind, BusinessStatus, Restaurant } from "./types
  * is ignored.
  */
 
-export type BusinessResult<T> =
-  | { ok: true; data: T; demo?: boolean }
-  | { ok: false; error: string };
+export type BusinessResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
 export type BusinessInput = {
   kind: BusinessKind;
@@ -58,7 +54,7 @@ function slugify(value: string): string {
 /* Applying                                                                    */
 /* -------------------------------------------------------------------------- */
 
-/** Apply to run a kitchen, promote events, or drive for ScalDive. */
+/** Apply to run a kitchen, promote events, or drive for Flash. */
 export async function applyForBusiness(
   input: BusinessInput,
 ): Promise<BusinessResult<{ id: string; status: BusinessStatus }>> {
@@ -70,52 +66,7 @@ export async function applyForBusiness(
   if (!userId) return { ok: false, error: "Sign in to apply." };
 
   const client = createAdminClient();
-
-  if (!client) {
-    // The demo keeps the application in the fixture set, so the console shows
-    // it the same way it will show the real row.
-    const business: Business = {
-      id: `biz_demo_${Date.now()}`,
-      userId,
-      kind: input.kind,
-      name,
-      email: input.email.trim(),
-      phone: input.phone.trim(),
-      neighbourhood: input.neighbourhood.trim(),
-      about: input.about.trim(),
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    };
-
-    businesses.push(business);
-
-    // A kitchen needs a storefront row before its console is useful.
-    if (input.kind === "restaurant") {
-      const venue: Restaurant = {
-        id: `rst_demo_${Date.now()}`,
-        slug: `${slugify(name) || "kitchen"}-${Date.now().toString().slice(-4)}`,
-        name,
-        tagline: "",
-        cuisine: "Ghanaian",
-        neighbourhood: input.neighbourhood.trim(),
-        rating: 0,
-        ratingCount: 0,
-        deliveryFee: 0,
-        etaMinutes: 30,
-        distanceKm: 0,
-        image: COVER_IMAGES[0],
-        ownerId: userId,
-        businessId: business.id,
-        menu: [],
-      };
-      restaurants.push(venue);
-    }
-
-    revalidatePath("/profile");
-    revalidateConsole(input.kind);
-
-    return { ok: true, data: { id: business.id, status: "pending" }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   // One live application per kind: applying again while one is waiting only
   // slows the answer down.
@@ -251,43 +202,26 @@ export async function publishMenuItem(input: {
   };
 
   const client = createAdminClient();
-  if (!client) {
-    const id = `mi_demo_${Date.now()}`;
-    const price = Math.round(input.price);
-    const kitchen = restaurants.find(
-      (entry) => entry.id === input.restaurantId && entry.businessId === gate.business.id,
-    );
-
-    if (!kitchen) return { ok: false, error: "That kitchen is not yours to change." };
-
-    kitchen.menu.push({
-      id,
-      name,
-      description: input.description.trim(),
-      tagline: "Made for you tonight",
-      price,
-      image,
-      sizes: sizesFor(price),
-      toppings: toppingsFor(kitchen.cuisine),
-      popular: false,
-      vegetarian: false,
-    });
-
-    revalidateConsole("restaurant", gate.business.id);
-    revalidatePath(`/food/${kitchen.slug}`);
-
-    return { ok: true, data: { id }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: kitchen, error: kitchenError } = await client
     .from("restaurants")
-    .select("id, slug, owner_user_id, business_id")
+    .select("id, slug, seller_user_id, owner_user_id, business_id")
     .eq("id", input.restaurantId)
     .maybeSingle();
 
   if (kitchenError) throw kitchenError;
   if (!kitchen) return { ok: false, error: "That kitchen is no longer here." };
-  if (kitchen.owner_user_id !== gate.userId || kitchen.business_id !== gate.business.id) {
+  try {
+    assertSellerOwns(
+      (kitchen as { seller_user_id?: string | null }).seller_user_id ?? kitchen.owner_user_id,
+      gate.userId,
+      "business_owner",
+    );
+  } catch {
+    return { ok: false, error: "That kitchen is not yours to change." };
+  }
+  if (kitchen.business_id !== gate.business.id) {
     return { ok: false, error: "That kitchen is not yours to change." };
   }
 
@@ -340,36 +274,23 @@ export async function setMenuItemPrice(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) {
-    const price = Math.round(input.price);
-    const kitchen = restaurants.find((entry) =>
-      entry.menu.some((item) => item.id === input.menuItemId),
-    );
-    const item = kitchen?.menu.find((entry) => entry.id === input.menuItemId);
-
-    if (item) {
-      item.price = price;
-      const regular = item.sizes.find((size) => size.id === "regular");
-      if (regular) regular.price = price;
-    }
-
-    revalidateConsole("restaurant");
-    revalidatePath("/food");
-
-    return { ok: true, data: { price }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: item, error: itemError } = await client
     .from("menu_items")
-    .select("id, restaurant_id, restaurants!inner(owner_user_id)")
+    .select("id, restaurant_id, restaurants!inner(seller_user_id, owner_user_id)")
     .eq("id", input.menuItemId)
     .maybeSingle();
 
   if (itemError) throw itemError;
   if (!item) return { ok: false, error: "That dish is no longer on the menu." };
 
-  const owner = (item.restaurants as unknown as { owner_user_id: string } | null)?.owner_user_id;
-  if (owner !== gate.userId) {
+  const owner = item.restaurants as unknown as
+    | { seller_user_id?: string | null; owner_user_id: string }
+    | null;
+  try {
+    assertSellerOwns(owner?.seller_user_id ?? owner?.owner_user_id, gate.userId, "business_owner");
+  } catch {
     return { ok: false, error: "That dish is not yours to change." };
   }
 
@@ -408,28 +329,23 @@ export async function setRestaurantDiscount(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) {
-    const kitchen = restaurants.find((entry) => entry.id === input.restaurantId);
-
-    if (kitchen) {
-      kitchen.discount = percent > 0 ? { label: `${percent}% off`, percent } : undefined;
-    }
-
-    revalidateConsole("restaurant");
-    revalidatePath("/food");
-
-    return { ok: true, data: { percent }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: kitchen, error: kitchenError } = await client
     .from("restaurants")
-    .select("id, owner_user_id")
+    .select("id, seller_user_id, owner_user_id")
     .eq("id", input.restaurantId)
     .maybeSingle();
 
   if (kitchenError) throw kitchenError;
   if (!kitchen) return { ok: false, error: "That kitchen is no longer here." };
-  if (kitchen.owner_user_id !== gate.userId) {
+  try {
+    assertSellerOwns(
+      (kitchen as { seller_user_id?: string | null }).seller_user_id ?? kitchen.owner_user_id,
+      gate.userId,
+      "business_owner",
+    );
+  } catch {
     return { ok: false, error: "That kitchen is not yours to change." };
   }
 
@@ -491,54 +407,7 @@ export async function publishEvent(input: {
   };
 
   const client = createAdminClient();
-  if (!client) {
-    const id = `evt_demo_${Date.now()}`;
-    const slug = slugify(title);
-    const price = Math.round(input.price);
-
-    events.push({
-      id,
-      slug,
-      title,
-      subtitle: "New on ScalDive",
-      description: title,
-      venue: input.venue.trim(),
-      neighbourhood: input.neighbourhood.trim(),
-      city: "Accra",
-      distanceKm: 0,
-      date: input.date,
-      startTime: input.startTime,
-      endTime: input.endTime,
-      image,
-      categories: ["Live Show"],
-      featured: false,
-      trending: false,
-      live: false,
-      priceFrom: price,
-      going: 0,
-      capacity: Math.max(0, Math.round(input.capacity)),
-      ownerId: gate.userId,
-      businessId: gate.business.id,
-      tiers: [
-        {
-          id: `${id}-ga`,
-          name: input.tierName.trim() || "General Admission",
-          description: "",
-          price,
-          perks: [],
-          available: Math.max(0, Math.round(input.capacity)),
-          discountPercent: discount.percent,
-          discountStartsAt: discount.starts ?? undefined,
-          discountEndsAt: discount.ends ?? undefined,
-        },
-      ],
-    });
-
-    revalidateConsole("events", gate.business.id);
-    revalidatePath("/events");
-
-    return { ok: true, data: { id, slug }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const slug = `${slugify(title)}-${Date.now().toString().slice(-5)}`;
 
@@ -550,7 +419,7 @@ export async function publishEvent(input: {
     id: eventId,
     slug,
     title,
-    subtitle: "New on ScalDive",
+    subtitle: "New on Flash",
     description: input.title.trim(),
     venue: input.venue.trim(),
     neighbourhood: input.neighbourhood.trim(),
@@ -611,29 +480,23 @@ export async function setTierPrice(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) {
-    const price = Math.round(input.price);
-    const tier = events.flatMap((event) => event.tiers).find((entry) => entry.id === input.tierId);
-
-    if (tier) tier.price = price;
-
-    revalidateConsole("events");
-    revalidatePath("/events");
-
-    return { ok: true, data: { price }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: tier, error: tierError } = await client
     .from("event_tiers")
-    .select("id, event_id, events!inner(owner_user_id)")
+    .select("id, event_id, events!inner(seller_user_id, owner_user_id)")
     .eq("id", input.tierId)
     .maybeSingle();
 
   if (tierError) throw tierError;
   if (!tier) return { ok: false, error: "That ticket is no longer on sale." };
 
-  const owner = (tier.events as unknown as { owner_user_id: string } | null)?.owner_user_id;
-  if (owner !== gate.userId) {
+  const owner = tier.events as unknown as
+    | { seller_user_id?: string | null; owner_user_id: string }
+    | null;
+  try {
+    assertSellerOwns(owner?.seller_user_id ?? owner?.owner_user_id, gate.userId, "business_owner");
+  } catch {
     return { ok: false, error: "That ticket is not yours to change." };
   }
 
@@ -672,28 +535,23 @@ export async function setEventDiscount(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) {
-    const event = events.find((entry) => entry.id === input.eventId);
-
-    if (event) {
-      event.discount = percent > 0 ? { label: `${percent}% off`, percent } : undefined;
-    }
-
-    revalidateConsole("events");
-    revalidatePath("/events");
-
-    return { ok: true, data: { percent }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: event, error: eventError } = await client
     .from("events")
-    .select("id, owner_user_id")
+    .select("id, seller_user_id, owner_user_id")
     .eq("id", input.eventId)
     .maybeSingle();
 
   if (eventError) throw eventError;
   if (!event) return { ok: false, error: "That event is no longer here." };
-  if (event.owner_user_id !== gate.userId) {
+  try {
+    assertSellerOwns(
+      (event as { seller_user_id?: string | null }).seller_user_id ?? event.owner_user_id,
+      gate.userId,
+      "business_owner",
+    );
+  } catch {
     return { ok: false, error: "That event is not yours to change." };
   }
 
@@ -722,15 +580,7 @@ export async function confirmOrder(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) {
-    const order = incomingOrders.find((entry) => entry.id === input.orderId);
-
-    if (order) order.status = "preparing";
-
-    revalidateConsole("restaurant");
-
-    return { ok: true, data: { status: "preparing" }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: order, error: orderError } = await client
     .from("orders")
@@ -764,15 +614,7 @@ export async function completeOrder(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) {
-    const order = incomingOrders.find((entry) => entry.id === input.orderId);
-
-    if (order) order.status = "delivered";
-
-    revalidateConsole("restaurant");
-
-    return { ok: true, data: { status: "delivered" }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: order, error: orderError } = await client
     .from("orders")
@@ -806,27 +648,23 @@ export async function confirmTicket(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) {
-    const ticket = incomingTickets.find((entry) => entry.id === input.ticketId);
-
-    if (ticket) ticket.status = "confirmed";
-
-    revalidateConsole("events");
-
-    return { ok: true, data: { status: "confirmed" }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: ticket, error: ticketError } = await client
     .from("tickets")
-    .select("id, status, event_id, events!inner(owner_user_id)")
+    .select("id, status, event_id, events!inner(seller_user_id, owner_user_id)")
     .eq("id", input.ticketId)
     .maybeSingle();
 
   if (ticketError) throw ticketError;
   if (!ticket) return { ok: false, error: "That ticket is no longer here." };
 
-  const owner = (ticket.events as unknown as { owner_user_id: string } | null)?.owner_user_id;
-  if (owner !== gate.userId) {
+  const owner = ticket.events as unknown as
+    | { seller_user_id?: string | null; owner_user_id: string }
+    | null;
+  try {
+    assertSellerOwns(owner?.seller_user_id ?? owner?.owner_user_id, gate.userId, "business_owner");
+  } catch {
     return { ok: false, error: "That ticket is not yours to confirm." };
   }
 
@@ -915,44 +753,25 @@ export async function createMenuItem(input: {
   const price = Math.round(input.price);
   const tags = parseTags(input.tags);
   const client = createAdminClient();
-
-  if (!client) {
-    const kitchen = restaurants.find(
-      (entry) => entry.id === input.restaurantId && entry.businessId === gate.business.id,
-    );
-    if (!kitchen) return { ok: false, error: "That kitchen is not yours to change." };
-
-    const id = `mi_demo_${Date.now()}`;
-    kitchen.menu.push({
-      id,
-      name,
-      description: input.description.trim(),
-      tagline: "",
-      price,
-      image,
-      tags,
-      discountPercent: discount.percent,
-      discountStartsAt: discount.starts ?? undefined,
-      discountEndsAt: discount.ends ?? undefined,
-      sizes: sizesFor(price),
-      toppings: toppingsFor(kitchen.cuisine),
-      popular: false,
-      vegetarian: false,
-    });
-
-    revalidateConsole("restaurant", gate.business.id);
-    revalidatePath(`/food/${kitchen.slug}`);
-    return { ok: true, data: { id }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: kitchen, error: kitchenError } = await client
     .from("restaurants")
-    .select("id, slug, owner_user_id, business_id")
+    .select("id, slug, seller_user_id, owner_user_id, business_id")
     .eq("id", input.restaurantId)
     .maybeSingle();
 
   if (kitchenError) throw kitchenError;
-  if (!kitchen || kitchen.owner_user_id !== gate.userId || kitchen.business_id !== gate.business.id) {
+  if (!kitchen || kitchen.business_id !== gate.business.id) {
+    return { ok: false, error: "That kitchen is not yours to change." };
+  }
+  try {
+    assertSellerOwns(
+      (kitchen as { seller_user_id?: string | null }).seller_user_id ?? kitchen.owner_user_id,
+      gate.userId,
+      "business_owner",
+    );
+  } catch {
     return { ok: false, error: "That kitchen is not yours to change." };
   }
 
@@ -1026,46 +845,26 @@ export async function updateMenuItem(input: {
   const price = Math.round(input.price);
   const tags = parseTags(input.tags);
   const client = createAdminClient();
-
-  if (!client) {
-    const kitchen = restaurants.find(
-      (entry) =>
-        entry.businessId === gate.business.id &&
-        entry.menu.some((item) => item.id === input.menuItemId),
-    );
-    const item = kitchen?.menu.find((entry) => entry.id === input.menuItemId);
-    if (!kitchen || !item) return { ok: false, error: "That dish is not yours to change." };
-
-    item.name = name;
-    item.description = input.description.trim();
-    item.price = price;
-    item.tags = tags;
-    item.discountPercent = discount.percent;
-    item.discountStartsAt = discount.starts ?? undefined;
-    item.discountEndsAt = discount.ends ?? undefined;
-    if (input.imageSrc) item.image = {
-      src: input.imageSrc,
-      alt: input.imageAlt ?? item.image.alt,
-    };
-    item.sizes = item.sizes.map((size, index) => ({
-      ...size,
-      price: index === 0 ? price : Math.round(price * 1.3),
-    }));
-
-    revalidateConsole("restaurant", gate.business.id);
-    revalidatePath(`/food/${kitchen.slug}`);
-    return { ok: true, data: { id: item.id }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: item, error: itemError } = await client
     .from("menu_items")
-    .select("id, image_src, restaurants!inner(owner_user_id, business_id, slug)")
+    .select("id, image_src, restaurants!inner(seller_user_id, owner_user_id, business_id, slug)")
     .eq("id", input.menuItemId)
     .maybeSingle();
 
   if (itemError) throw itemError;
   const owner = Array.isArray(item?.restaurants) ? item?.restaurants[0] : item?.restaurants;
-  if (!owner || owner.owner_user_id !== gate.userId || owner.business_id !== gate.business.id) {
+  if (!owner || owner.business_id !== gate.business.id) {
+    return { ok: false, error: "That dish is not yours to change." };
+  }
+  try {
+    assertSellerOwns(
+      (owner as { seller_user_id?: string | null }).seller_user_id ?? owner.owner_user_id,
+      gate.userId,
+      "business_owner",
+    );
+  } catch {
     return { ok: false, error: "That dish is not yours to change." };
   }
 
@@ -1118,27 +917,26 @@ export async function deleteMenuItem(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) {
-    const kitchen = restaurants.find(
-      (entry) =>
-        entry.businessId === gate.business.id &&
-        entry.menu.some((item) => item.id === input.menuItemId),
-    );
-    if (!kitchen) return { ok: false, error: "That dish is not yours to change." };
-    kitchen.menu = kitchen.menu.filter((item) => item.id !== input.menuItemId);
-    revalidateConsole("restaurant", gate.business.id);
-    return { ok: true, data: { id: input.menuItemId }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: item, error: itemError } = await client
     .from("menu_items")
-    .select("id, restaurants!inner(owner_user_id, business_id)")
+    .select("id, restaurants!inner(seller_user_id, owner_user_id, business_id)")
     .eq("id", input.menuItemId)
     .maybeSingle();
 
   if (itemError) throw itemError;
   const owner = Array.isArray(item?.restaurants) ? item?.restaurants[0] : item?.restaurants;
-  if (!owner || owner.owner_user_id !== gate.userId || owner.business_id !== gate.business.id) {
+  if (!owner || owner.business_id !== gate.business.id) {
+    return { ok: false, error: "That dish is not yours to change." };
+  }
+  try {
+    assertSellerOwns(
+      (owner as { seller_user_id?: string | null }).seller_user_id ?? owner.owner_user_id,
+      gate.userId,
+      "business_owner",
+    );
+  } catch {
     return { ok: false, error: "That dish is not yours to change." };
   }
 
@@ -1175,33 +973,25 @@ export async function updateEvent(input: {
   }
 
   const client = createAdminClient();
-  if (!client) {
-    const event = events.find(
-      (entry) => entry.id === input.eventId && entry.businessId === gate.business.id,
-    );
-    if (!event) return { ok: false, error: "That event is not yours to change." };
-
-    event.title = title;
-    event.venue = input.venue.trim();
-    event.neighbourhood = input.neighbourhood.trim();
-    event.date = input.date;
-    event.startTime = input.startTime;
-    event.endTime = input.endTime;
-    if (input.imageSrc) event.image = { src: input.imageSrc, alt: input.imageAlt ?? event.image.alt };
-
-    revalidateConsole("events", gate.business.id);
-    revalidatePath(`/events/${event.slug}`);
-    return { ok: true, data: { id: event.id }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: event, error: eventError } = await client
     .from("events")
-    .select("id, slug, owner_user_id, business_id")
+    .select("id, slug, seller_user_id, owner_user_id, business_id")
     .eq("id", input.eventId)
     .maybeSingle();
 
   if (eventError) throw eventError;
-  if (!event || event.owner_user_id !== gate.userId || event.business_id !== gate.business.id) {
+  if (!event || event.business_id !== gate.business.id) {
+    return { ok: false, error: "That event is not yours to change." };
+  }
+  try {
+    assertSellerOwns(
+      (event as { seller_user_id?: string | null }).seller_user_id ?? event.owner_user_id,
+      gate.userId,
+      "business_owner",
+    );
+  } catch {
     return { ok: false, error: "That event is not yours to change." };
   }
 
@@ -1235,25 +1025,25 @@ export async function closeEvent(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) {
-    const event = events.find(
-      (entry) => entry.id === input.eventId && entry.businessId === gate.business.id,
-    );
-    if (!event) return { ok: false, error: "That event is not yours to change." };
-    event.live = false;
-    event.featured = false;
-    revalidateConsole("events", gate.business.id);
-    return { ok: true, data: { id: event.id }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: event, error: eventError } = await client
     .from("events")
-    .select("id, owner_user_id, business_id")
+    .select("id, seller_user_id, owner_user_id, business_id")
     .eq("id", input.eventId)
     .maybeSingle();
 
   if (eventError) throw eventError;
-  if (!event || event.owner_user_id !== gate.userId || event.business_id !== gate.business.id) {
+  if (!event || event.business_id !== gate.business.id) {
+    return { ok: false, error: "That event is not yours to change." };
+  }
+  try {
+    assertSellerOwns(
+      (event as { seller_user_id?: string | null }).seller_user_id ?? event.owner_user_id,
+      gate.userId,
+      "business_owner",
+    );
+  } catch {
     return { ok: false, error: "That event is not yours to change." };
   }
 
@@ -1290,36 +1080,26 @@ export async function updateTicketTier(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) {
-    const event = events.find(
-      (entry) =>
-        entry.businessId === gate.business.id &&
-        entry.tiers.some((tier) => tier.id === input.tierId),
-    );
-    const tier = event?.tiers.find((entry) => entry.id === input.tierId);
-    if (!event || !tier) return { ok: false, error: "That ticket is not yours to change." };
-
-    tier.name = name;
-    tier.price = Math.round(input.price);
-    tier.available = Math.max(0, Math.round(input.available));
-    tier.salesClosed = input.salesClosed ?? false;
-    tier.discountPercent = discount.percent;
-    tier.discountStartsAt = discount.starts ?? undefined;
-    tier.discountEndsAt = discount.ends ?? undefined;
-
-    revalidateConsole("events", gate.business.id);
-    return { ok: true, data: { id: tier.id }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: tier, error: tierError } = await client
     .from("event_tiers")
-    .select("id, events!inner(owner_user_id, business_id)")
+    .select("id, events!inner(seller_user_id, owner_user_id, business_id)")
     .eq("id", input.tierId)
     .maybeSingle();
 
   if (tierError) throw tierError;
   const owner = Array.isArray(tier?.events) ? tier?.events[0] : tier?.events;
-  if (!owner || owner.owner_user_id !== gate.userId || owner.business_id !== gate.business.id) {
+  if (!owner || owner.business_id !== gate.business.id) {
+    return { ok: false, error: "That ticket is not yours to change." };
+  }
+  try {
+    assertSellerOwns(
+      (owner as { seller_user_id?: string | null }).seller_user_id ?? owner.owner_user_id,
+      gate.userId,
+      "business_owner",
+    );
+  } catch {
     return { ok: false, error: "That ticket is not yours to change." };
   }
 
@@ -1349,27 +1129,26 @@ export async function deleteTicketTier(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) {
-    const event = events.find(
-      (entry) =>
-        entry.businessId === gate.business.id &&
-        entry.tiers.some((tier) => tier.id === input.tierId),
-    );
-    if (!event) return { ok: false, error: "That ticket is not yours to change." };
-    event.tiers = event.tiers.filter((tier) => tier.id !== input.tierId);
-    revalidateConsole("events", gate.business.id);
-    return { ok: true, data: { id: input.tierId }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: tier, error: tierError } = await client
     .from("event_tiers")
-    .select("id, events!inner(owner_user_id, business_id)")
+    .select("id, events!inner(seller_user_id, owner_user_id, business_id)")
     .eq("id", input.tierId)
     .maybeSingle();
 
   if (tierError) throw tierError;
   const owner = Array.isArray(tier?.events) ? tier?.events[0] : tier?.events;
-  if (!owner || owner.owner_user_id !== gate.userId || owner.business_id !== gate.business.id) {
+  if (!owner || owner.business_id !== gate.business.id) {
+    return { ok: false, error: "That ticket is not yours to change." };
+  }
+  try {
+    assertSellerOwns(
+      (owner as { seller_user_id?: string | null }).seller_user_id ?? owner.owner_user_id,
+      gate.userId,
+      "business_owner",
+    );
+  } catch {
     return { ok: false, error: "That ticket is not yours to change." };
   }
 
@@ -1428,7 +1207,7 @@ export async function saveSettlementDetails(input: {
   }
 
   const client = createAdminClient();
-  if (!client) return { ok: true, data: { recipientCode: result.recipientCode }, demo: true };
+  if (!client) throw new Error("Database is not configured");
 
   const { error } = await client
     .from("businesses")
@@ -1460,16 +1239,22 @@ export async function decideTicketRequest(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) return { ok: true, data: { status: input.status }, demo: true };
+  if (!client) throw new Error("Database is not configured");
 
   const { data: request } = await client
     .from("ticket_requests")
-    .select("id, events!inner(owner_user_id, business_id)")
+    .select("id, events!inner(seller_user_id, owner_user_id, business_id)")
     .eq("id", input.requestId)
     .maybeSingle();
 
   const owner = Array.isArray(request?.events) ? request?.events[0] : request?.events;
-  if (!owner || owner.owner_user_id !== gate.userId) {
+  try {
+    assertSellerOwns(
+      (owner as { seller_user_id?: string | null } | null)?.seller_user_id ?? owner?.owner_user_id,
+      gate.userId,
+      "business_owner",
+    );
+  } catch {
     return { ok: false, error: "That request is not yours to decide." };
   }
 
@@ -1493,7 +1278,7 @@ export async function payCommission(input: {
   if ("error" in gate) return { ok: false, error: gate.error };
 
   const client = createAdminClient();
-  if (!client) return { ok: false, error: "No database is connected." };
+  if (!client) throw new Error("Database is not configured");
 
   const { data: charge } = await client
     .from("payments")
@@ -1544,11 +1329,19 @@ async function ownedKitchen(
 ): Promise<boolean> {
   const { data, error } = await client
     .from("restaurants")
-    .select("owner_user_id")
+    .select("seller_user_id, owner_user_id")
     .eq("id", restaurantId)
     .maybeSingle();
 
   if (error) throw error;
-  return data?.owner_user_id === userId;
+  try {
+    assertSellerOwns(
+      (data as { seller_user_id?: string | null } | null)?.seller_user_id ?? data?.owner_user_id,
+      userId,
+      "business_owner",
+    );
+  } catch {
+    return false;
+  }
+  return true;
 }
-
