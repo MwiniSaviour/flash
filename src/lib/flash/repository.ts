@@ -1,11 +1,10 @@
-
 /**
  * The data seam.
  *
- * Every screen reads through this module. When Supabase is connected the reads
- * come from Postgres and the row mappers below turn the snake_case columns
- * into the camelCase view models the UI consumes. Without database
- * configuration the repository throws; it never serves fixtures.
+ * Every screen reads through this module. Reads come from Postgres and the row
+ * mappers below turn the snake_case columns into the camelCase view models the
+ * UI consumes. A missing database is a configuration failure, never a reason
+ * to invent rows.
  *
  * The browser never touches the database. The repository runs on the server and
  * holds the service-role client, so every query has to scope itself to the
@@ -40,7 +39,6 @@ import {
 } from "./delivery";
 import { ensureProfile } from "./profile";
 import { discountLabel } from "./pricing";
-import { DEMO_TODAY } from "./format";
 import type {
   Booking,
   BookingStatus,
@@ -76,6 +74,13 @@ import type {
   TicketRequestRow,
   TicketTierRow,
 } from "./rows";
+
+/** The live path requires a database; absence is a configuration failure. */
+function requireClient(): AdminClient {
+  const client = createAdminClient();
+  if (!client) throw new Error("Database is not configured");
+  return client;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Mappers                                                                     */
@@ -610,15 +615,12 @@ async function liveBookings(client: AdminClient, userId: string): Promise<Bookin
 /* -------------------------------------------------------------------------- */
 
 export async function listEvents(): Promise<Event[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
+  const client = requireClient();
   return liveEvents(client);
 }
 
 export async function getEventBySlug(slug: string): Promise<Event | undefined> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const { data, error } = await client
     .from("events")
     .select("*, event_tiers(*)")
@@ -633,9 +635,7 @@ export async function getEventBySlug(slug: string): Promise<Event | undefined> {
 }
 
 export async function getEventById(id: string): Promise<Event | undefined> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const { data, error } = await client
     .from("events")
     .select("*, event_tiers(*)")
@@ -651,9 +651,7 @@ export async function getEventById(id: string): Promise<Event | undefined> {
 
 /** The event the Events screen leads with. */
 export async function getFeaturedEvent(): Promise<Event | undefined> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const { data, error } = await client
     .from("events")
     .select("*, event_tiers(*)")
@@ -670,13 +668,11 @@ export async function getFeaturedEvent(): Promise<Event | undefined> {
 
 /** Soonest first, featured events included. */
 export async function getUpcomingEvents(): Promise<Event[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const { data, error } = await client
     .from("events")
     .select("*, event_tiers(*)")
-    .gte("event_date", DEMO_TODAY)
+    .gte("event_date", new Date().toISOString().slice(0, 10))
     .order("event_date", { ascending: true });
 
   if (error) throw error;
@@ -688,9 +684,7 @@ export async function getUpcomingEvents(): Promise<Event[]> {
 
 /** Trending events, most-booked first. */
 export async function getTrendingEvents(limit = 4): Promise<Event[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const { data, error } = await client
     .from("events")
     .select("*, event_tiers(*)")
@@ -706,15 +700,12 @@ export async function getTrendingEvents(limit = 4): Promise<Event[]> {
 }
 
 export async function listRestaurants(): Promise<Restaurant[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
+  const client = requireClient();
   return liveRestaurants(client);
 }
 
 export async function getRestaurantBySlug(slug: string): Promise<Restaurant | undefined> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const { data, error } = await client
     .from("restaurants")
     .select("*, menu_items(*, menu_item_sizes(*), menu_item_toppings(*))")
@@ -742,9 +733,7 @@ export async function getTrendingRestaurants(limit = 4): Promise<Restaurant[]> {
  * but the classes and their fares come from the database.
  */
 export async function getRideQuote(): Promise<RideQuote> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const { data, error } = await client
     .from("ride_classes")
     .select("*")
@@ -756,9 +745,7 @@ export async function getRideQuote(): Promise<RideQuote> {
 }
 
 export async function getSavedPlaces(): Promise<SavedPlace[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return [];
 
@@ -778,21 +765,18 @@ export async function getSavedPlaces(): Promise<SavedPlace[]> {
 }
 
 export async function listTickets(): Promise<Ticket[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return [];
   return liveTickets(client, userId);
 }
 
 /**
- * Sold-out requests, read from the database.
+ * Sold-out requests. With no database, demo requests come from the in-memory
+ * store so planner and admin screens have something to show.
  */
 export async function listTicketRequests(eventIds?: string[]): Promise<TicketRequest[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   let query = client
     .from("ticket_requests")
     .select("*, events(title), event_tiers(name)")
@@ -837,9 +821,7 @@ export async function listUserPayments(): Promise<
     createdAt: string;
   }[]
 > {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return [];
 
@@ -863,18 +845,14 @@ export async function listUserPayments(): Promise<
 }
 
 export async function listBookings(): Promise<Booking[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return [];
   return liveBookings(client, userId);
 }
 
 export async function getActiveOrder(): Promise<Order | undefined> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return undefined;
 
@@ -884,13 +862,9 @@ export async function getActiveOrder(): Promise<Order | undefined> {
 }
 
 export async function getCurrentUser(): Promise<FlashUser> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
-  if (!userId) {
-    return { id: "guest", name: "Customer", email: "", avatarUrl: "", memberSince: "", notificationsEnabled: false };
-  }
+  if (!userId) throw new Error("No signed-in customer.");
   return liveProfile(client, userId);
 }
 
@@ -901,9 +875,7 @@ export async function getCurrentUser(): Promise<FlashUser> {
  * offer. This reads the kitchens whose owner is the signed-in customer.
  */
 export async function listMyKitchens(): Promise<Restaurant[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return [];
 
@@ -927,9 +899,7 @@ export async function listMyKitchens(): Promise<Restaurant[]> {
  * treat a missing row as "finish setup", not as a foreign business.
  */
 export async function listKitchen(businessId: string): Promise<Restaurant | undefined> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return undefined;
 
@@ -966,9 +936,7 @@ function toBusiness(row: BusinessRow): Business {
 
 /** Every business the signed-in account has applied for or runs. */
 export async function listBusinesses(): Promise<Business[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return [];
 
@@ -1016,9 +984,7 @@ export async function isBusinessAccount(): Promise<boolean> {
   const role = await currentRole();
   if (canManageBusiness(role)) return true;
 
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return false;
 
@@ -1035,9 +1001,7 @@ export async function isBusinessAccount(): Promise<boolean> {
 
 /** The events the signed-in account promotes. */
 export async function listMyEvents(): Promise<Event[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return [];
 
@@ -1056,9 +1020,7 @@ export async function listMyEvents(): Promise<Event[]> {
 
 /** The events one business promotes, not the whole account's. */
 export async function listEventsForBusiness(businessId: string): Promise<Event[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return [];
 
@@ -1078,9 +1040,7 @@ export async function listEventsForBusiness(businessId: string): Promise<Event[]
 
 /** The orders a kitchen has to deal with. */
 export async function listIncomingOrders(restaurantId: string): Promise<Order[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const { data, error } = await client
     .from("orders")
     .select("*, restaurants(*), drivers(*), order_lines(*)")
@@ -1094,9 +1054,7 @@ export async function listIncomingOrders(restaurantId: string): Promise<Order[]>
 
 /** The tickets an event manager has to confirm. */
 export async function listIncomingTickets(eventIds: string[]): Promise<Ticket[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   if (eventIds.length === 0) return [];
 
   const { data, error } = await client
@@ -1128,9 +1086,7 @@ export async function listCustomers(
   businessId: string,
   kind: "restaurant" | "events",
 ): Promise<ConsoleCustomer[]> {
-  const client = createAdminClient();
-
-  if (!client) throw new Error("Database is not configured.");
+  const client = requireClient();
 
   const readPurchases = async () => {
     if (kind === "restaurant") {
@@ -1207,9 +1163,7 @@ export async function listCustomers(
 
 /** Everything of the customer's that is still moving. */
 export async function listDeliveries(): Promise<Delivery[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return [];
 
@@ -1234,9 +1188,7 @@ export async function listDeliveries(): Promise<Delivery[]> {
 
 /** Everything that has already arrived. */
 export async function listPastDeliveries(): Promise<PastDelivery[]> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return [];
 
@@ -1255,9 +1207,7 @@ export async function listPastDeliveries(): Promise<PastDelivery[]> {
 
 /** One delivery, for its own screen. */
 export async function getDelivery(id: string): Promise<Delivery | undefined> {
-  const client = createAdminClient();
-  if (!client) throw new Error("Database is not configured.");
-
+  const client = requireClient();
   const userId = await currentUserId();
   if (!userId) return undefined;
 
