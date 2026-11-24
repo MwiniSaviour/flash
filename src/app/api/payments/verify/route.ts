@@ -29,10 +29,7 @@ export async function GET(request: Request) {
 
   const client = createAdminClient();
   if (!client) {
-    // Paystack is the authority for the charge. The local ledger row cannot be
-    // written without a database, but a verified transaction must still be
-    // reported honestly rather than as a configuration failure.
-    return NextResponse.json({ status: "success", reference });
+    return NextResponse.json({ error: "Database is not configured." }, { status: 503 });
   }
 
   const { data: payment } = await client

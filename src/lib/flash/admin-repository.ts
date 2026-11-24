@@ -1,8 +1,6 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { activeOrder, tickets } from "@/lib/flash/data/account";
-import { businesses, incomingOrders, incomingTickets } from "@/lib/flash/data/business";
 import { events } from "@/lib/flash/data/events";
 import { restaurants } from "@/lib/flash/data/food";
 import { DEMO_TODAY } from "@/lib/flash/format";
@@ -80,59 +78,10 @@ function buildSeries(
   return [...buckets.values()];
 }
 
-function fixtureOverview(days: number): AdminOverview {
-  const orders = [activeOrder, ...incomingOrders];
-  const allTickets = [...tickets, ...incomingTickets];
-
-  const activity: AdminActivity[] = [
-    ...businesses.map((business) => ({
-      id: `biz-${business.id}`,
-      kind: "application" as const,
-      label: business.name,
-      detail: `${business.kind} application ${business.status}`,
-      at: business.decidedAt ?? business.createdAt,
-    })),
-    ...orders.map((order) => ({
-      id: `ord-${order.id}`,
-      kind: "order" as const,
-      label: `Order #${order.number}`,
-      detail: `${order.status} · ${order.lines.length} item${order.lines.length === 1 ? "" : "s"}`,
-      at: order.placedAt,
-    })),
-    ...allTickets.map((ticket) => ({
-      id: `tkt-${ticket.id}`,
-      kind: "ticket" as const,
-      label: ticket.reference,
-      detail: `${ticket.tierName} · ${ticket.quantity} ticket${ticket.quantity === 1 ? "" : "s"}`,
-      at: ticket.purchasedAt,
-    })),
-  ].sort((a, b) => b.at.localeCompare(a.at));
-
-  return {
-    customers: 1,
-    businesses: businesses.length,
-    pendingApprovals: businesses.filter((business) => business.status === "pending").length,
-    orders: orders.length,
-    tickets: allTickets.reduce((total, ticket) => total + ticket.quantity, 0),
-    bookedValue: orders.reduce(
-      (total, order) => total + order.subtotal - order.discount + order.deliveryFee,
-      0,
-    ),
-    collected: 0,
-    commission: 0,
-    series: buildSeries(
-      days,
-      orders.map((order) => order.placedAt),
-      allTickets.map((ticket) => ticket.purchasedAt),
-    ),
-    activity: activity.slice(0, 8),
-  };
-}
-
 /** Platform-wide figures. Every read is gated by requireAdmin at the caller. */
 export async function getAdminOverview(days: number): Promise<AdminOverview> {
   const client = createAdminClient();
-  if (!client) return fixtureOverview(days);
+  if (!client) throw new Error("Database is not configured");
 
   const [profiles, businessRows, orderRows, ticketRows, paymentRows] = await Promise.all([
     client.from("profiles").select("id, created_at, role"),
@@ -186,7 +135,7 @@ export async function getAdminOverview(days: number): Promise<AdminOverview> {
     collected: paid.reduce((total, row) => total + row.amount_pesewas, 0) / 100,
     commission: paid.reduce((total, row) => total + row.commission_pesewas, 0) / 100,
     series: buildSeries(
-      30,
+      days,
       (orderRows.data ?? []).map((row) => row.placed_at),
       (ticketRows.data ?? []).map((row) => row.purchased_at),
     ),
@@ -196,7 +145,7 @@ export async function getAdminOverview(days: number): Promise<AdminOverview> {
 
 export async function listApplications(): Promise<AdminApplication[]> {
   const client = createAdminClient();
-  if (!client) return businesses.map((business) => ({ ...business }));
+  if (!client) throw new Error("Database is not configured");
 
   const { data, error } = await client
     .from("businesses")
@@ -218,7 +167,7 @@ export async function listApplications(): Promise<AdminApplication[]> {
 
 export async function listAdminPayments(): Promise<AdminPayment[]> {
   const client = createAdminClient();
-  if (!client) return [];
+  if (!client) throw new Error("Database is not configured");
 
   const { data, error } = await client
     .from("payments")
@@ -254,7 +203,7 @@ export type AdminBooking = {
 
 export async function listAdminBookings(): Promise<AdminBooking[]> {
   const client = createAdminClient();
-  if (!client) return [];
+  if (!client) throw new Error("Database is not configured");
 
   const [rides, parcels, orders, tickets, payments] = await Promise.all([
     client.from("rides").select("id, number, reference, status, price, user_id, rider_id, requested_at, scheduled_for, pickup, dropoff"),
@@ -341,7 +290,7 @@ export async function listAdminBookings(): Promise<AdminBooking[]> {
 
 export async function listPayouts(): Promise<AdminPayment[]> {
   const client = createAdminClient();
-  if (!client) return [];
+  if (!client) throw new Error("Database is not configured");
 
   const { data, error } = await client
     .from("payouts")
@@ -371,7 +320,7 @@ export function adminCatalogueCounts() {
 
 export async function reassignRideDriver(rideId: string, driverId: string): Promise<{ ok: boolean; error?: string }> {
   const client = createAdminClient();
-  if (!client) return { ok: false, error: "No database connected." };
+  if (!client) throw new Error("Database is not configured");
 
   // Only change the driver. A scheduled ride keeps its scheduled status so the
   // new driver still picks it up at the requested time.
@@ -386,13 +335,13 @@ export async function reassignRideDriver(rideId: string, driverId: string): Prom
 
 export async function listDrivers(): Promise<{ id: string; name: string }[]> {
   const client = createAdminClient();
-  if (!client) return [];
+  if (!client) throw new Error("Database is not configured");
 
   const { data, error } = await client
     .from("drivers")
     .select("id, name")
     .order("name");
 
-  if (error) return [];
+  if (error) throw error;
   return (data ?? []).map((d) => ({ id: d.id, name: d.name }));
 }

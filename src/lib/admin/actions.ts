@@ -3,8 +3,6 @@
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/admin/auth";
-import { businesses } from "@/lib/flash/data/business";
-import { DEMO_SETTINGS } from "@/lib/payments/commission";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { reassignRideDriver } from "@/lib/flash/admin-repository";
 
@@ -19,17 +17,8 @@ export async function decideApplication(
   if (!admin) return { ok: false, error: "You do not have access to this action." };
 
   const client = createAdminClient();
+  if (!client) throw new Error("Database is not configured");
   const decidedAt = new Date().toISOString();
-
-  if (!client) {
-    const row = businesses.find((business) => business.id === businessId);
-    if (!row) return { ok: false, error: "That application is no longer here." };
-    row.status = decision;
-    row.decidedAt = decidedAt;
-    revalidatePath("/admin");
-    revalidatePath("/admin/approvals");
-    return { ok: true };
-  }
 
   const { error } = await client
     .from("businesses")
@@ -85,11 +74,7 @@ export async function updatePlatformSettings(input: {
   }
 
   const client = createAdminClient();
-  if (!client) {
-    Object.assign(DEMO_SETTINGS, input);
-    revalidatePath("/admin/settings");
-    return { ok: true };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { error } = await client
     .from("platform_settings")
@@ -122,7 +107,7 @@ export async function decideTicketRequestAsAdmin(input: {
   if (!admin) return { ok: false, error: "You do not have access to this action." };
 
   const client = createAdminClient();
-  if (!client) return { ok: true };
+  if (!client) throw new Error("Database is not configured");
 
   const { error } = await client
     .from("ticket_requests")

@@ -48,7 +48,7 @@ export default async function EventsOverviewPage({
     listCustomers(businessId, "events"),
     (async () => {
       const client = createAdminClient();
-      if (!client) return [];
+      if (!client) throw new Error("Database is not configured");
       const { data } = await client
         .from("payments")
         .select("id, amount_pesewas, reference, ticket_id")
