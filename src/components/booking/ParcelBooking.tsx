@@ -26,6 +26,7 @@ import {
   type ParcelType,
 } from "@/lib/flash/data/parcels";
 import { cedis, distance } from "@/lib/flash/format";
+import { recordPurchase } from "@/lib/flash/local-purchases";
 import { parcelFareCedis, type TransportRates } from "@/lib/flash/pricing";
 import type { SavedPlace } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
@@ -100,16 +101,35 @@ export function ParcelBooking({
         return;
       }
 
-      if (result.data.checkout) {
-        await payWithIntent(result.data.checkout, () => {
-          setSent({ trackingNumber: result.data.trackingNumber, demo: result.data.demo });
+      const complete = () => {
+        recordPurchase({
+          kind: "parcel",
+          id: result.data.id,
+          reference: result.data.trackingNumber,
+          number: result.data.trackingNumber,
+          title: `${type.name} to ${recipient}`,
+          subtitle: `${pickup || "Pick-up"} → ${dropoff || "Drop-off"}`,
+          price: result.data.price,
+          paid: method !== "cash",
+          image: {
+            src: "/assets/images/ride-xl-coach.jpg",
+            alt: "A coach bus with its lights on at dusk",
+          },
+          details: [`${quantity} parcel${quantity === 1 ? "" : "s"} · ${size}`, details || "No contents note"],
+          from: pickup,
+          fromPlace: "Accra",
+          to: dropoff,
+          toPlace: "Accra",
         });
+        setSent({ trackingNumber: result.data.trackingNumber, demo: result.data.demo });
+      };
+
+      if (result.data.checkout) {
+        await payWithIntent(result.data.checkout, complete);
         return;
       }
 
-      setSent({ trackingNumber: result.data.trackingNumber, demo: result.data.demo });
-
-      setSent({ trackingNumber: result.data.trackingNumber, demo: result.data.demo });
+      complete();
     });
   }
 

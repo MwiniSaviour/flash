@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon, type IconName } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
+import { recordPurchase } from "@/lib/flash/local-purchases";
 import { LocationFields } from "@/components/flash/LocationFields";
 import { LiveMap } from "@/components/flash/LiveMap";
 import type { Schedule } from "@/components/flash/SchedulePicker";
@@ -120,16 +121,38 @@ export function RideBooking({
         return;
       }
 
-      if (result.data.checkout) {
-        await payWithIntent(result.data.checkout, () => {
-          setReference({ value: result.data.reference, demo: result.data.demo });
+      const complete = () => {
+        recordPurchase({
+          kind: "ride",
+          id: result.data.id,
+          reference: result.data.reference,
+          number: result.data.number,
+          title: `${selected.name} to ${dropoff || "your destination"}`,
+          subtitle: `${pickup || "Pick-up"} → ${dropoff || "Drop-off"}`,
+          price: result.data.price,
+          paid: method !== "cash",
+          image: {
+            src: "/assets/images/ride-driver-pov.jpg",
+            alt: "A driver's hands on the steering wheel at dusk",
+          },
+          details: [
+            `${passengers} passenger${passengers === 1 ? "" : "s"}`,
+            `${distanceKm} km · ${durationMinutes} min`,
+          ],
+          from: pickup,
+          fromPlace: "Accra",
+          to: dropoff,
+          toPlace: "Accra",
         });
+        setReference({ value: result.data.reference, demo: result.data.demo });
+      };
+
+      if (result.data.checkout) {
+        await payWithIntent(result.data.checkout, complete);
         return;
       }
 
-      setReference({ value: result.data.reference, demo: result.data.demo });
-
-      setReference({ value: result.data.reference, demo: result.data.demo });
+      complete();
     });
   }
 

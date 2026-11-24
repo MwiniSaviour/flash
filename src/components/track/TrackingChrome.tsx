@@ -48,6 +48,8 @@ export function GreetingHeader({ user }: { user: FlashUser }) {
 }
 
 const stageTone = {
+  confirmed: { tone: "success" as const, icon: "check-circle" as const },
+  "pending delivery": { tone: "warning" as const, icon: "clock" as const },
   scheduled: { tone: "brand" as const, icon: "calendar" as const },
   preparing: { tone: "warning" as const, icon: "clock" as const },
   "on the way": { tone: "brand" as const, icon: "truck" as const },
@@ -111,16 +113,24 @@ export function DeliveryCard({ delivery }: { delivery: Delivery }) {
         )}
       </span>
 
-      <RouteProgress progress={delivery.progress} className="mt-3" />
-
-      <span className="mt-2.5 flex items-center justify-between gap-2 text-[11.5px] text-muted">
-        <span className="truncate">{delivery.fromPlace}</span>
-        <span className="flex shrink-0 items-center gap-1 font-semibold text-ink">
-          <Icon name="timer" size={12} className="text-brand" />
-          {delivery.eta}
+      {delivery.status === "on the way" || delivery.status === "arriving" || delivery.status === "delivered" ? (
+        <>
+          <RouteProgress progress={delivery.progress} className="mt-3" />
+          <span className="mt-2.5 flex items-center justify-between gap-2 text-[11.5px] text-muted">
+            <span className="truncate">{delivery.fromPlace}</span>
+            <span className="flex shrink-0 items-center gap-1 font-semibold text-ink">
+              <Icon name="timer" size={12} className="text-brand" />
+              {delivery.eta}
+            </span>
+            <span className="truncate text-right">{delivery.toPlace}</span>
+          </span>
+        </>
+      ) : (
+        <span className="mt-3 flex items-center gap-1.5 text-[11.5px] text-muted-soft">
+          <Icon name="clock" size={12} />
+          No rider assigned yet
         </span>
-        <span className="truncate text-right">{delivery.toPlace}</span>
-      </span>
+      )}
     </Link>
   );
 }

@@ -11,6 +11,7 @@ import { SegmentedControl } from "@/components/flash/SegmentedControl";
 import { EmptyState, Price } from "@/components/flash/ui";
 import { useCart } from "@/lib/cart";
 import { placeOrder } from "@/lib/flash/actions";
+import { recordPurchase } from "@/lib/flash/local-purchases";
 import { payWithIntent } from "@/lib/payments/inline";
 import { cedis } from "@/lib/flash/format";
 import { deliveryQuote, type TransportRates } from "@/lib/flash/pricing";
@@ -71,31 +72,46 @@ export function FoodCheckout({
         return;
       }
 
-      if (result.data.checkout) {
-        await payWithIntent(result.data.checkout, () => {
-          setPlaced({
+      const complete = () => {
+        recordPurchase({
+          kind: "order",
+          id: result.data.id,
+          reference: result.data.reference,
+          number: result.data.number,
+          title: cart.restaurant?.name ?? "Flash order",
+          subtitle: `${cart.lines.length} item${cart.lines.length === 1 ? "" : "s"} · ${fulfilment}`,
+          price: result.data.total,
+          paid: method !== "cash",
+          // CartRestaurant no longer carries an image; the receipt still
+          // needs one, so use a real catalogue frame rather than inventing a
+          // field that the cart does not have.
+          image: {
+            src: "/assets/images/dish-fried-rice.jpg",
+            alt: "Fried rice with chicken, sweetcorn and spring onion on a square plate",
+          },
+          details: [
+            `${cart.lines.length} item${cart.lines.length === 1 ? "" : "s"}`,
+            fulfilment === "delivery" ? address : "Collect from the kitchen",
+          ],
+          from: cart.restaurant?.name,
+          fromPlace: cart.restaurant?.neighbourhood,
+          to: address,
+          toPlace: "Accra",
+        });
+        setPlaced({
           reference: result.data.reference,
           etaMinutes: result.data.etaMinutes,
           total: result.data.total,
           demo: result.data.demo,
         });
-        });
+      };
+
+      if (result.data.checkout) {
+        await payWithIntent(result.data.checkout, complete);
         return;
       }
 
-      setPlaced({
-          reference: result.data.reference,
-          etaMinutes: result.data.etaMinutes,
-          total: result.data.total,
-          demo: result.data.demo,
-        });
-
-      setPlaced({
-        reference: result.data.reference,
-        etaMinutes: result.data.etaMinutes,
-        total: result.data.total,
-        demo: result.data.demo,
-      });
+      complete();
     });
   }
 
