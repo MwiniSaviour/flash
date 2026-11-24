@@ -1,4 +1,4 @@
-# Production smoke — ScalDive
+# Production smoke - Flash
 
 Run these after any deploy. Secrets are set on the Vercel project only; never
 paste values into a file, chat or commit.
@@ -14,6 +14,14 @@ npx vitest run
 ```
 
 Expected: all pass; no `demo: true` path in a successful write.
+
+## Database API
+
+Flash does not use a Supabase cloud project. The server talks to the VPS
+PostgREST API through `DATABASE_API_URL`, set to
+`https://db-api.flash.scalmint.com` in Vercel. The server-only
+`DATABASE_SERVICE_ROLE_KEY` is an HS256 JWT signed with the VPS
+`PGRST_JWT_SECRET`. There is no browser database credential.
 
 ## Location-sensitive catalogue
 
@@ -36,16 +44,41 @@ Expected: all pass; no `demo: true` path in a successful write.
 
 - New uploads go through `uploadImageAction`; confirm the Cloudinary asset is
   webp, at most 2400px and stored under `CLOUDINARY_FOLDER`.
-- No product row points at `/assets/images/…`.
+- No product row points at `/assets/images/`.
 
-## Payments
+## Payments and commissions
 
 - A paid ticket/order/ride/parcel appears in Bookings and Track after
-  verification; progress and ETA appear only once a rider is assigned and the
-  state is on the way, arriving or delivered.
+  verification.
+- Commission is computed from database prices on the server: ticket sales,
+  food orders and ride/parcel jobs each produce a payment row with the expected
+  commission pesewas. The browser never supplies the commission.
+- Progress and ETA appear only once a rider is assigned and the state is on the
+  way, arriving or delivered.
+
+## Live tracking
+
+- `GET /api/live` returns 401 without a session and `text/event-stream` with
+  `cache-control: no-store` for a signed-in user.
+- A dispatch status change refreshes Track/Bookings without a manual reload.
+- The stream emits only `event: refresh` with `data: {}` — never rows, emails,
+  tokens or user ids.
+
+## Security
+
+- No secret appears in `NEXT_PUBLIC_*`, source, logs or `git diff`.
+- Payment writes with no database throw `Database is not configured`; they never
+  return `ok: true`.
+- The service-role key is imported only through `src/lib/supabase/admin.ts`,
+  guarded by `server-only`.
 
 ## Rollback
 
 - Re-deploy the previous Vercel deployment from the deployment list.
 - Database changes are additive; revert the latest migration before
   re-deploying code that depends on it.
+
+## Remaining blockers
+
+- Cloudinary backfill of catalogue images and deletion of local files.
+- Clerk seller provisioning (five accounts and their `seller_user_id` rows).
