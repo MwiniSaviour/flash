@@ -5,6 +5,7 @@ import { Webhook } from "svix";
 
 import { getEnv } from "@/lib/env";
 import { DEFAULT_ROLE, roleOf } from "@/lib/flash/roles";
+import { upsertSeller } from "@/lib/flash/sellers";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -98,7 +99,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No user id in the event." }, { status: 400 });
     }
 
-    if (!client) return NextResponse.json({ received: true });
+    if (!client) {
+      return NextResponse.json({ error: "Database is not configured." }, { status: 503 });
+    }
 
     const { data: existing, error: readError } = await client
       .from("profiles")
@@ -127,11 +130,22 @@ export async function POST(request: Request) {
     );
 
     if (error) throw error;
+
+    if (roleOf(user.public_metadata?.role ?? DEFAULT_ROLE) === "seller") {
+      await upsertSeller({
+        clerkUserId: user.id,
+        displayName: name,
+        email: emailOf(user),
+      });
+    }
+
     return NextResponse.json({ received: true });
   }
 
   if (event.type === "user.deleted") {
-    if (!client) return NextResponse.json({ received: true });
+    if (!client) {
+      return NextResponse.json({ error: "Database is not configured." }, { status: 503 });
+    }
     if (!event.data.id) {
       return NextResponse.json({ error: "No user id in the event." }, { status: 400 });
     }
