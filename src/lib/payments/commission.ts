@@ -1,5 +1,6 @@
 import "server-only";
 
+import { hasSupabaseAdminEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { DEMO_SETTINGS, type PlatformSettings } from "./commission-math";
@@ -7,10 +8,14 @@ import { DEMO_SETTINGS, type PlatformSettings } from "./commission-math";
 export { computeCommission, computeTicketCommission, DEMO_SETTINGS } from "./commission-math";
 export type { Commission, CommissionInput, PlatformSettings } from "./commission-math";
 
-/** Reads the single settings row; the demo uses the documented defaults. */
+/**
+ * The authoritative settings row. Commission, fares and payouts are computed
+ * from these numbers, so an unconfigured database must fail instead of
+ * settling at invented demo rates.
+ */
 export async function platformSettings(): Promise<PlatformSettings> {
   const client = createAdminClient();
-  if (!client) return DEMO_SETTINGS;
+  if (!client) throw new Error("Database is not configured");
 
   const { data, error } = await client
     .from("platform_settings")
@@ -19,7 +24,7 @@ export async function platformSettings(): Promise<PlatformSettings> {
     .maybeSingle();
 
   if (error) throw error;
-  if (!data) return DEMO_SETTINGS;
+  if (!data) throw new Error("Platform settings row is missing");
 
   return {
     goodsCommissionBps: Number(data.goods_commission_bps),
@@ -32,4 +37,16 @@ export async function platformSettings(): Promise<PlatformSettings> {
     deliveryPerKmPesewas: Number(data.delivery_per_km_pesewas ?? 200),
     deliveryBaseKm: Number(data.delivery_base_km ?? 3),
   };
+}
+
+/**
+ * Display-only rates for the storefront shell.
+ *
+ * The demo has no database, so screens that only draw a quote use the
+ * documented defaults. No charge, settlement or persisted price may come from
+ * this call: those paths use platformSettings() and fail closed without a DB.
+ */
+export async function displaySettings(): Promise<PlatformSettings> {
+  if (!hasSupabaseAdminEnv()) return DEMO_SETTINGS;
+  return platformSettings();
 }

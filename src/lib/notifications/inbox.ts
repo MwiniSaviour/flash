@@ -1,6 +1,7 @@
 import "server-only";
 
 import { currentUserId } from "@/lib/auth/server";
+import { hasSupabaseAdminEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { notificationHref } from "./copy";
@@ -30,7 +31,7 @@ type Row = {
 
 async function rowsFor(where: "user" | "business"): Promise<Row[]> {
   const client = createAdminClient();
-  if (!client) return [];
+  if (!client) throw new Error("Database is not configured");
   const userId = await currentUserId();
   if (!userId) return [];
   let query = client
@@ -59,6 +60,9 @@ function toItem(row: Row): PersistedNotification {
 }
 
 export async function getPersistedNotifications(): Promise<PersistedNotification[]> {
+  // The storefront demo has no persisted rows at all, so an empty inbox is the
+  // truthful answer rather than invented data. Console reads below require a DB.
+  if (!hasSupabaseAdminEnv()) return [];
   return (await rowsFor("user")).map(toItem);
 }
 
@@ -68,7 +72,7 @@ export async function getBusinessNotifications(): Promise<PersistedNotification[
 
 export async function listNotificationIds(): Promise<string[]> {
   const client = createAdminClient();
-  if (!client) return [];
+  if (!client) throw new Error("Database is not configured");
   const userId = await currentUserId();
   if (!userId) return [];
   const { data } = await client
@@ -81,7 +85,7 @@ export async function listNotificationIds(): Promise<string[]> {
 
 export async function getBusinessUnreadCount(): Promise<number> {
   const client = createAdminClient();
-  if (!client) return 0;
+  if (!client) throw new Error("Database is not configured");
   const userId = await currentUserId();
   if (!userId) return 0;
   const { count, error } = await client
@@ -97,7 +101,7 @@ export async function getBusinessUnreadCount(): Promise<number> {
 export async function markPersistedRead(ids: string[]): Promise<void> {
   if (!ids.length) return;
   const client = createAdminClient();
-  if (!client) return;
+  if (!client) throw new Error("Database is not configured");
   const userId = await currentUserId();
   if (!userId) return;
   const { error } = await client

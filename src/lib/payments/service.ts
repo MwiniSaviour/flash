@@ -53,6 +53,7 @@ export async function startCheckout(input: {
   }
 
   const client = createAdminClient();
+  if (!client) throw new Error("Database is not configured");
 
   const commission = computeCommission({
     itemsPesewas: pesewas(input.itemsCedis),
@@ -63,26 +64,24 @@ export async function startCheckout(input: {
 
   const reference = newReference("FLP");
 
-  if (client) {
-    const { error } = await client.from("payments").insert({
-      id: reference,
-      user_id: input.userId,
-      kind: input.kind,
-      reference,
-      provider: "paystack",
-      status: "pending",
-      amount_pesewas: commission.totalChargedPesewas,
-      commission_pesewas: commission.totalPesewas,
-      seller_net_pesewas: commission.sellerNetPesewas,
-      driver_pesewas: commission.driverPesewas,
-      order_id: input.orderId ?? null,
-      ticket_id: input.ticketId ?? null,
-      ride_id: input.rideId ?? null,
-      parcel_id: input.parcelId ?? null,
-    });
+  const { error } = await client.from("payments").insert({
+    id: reference,
+    user_id: input.userId,
+    kind: input.kind,
+    reference,
+    provider: "paystack",
+    status: "pending",
+    amount_pesewas: commission.totalChargedPesewas,
+    commission_pesewas: commission.totalPesewas,
+    seller_net_pesewas: commission.sellerNetPesewas,
+    driver_pesewas: commission.driverPesewas,
+    order_id: input.orderId ?? null,
+    ticket_id: input.ticketId ?? null,
+    ride_id: input.rideId ?? null,
+    parcel_id: input.parcelId ?? null,
+  });
 
-    if (error) throw error;
-  }
+  if (error) throw error;
 
   const result = await initPaystackTransaction({
     amountPesewas: commission.totalChargedPesewas,
@@ -92,7 +91,7 @@ export async function startCheckout(input: {
   });
 
   if (!result.ok || !result.checkoutUrl) {
-    if (client) await client.from("payments").update({ status: "failed" }).eq("id", reference);
+    await client.from("payments").update({ status: "failed" }).eq("id", reference);
     throw new Error(result.message || "We could not start the payment.");
   }
 
@@ -102,9 +101,8 @@ export async function startCheckout(input: {
     accessCode: result.accessCode,
     amountPesewas: commission.totalChargedPesewas,
     email: input.email,
-    // A real Paystack transaction was started. The flag only says the local
-    // ledger row could not be written because no database is connected.
-    demo: !client,
+    // Both the Paystack transaction and the local ledger row exist.
+    demo: false,
   };
 }
 
@@ -119,7 +117,7 @@ export async function fulfilPayment(payload: PaystackWebhookPayload): Promise<bo
   }
 
   const client = createAdminClient();
-  if (!client) return false;
+  if (!client) throw new Error("Database is not configured");
 
   const { data: payment, error } = await client
     .from("payments")
@@ -259,7 +257,7 @@ export async function fulfilPayment(payload: PaystackWebhookPayload): Promise<bo
 /** Releases a single held payout through Paystack. */
 async function releasePayout(payoutId: string, recipient: string | null): Promise<boolean> {
   const client = createAdminClient();
-  if (!client) return false;
+  if (!client) throw new Error("Database is not configured");
 
   const { data: payout, error } = await client
     .from("payouts")
@@ -378,7 +376,7 @@ export async function releaseDriverPayoutForDispatch(input: {
   jobId: string;
 }): Promise<boolean> {
   const client = createAdminClient();
-  if (!client) return false;
+  if (!client) throw new Error("Database is not configured");
 
   const [ride, parcel] = await Promise.all([
     client.from("rides").select("id").eq("dispatch_job_id", input.jobId).maybeSingle(),
@@ -426,7 +424,7 @@ export async function confirmDelivery(input: {
   userId: string;
 }): Promise<{ ok: boolean; error?: string }> {
   const client = createAdminClient();
-  if (!client) return { ok: true };
+  if (!client) throw new Error("Database is not configured");
 
   const { data: order, error } = await client
     .from("orders")
@@ -479,7 +477,7 @@ export async function recordCashCommission(input: {
   parcelId?: string;
 }): Promise<void> {
   const client = createAdminClient();
-  if (!client) return;
+  if (!client) throw new Error("Database is not configured");
 
   const commission = computeCommission({
     itemsPesewas: pesewas(input.itemsCedis),
@@ -531,9 +529,7 @@ export async function startCommissionCheckout(input: {
   email: string;
 }): Promise<{ ok: boolean; checkoutUrl: string | null; error?: string }> {
   const client = createAdminClient();
-  if (!client) {
-    return { ok: false, checkoutUrl: null, error: "No database is connected." };
-  }
+  if (!client) throw new Error("Database is not configured");
 
   const { data: payment, error } = await client
     .from("payments")

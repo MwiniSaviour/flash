@@ -102,6 +102,9 @@ export async function uploadImage(
 /** Removes an asset after a replacement or a failed database write. */
 export async function destroyImage(publicId: string): Promise<void> {
   const client = configuredCloudinary();
+  // Safe no-op: uploadImage() refuses to run without credentials, so in this
+  // state there is no asset in our account to remove. Cleanup is best-effort
+  // by design — aborting a user's write over an impossible delete would be worse.
   if (!client) return;
 
   try {

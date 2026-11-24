@@ -10,7 +10,7 @@ import {
   getRideQuote,
   getSavedPlaces,
 } from "@/lib/flash/repository";
-import { platformSettings } from "@/lib/payments/commission";
+import { displaySettings } from "@/lib/payments/commission";
 
 /**
  * Every screen in ScalDive reads the database, so nothing here can be
@@ -36,7 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     getCurrentUser(),
     getRideQuote(),
     getSavedPlaces(),
-    platformSettings(),
+    displaySettings(),
   ]);
 
   return (

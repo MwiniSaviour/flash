@@ -24,6 +24,9 @@ export type AppNotification = {
 
 async function readKeys(userId: string | null): Promise<Set<string>> {
   const client = createAdminClient();
+  // Demo read markers live in the account store. This only reads optional
+  // fixture state — no notification content is invented here; every item in
+  // getNotifications() still comes from the same seeded repository the demo uses.
   if (!client) return accountStore.readKeys;
 
   if (!userId) return new Set<string>();
