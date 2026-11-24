@@ -119,6 +119,7 @@ export async function applyForBusiness(
       eta_minutes: 30,
       distance_km: 0,
       owner_user_id: userId,
+      seller_user_id: userId,
       business_id: id,
       image_src: COVER_IMAGES[0].src,
       image_alt: COVER_IMAGES[0].alt,
@@ -231,6 +232,7 @@ export async function publishMenuItem(input: {
   const { error } = await client.from("menu_items").insert({
     id,
     restaurant_id: input.restaurantId,
+    seller_user_id: gate.userId,
     name,
     description: input.description.trim(),
     tagline: "Made for you tonight",
@@ -425,6 +427,7 @@ export async function publishEvent(input: {
     neighbourhood: input.neighbourhood.trim(),
     city: "Accra",
     distance_km: 0,
+    seller_user_id: gate.userId,
     event_date: input.date,
     start_time: input.startTime,
     end_time: input.endTime,
@@ -451,6 +454,7 @@ export async function publishEvent(input: {
   const { error: tierError } = await client.from("event_tiers").insert({
     id: tierId,
     event_id: eventId,
+    seller_user_id: gate.userId,
     name: input.tierName.trim() || "General Admission",
     description: "",
     price,
@@ -779,6 +783,7 @@ export async function createMenuItem(input: {
   const { error } = await client.from("menu_items").insert({
     id,
     restaurant_id: input.restaurantId,
+    seller_user_id: gate.userId,
     name,
     description: input.description.trim(),
     tagline: "",
