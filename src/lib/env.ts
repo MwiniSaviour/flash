@@ -67,6 +67,11 @@ function readSiteUrl(): string {
 
 let cached: FlashEnv | null = null;
 
+/** Discard the parsed snapshot. Tests use this after changing process.env. */
+export function resetEnvCache(): void {
+  cached = null;
+}
+
 /** The parsed environment. Built once; safe to call on the server or client. */
 export function getEnv(): FlashEnv {
   if (cached) return cached;
@@ -81,7 +86,9 @@ export function getEnv(): FlashEnv {
     clerkPublishableKey: clean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
     clerkSecretKey: clean(process.env.CLERK_SECRET_KEY),
     clerkWebhookSecret: clean(process.env.CLERK_WEBHOOK_SECRET),
-    cloudinaryCloudName: clean(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME),
+    cloudinaryCloudName:
+      clean(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) ??
+      clean(process.env.CLOUDINARY_CLOUD_NAME),
     cloudinaryApiKey: clean(process.env.CLOUDINARY_API_KEY),
     cloudinaryApiSecret: clean(process.env.CLOUDINARY_API_SECRET),
     cloudinaryFolder: clean(process.env.CLOUDINARY_FOLDER) ?? "flash",
@@ -242,4 +249,29 @@ export function envIssues(): string[] {
   }
 
   return issues;
+}
+
+/**
+ * Fail-fast production configuration check.
+ *
+ * The fixtures are gone in production, so a deployment without its database,
+ * identity and media credentials must stop instead of serving invented rows.
+ * Only key names are reported — never values.
+ */
+export function assertProductionEnv(): void {
+  const env = getEnv();
+  const required: [string, string | null][] = [
+    ["NEXT_PUBLIC_SUPABASE_URL", env.supabaseUrl],
+    ["SUPABASE_SERVICE_ROLE_KEY", env.supabaseServiceRoleKey],
+    ["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", env.clerkPublishableKey],
+    ["CLERK_SECRET_KEY", env.clerkSecretKey],
+    ["CLOUDINARY_CLOUD_NAME", env.cloudinaryCloudName],
+    ["CLOUDINARY_API_KEY", env.cloudinaryApiKey],
+    ["CLOUDINARY_API_SECRET", env.cloudinaryApiSecret],
+  ];
+
+  const missing = required.filter(([, value]) => !value).map(([name]) => name);
+  if (missing.length) {
+    throw new Error(`Flash is not configured: ${missing.join(", ")}`);
+  }
 }
