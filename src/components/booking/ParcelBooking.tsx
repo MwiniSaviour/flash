@@ -181,7 +181,8 @@ export function ParcelBooking({
 
           {sent.demo ? (
             <p className="mt-2 text-[12px] text-muted-soft">
-              </p>
+              Paid with Paystack. This parcel cannot be saved to your account until a database is connected.
+            </p>
           ) : null}
         </div>
 

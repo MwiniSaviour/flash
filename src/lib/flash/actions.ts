@@ -327,13 +327,41 @@ export async function bookTicket(input: {
   if (!userId) return { ok: false, error: "Sign in to book a ticket." };
 
   if (!client) {
+    const id = mintId("tkt");
+    const total = demoTierPrice(input.tierId) * quantity;
+    if (input.paymentMethod === "cash") {
+      return { ok: true, data: { id, reference: mintReference(), total, demo: true } };
+    }
+
+    const identity = await currentClerkIdentity();
+    const checkout = await startCheckout({
+      kind: "ticket",
+      userId,
+      email: identity?.email ?? "",
+      itemsCedis: total,
+      deliveryFeeCedis: 0,
+      selfDelivery: false,
+      ticketId: id,
+    });
+    if (!checkout.checkoutUrl) {
+      return { ok: false, error: "We could not start the payment. No ticket was booked." };
+    }
+
     return {
       ok: true,
       data: {
-        id: mintId("tkt"),
-        reference: mintReference(),
-        total: demoTierPrice(input.tierId) * quantity,
+        id,
+        reference: checkout.reference,
+        total,
         demo: true,
+        checkoutUrl: checkout.checkoutUrl,
+        checkout: {
+          reference: checkout.reference,
+          accessCode: checkout.accessCode,
+          amountPesewas: checkout.amountPesewas,
+          email: checkout.email,
+          checkoutUrl: checkout.checkoutUrl,
+        },
       },
     };
   }
@@ -588,15 +616,46 @@ export async function placeOrder(input: {
   if (!userId) return { ok: false, error: "Sign in to place an order." };
 
   if (!client) {
+    const id = mintId("ord");
+    const kitchen = restaurants.find((item) => item.id === input.restaurantId);
+    const total = demoOrderTotal(input.restaurantId, lines, fulfilment);
+    const data = {
+      id,
+      reference: mintReference(),
+      number: mintNumber(),
+      total,
+      etaMinutes: kitchen?.etaMinutes ?? 30,
+      demo: true,
+    };
+    if (input.paymentMethod === "cash") return { ok: true, data };
+
+    const identity = await currentClerkIdentity();
+    const checkout = await startCheckout({
+      kind: "order",
+      userId,
+      email: identity?.email ?? "",
+      itemsCedis: total - (fulfilment === "delivery" ? kitchen?.deliveryFee ?? 0 : 0),
+      deliveryFeeCedis: fulfilment === "delivery" ? kitchen?.deliveryFee ?? 0 : 0,
+      selfDelivery: false,
+      orderId: id,
+    });
+    if (!checkout.checkoutUrl) {
+      return { ok: false, error: "We could not start the payment. No order was placed." };
+    }
+
     return {
       ok: true,
       data: {
-        id: mintId("ord"),
-        reference: mintReference(),
-        number: mintNumber(),
-        total: demoOrderTotal(input.restaurantId, lines, fulfilment),
-        etaMinutes: restaurants.find((item) => item.id === input.restaurantId)?.etaMinutes ?? 30,
-        demo: true,
+        ...data,
+        reference: checkout.reference,
+        checkoutUrl: checkout.checkoutUrl,
+        checkout: {
+          reference: checkout.reference,
+          accessCode: checkout.accessCode,
+          amountPesewas: checkout.amountPesewas,
+          email: checkout.email,
+          checkoutUrl: checkout.checkoutUrl,
+        },
       },
     };
   }
@@ -834,16 +893,33 @@ export async function requestRide(input: {
   }
 
   if (!client) {
+    const id = mintId("ride");
+    const data = {
+      id,
+      reference: mintReference(),
+      number: mintNumber(),
+      price: demoRidePrice(input.rideClass),
+      etaMinutes: rideClasses.find((item) => item.id === input.rideClass)?.etaMinutes ?? 8,
+      demo: true,
+    };
+    const identity = await currentClerkIdentity();
+    const checkout = await checkoutForDispatch({
+      kind: "ride",
+      userId,
+      email: identity?.email ?? "",
+      price: data.price,
+      id,
+      paymentMethod,
+    });
+    if (paymentMethod !== "pod" && !checkout) {
+      return { ok: false, error: "We could not start the payment. No ride was booked." };
+    }
+
     return {
       ok: true,
-      data: {
-        id: mintId("ride"),
-        reference: mintReference(),
-        number: mintNumber(),
-        price: demoRidePrice(input.rideClass),
-        etaMinutes: rideClasses.find((item) => item.id === input.rideClass)?.etaMinutes ?? 8,
-        demo: true,
-      },
+      data: checkout
+        ? { ...data, reference: checkout.reference, checkoutUrl: checkout.checkoutUrl, checkout }
+        : data,
     };
   }
 
@@ -1077,6 +1153,7 @@ export async function sendParcel(input: {
   const quote = quoteParcel(type, input.parcelSize, distanceKm, settings);
   const price = quote.price * quantity;
   const client = createAdminClient();
+  const paymentMethod = input.paymentMethod ?? "pod";
 
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to send a parcel." };
@@ -1085,15 +1162,30 @@ export async function sendParcel(input: {
   }
 
   if (!client) {
+    const id = mintId("par");
+    const data = {
+      id,
+      trackingNumber: parcelTrackingNumber(Math.floor(Math.random() * 9000) + 1000),
+      price,
+      etaMinutes: quote.etaMinutes,
+      demo: true,
+    };
+    const identity = await currentClerkIdentity();
+    const checkout = await checkoutForDispatch({
+      kind: "parcel",
+      userId,
+      email: identity?.email ?? "",
+      price,
+      id,
+      paymentMethod,
+    });
+    if (paymentMethod !== "pod" && !checkout) {
+      return { ok: false, error: "We could not start the payment. No parcel was booked." };
+    }
+
     return {
       ok: true,
-      data: {
-        id: mintId("par"),
-        trackingNumber: parcelTrackingNumber(Math.floor(Math.random() * 9000) + 1000),
-        price,
-        etaMinutes: quote.etaMinutes,
-        demo: true,
-      },
+      data: checkout ? { ...data, checkoutUrl: checkout.checkoutUrl, checkout } : data,
     };
   }
 
@@ -1127,7 +1219,6 @@ export async function sendParcel(input: {
 
   if (error) return { ok: false, error: "We could not book that courier. Try again." };
 
-  const paymentMethod = input.paymentMethod ?? "pod";
   const identity = await currentClerkIdentity();
   const handoffResult = await handoffToDispatch(client, {
     id,
@@ -1234,13 +1325,46 @@ export async function bookTicketBatch(input: {
   if (!userId) return { ok: false, error: "Sign in to book tickets." };
 
   if (!client) {
+    const total = lines.reduce((sum, line) => sum + demoTierPrice(line.tierId) * line.quantity, 0);
+    if (input.paymentMethod === "cash") {
+      return {
+        ok: true,
+        data: {
+          references: lines.map(() => mintReference()),
+          total,
+          checkoutUrl: null,
+          demo: true,
+        },
+      };
+    }
+
+    const identity = await currentClerkIdentity();
+    const checkout = await startCheckout({
+      kind: "ticket",
+      userId,
+      email: identity?.email ?? "",
+      itemsCedis: total,
+      deliveryFeeCedis: 0,
+      selfDelivery: false,
+    });
+    if (!checkout.checkoutUrl) {
+      return { ok: false, error: "We could not start the payment. No tickets were booked." };
+    }
+
     return {
       ok: true,
       data: {
-        references: lines.map(() => mintReference()),
-        total: lines.reduce((sum, line) => sum + demoTierPrice(line.tierId) * line.quantity, 0),
-        checkoutUrl: null,
+        references: [checkout.reference],
+        total,
+        checkoutUrl: checkout.checkoutUrl,
         demo: true,
+        checkout: {
+          reference: checkout.reference,
+          accessCode: checkout.accessCode,
+          amountPesewas: checkout.amountPesewas,
+          email: checkout.email,
+          checkoutUrl: checkout.checkoutUrl,
+        },
       },
     };
   }

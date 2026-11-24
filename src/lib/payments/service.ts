@@ -53,7 +53,6 @@ export async function startCheckout(input: {
   }
 
   const client = createAdminClient();
-  if (!client) return { reference: "", checkoutUrl: null, accessCode: null, amountPesewas: 0, email: "", demo: true };
 
   const commission = computeCommission({
     itemsPesewas: pesewas(input.itemsCedis),
@@ -64,24 +63,26 @@ export async function startCheckout(input: {
 
   const reference = newReference("FLP");
 
-  const { error } = await client.from("payments").insert({
-    id: reference,
-    user_id: input.userId,
-    kind: input.kind,
-    reference,
-    provider: "paystack",
-    status: "pending",
-    amount_pesewas: commission.totalChargedPesewas,
-    commission_pesewas: commission.totalPesewas,
-    seller_net_pesewas: commission.sellerNetPesewas,
-    driver_pesewas: commission.driverPesewas,
-    order_id: input.orderId ?? null,
-    ticket_id: input.ticketId ?? null,
-    ride_id: input.rideId ?? null,
-    parcel_id: input.parcelId ?? null,
-  });
+  if (client) {
+    const { error } = await client.from("payments").insert({
+      id: reference,
+      user_id: input.userId,
+      kind: input.kind,
+      reference,
+      provider: "paystack",
+      status: "pending",
+      amount_pesewas: commission.totalChargedPesewas,
+      commission_pesewas: commission.totalPesewas,
+      seller_net_pesewas: commission.sellerNetPesewas,
+      driver_pesewas: commission.driverPesewas,
+      order_id: input.orderId ?? null,
+      ticket_id: input.ticketId ?? null,
+      ride_id: input.rideId ?? null,
+      parcel_id: input.parcelId ?? null,
+    });
 
-  if (error) throw error;
+    if (error) throw error;
+  }
 
   const result = await initPaystackTransaction({
     amountPesewas: commission.totalChargedPesewas,
@@ -91,7 +92,7 @@ export async function startCheckout(input: {
   });
 
   if (!result.ok || !result.checkoutUrl) {
-    await client.from("payments").update({ status: "failed" }).eq("id", reference);
+    if (client) await client.from("payments").update({ status: "failed" }).eq("id", reference);
     throw new Error(result.message || "We could not start the payment.");
   }
 
@@ -101,7 +102,9 @@ export async function startCheckout(input: {
     accessCode: result.accessCode,
     amountPesewas: commission.totalChargedPesewas,
     email: input.email,
-    demo: false,
+    // A real Paystack transaction was started. The flag only says the local
+    // ledger row could not be written because no database is connected.
+    demo: !client,
   };
 }
 

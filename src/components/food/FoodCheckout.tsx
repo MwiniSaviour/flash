@@ -130,7 +130,8 @@ export function FoodCheckout({
 
           {placed.demo ? (
             <p className="mt-1.5 text-[12px] text-muted-soft">
-              </p>
+              Paid with Paystack. This order cannot be saved to your account until a database is connected.
+            </p>
           ) : null}
 
           <div className="mt-5 flex flex-col gap-2">

@@ -22,14 +22,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "A reference is required." }, { status: 400 });
   }
 
-  const client = createAdminClient();
-  if (!client) {
-    return NextResponse.json({ error: "Data store is not configured." }, { status: 503 });
-  }
-
   const verified = await verifyPaystackTransaction(reference);
   if (verified.status !== "success") {
     return NextResponse.json({ status: "pending" });
+  }
+
+  const client = createAdminClient();
+  if (!client) {
+    // Paystack is the authority for the charge. The local ledger row cannot be
+    // written without a database, but a verified transaction must still be
+    // reported honestly rather than as a configuration failure.
+    return NextResponse.json({ status: "success", reference });
   }
 
   const { data: payment } = await client
