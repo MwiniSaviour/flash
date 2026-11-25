@@ -1,36 +1,11 @@
 
-/** Demo sold-out requests are held with the other mutable fixtures. */
-function demoTicketRequests(): TicketRequest[] {
-  if (!demoStore.ticketRequests) {
-    demoStore.ticketRequests = [
-      {
-        id: "treq-demo-1",
-        eventId: "evt-urban-vibes-festival",
-        tierId: "tier-urban-vip",
-        userId: DEMO_USER_ID,
-        name: "Ama Owusu",
-        phone: "+233 24 555 0101",
-        email: "ama@example.gh",
-        quantity: 2,
-        status: "pending",
-        note: "Two seats together if possible.",
-        createdAt: "2026-11-18T09:20:00.000Z",
-        decidedAt: null,
-        eventTitle: "Urban Vibes Festival",
-        tierName: "VIP Experience",
-      },
-    ];
-  }
-  return demoStore.ticketRequests;
-}
-
 /**
  * The data seam.
  *
  * Every screen reads through this module. When Supabase is connected the reads
  * come from Postgres and the row mappers below turn the snake_case columns
- * into the camelCase view models the UI consumes; when it is not, the seeded
- * demo fixtures answer instead. No screen knows which one it got.
+ * into the camelCase view models the UI consumes. Without database
+ * configuration the repository throws; it never serves fixtures.
  *
  * The browser never touches the database. The repository runs on the server and
  * holds the service-role client, so every query has to scope itself to the
@@ -51,14 +26,7 @@ import { notifyCompletion } from "@/lib/notifications/service";
 import { releaseDriverPayoutForDispatch } from "@/lib/payments/service";
 import { createAdminClient, type AdminClient } from "@/lib/supabase/admin";
 
-import { accountStore } from "./account-store";
-import { user } from "./data/account";
-import { demoStore } from "./data/demo-store";
-import { businesses, incomingOrders, incomingTickets } from "./data/business";
-import { events } from "./data/events";
-import { DEMO_USER_ID } from "./data/business";
-import { restaurants } from "./data/food";
-import { rideClasses, rideQuote } from "./data/rides";
+import { rideQuote } from "./data/rides";
 import type { Delivery, PastDelivery } from "./data/tracking";
 import { canManageBusiness } from "./roles";
 import {
@@ -643,13 +611,13 @@ async function liveBookings(client: AdminClient, userId: string): Promise<Bookin
 
 export async function listEvents(): Promise<Event[]> {
   const client = createAdminClient();
-  if (!client) return events;
+  if (!client) throw new Error("Database is not configured.");
   return liveEvents(client);
 }
 
 export async function getEventBySlug(slug: string): Promise<Event | undefined> {
   const client = createAdminClient();
-  if (!client) return events.find((event) => event.slug === slug);
+  if (!client) throw new Error("Database is not configured.");
 
   const { data, error } = await client
     .from("events")
@@ -666,7 +634,7 @@ export async function getEventBySlug(slug: string): Promise<Event | undefined> {
 
 export async function getEventById(id: string): Promise<Event | undefined> {
   const client = createAdminClient();
-  if (!client) return events.find((event) => event.id === id);
+  if (!client) throw new Error("Database is not configured.");
 
   const { data, error } = await client
     .from("events")
@@ -684,7 +652,7 @@ export async function getEventById(id: string): Promise<Event | undefined> {
 /** The event the Events screen leads with. */
 export async function getFeaturedEvent(): Promise<Event | undefined> {
   const client = createAdminClient();
-  if (!client) return events.find((event) => event.featured) ?? events[0];
+  if (!client) throw new Error("Database is not configured.");
 
   const { data, error } = await client
     .from("events")
@@ -703,11 +671,7 @@ export async function getFeaturedEvent(): Promise<Event | undefined> {
 /** Soonest first, featured events included. */
 export async function getUpcomingEvents(): Promise<Event[]> {
   const client = createAdminClient();
-  if (!client) {
-    return [...events]
-      .filter((event) => event.date >= DEMO_TODAY)
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   const { data, error } = await client
     .from("events")
@@ -725,12 +689,7 @@ export async function getUpcomingEvents(): Promise<Event[]> {
 /** Trending events, most-booked first. */
 export async function getTrendingEvents(limit = 4): Promise<Event[]> {
   const client = createAdminClient();
-  if (!client) {
-    return events
-      .filter((event) => event.trending)
-      .sort((a, b) => b.going - a.going)
-      .slice(0, limit);
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   const { data, error } = await client
     .from("events")
@@ -748,13 +707,13 @@ export async function getTrendingEvents(limit = 4): Promise<Event[]> {
 
 export async function listRestaurants(): Promise<Restaurant[]> {
   const client = createAdminClient();
-  if (!client) return restaurants;
+  if (!client) throw new Error("Database is not configured.");
   return liveRestaurants(client);
 }
 
 export async function getRestaurantBySlug(slug: string): Promise<Restaurant | undefined> {
   const client = createAdminClient();
-  if (!client) return restaurants.find((restaurant) => restaurant.slug === slug);
+  if (!client) throw new Error("Database is not configured.");
 
   const { data, error } = await client
     .from("restaurants")
@@ -784,7 +743,7 @@ export async function getTrendingRestaurants(limit = 4): Promise<Restaurant[]> {
  */
 export async function getRideQuote(): Promise<RideQuote> {
   const client = createAdminClient();
-  if (!client) return { ...rideQuote, classes: rideClasses };
+  if (!client) throw new Error("Database is not configured.");
 
   const { data, error } = await client
     .from("ride_classes")
@@ -798,7 +757,7 @@ export async function getRideQuote(): Promise<RideQuote> {
 
 export async function getSavedPlaces(): Promise<SavedPlace[]> {
   const client = createAdminClient();
-  if (!client) return accountStore.savedPlaces ?? [];
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -820,7 +779,7 @@ export async function getSavedPlaces(): Promise<SavedPlace[]> {
 
 export async function listTickets(): Promise<Ticket[]> {
   const client = createAdminClient();
-  if (!client) return [];
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -828,12 +787,11 @@ export async function listTickets(): Promise<Ticket[]> {
 }
 
 /**
- * Sold-out requests. With no database, demo requests come from the in-memory
- * store so planner and admin screens have something to show.
+ * Sold-out requests, read from the database.
  */
 export async function listTicketRequests(eventIds?: string[]): Promise<TicketRequest[]> {
   const client = createAdminClient();
-  if (!client) return demoTicketRequests();
+  if (!client) throw new Error("Database is not configured.");
 
   let query = client
     .from("ticket_requests")
@@ -880,7 +838,7 @@ export async function listUserPayments(): Promise<
   }[]
 > {
   const client = createAdminClient();
-  if (!client) return [];
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -906,7 +864,7 @@ export async function listUserPayments(): Promise<
 
 export async function listBookings(): Promise<Booking[]> {
   const client = createAdminClient();
-  if (!client) return [];
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -915,7 +873,7 @@ export async function listBookings(): Promise<Booking[]> {
 
 export async function getActiveOrder(): Promise<Order | undefined> {
   const client = createAdminClient();
-  if (!client) return undefined;
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return undefined;
@@ -927,20 +885,12 @@ export async function getActiveOrder(): Promise<Order | undefined> {
 
 export async function getCurrentUser(): Promise<FlashUser> {
   const client = createAdminClient();
-  if (!client) {
-    return {
-      ...user,
-      id: "guest",
-      name: "Customer",
-      email: "",
-      avatarUrl: "",
-      memberSince: "",
-      ...(accountStore.profile ?? {}),
-    };
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
-  if (!userId) return user;
+  if (!userId) {
+    return { id: "guest", name: "Customer", email: "", avatarUrl: "", memberSince: "", notificationsEnabled: false };
+  }
   return liveProfile(client, userId);
 }
 
@@ -952,9 +902,7 @@ export async function getCurrentUser(): Promise<FlashUser> {
  */
 export async function listMyKitchens(): Promise<Restaurant[]> {
   const client = createAdminClient();
-  if (!client) {
-    return restaurants.filter((restaurant) => restaurant.ownerId);
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -980,9 +928,7 @@ export async function listMyKitchens(): Promise<Restaurant[]> {
  */
 export async function listKitchen(businessId: string): Promise<Restaurant | undefined> {
   const client = createAdminClient();
-  if (!client) {
-    return restaurants.find((restaurant) => restaurant.businessId === businessId);
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return undefined;
@@ -1021,7 +967,7 @@ function toBusiness(row: BusinessRow): Business {
 /** Every business the signed-in account has applied for or runs. */
 export async function listBusinesses(): Promise<Business[]> {
   const client = createAdminClient();
-  if (!client) return businesses;
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -1071,7 +1017,7 @@ export async function isBusinessAccount(): Promise<boolean> {
   if (canManageBusiness(role)) return true;
 
   const client = createAdminClient();
-  if (!client) return false;
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return false;
@@ -1090,7 +1036,7 @@ export async function isBusinessAccount(): Promise<boolean> {
 /** The events the signed-in account promotes. */
 export async function listMyEvents(): Promise<Event[]> {
   const client = createAdminClient();
-  if (!client) return events.filter((event) => event.ownerId === DEMO_USER_ID);
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -1111,7 +1057,7 @@ export async function listMyEvents(): Promise<Event[]> {
 /** The events one business promotes, not the whole account's. */
 export async function listEventsForBusiness(businessId: string): Promise<Event[]> {
   const client = createAdminClient();
-  if (!client) return events.filter((event) => event.businessId === businessId);
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -1133,9 +1079,7 @@ export async function listEventsForBusiness(businessId: string): Promise<Event[]
 /** The orders a kitchen has to deal with. */
 export async function listIncomingOrders(restaurantId: string): Promise<Order[]> {
   const client = createAdminClient();
-  if (!client) {
-    return incomingOrders.filter((order) => order.restaurantId === restaurantId);
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   const { data, error } = await client
     .from("orders")
@@ -1151,9 +1095,7 @@ export async function listIncomingOrders(restaurantId: string): Promise<Order[]>
 /** The tickets an event manager has to confirm. */
 export async function listIncomingTickets(eventIds: string[]): Promise<Ticket[]> {
   const client = createAdminClient();
-  if (!client) {
-    return incomingTickets.filter((ticket) => eventIds.includes(ticket.eventId));
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   if (eventIds.length === 0) return [];
 
@@ -1177,15 +1119,6 @@ export type ConsoleCustomer = {
   spend: number;
 };
 
-/** The demo people behind the seeded orders and tickets. */
-const DEMO_CUSTOMERS = [
-  { id: "usr-kofi-mensah", name: "Kofi Mensah", email: "kofi@example.gh" },
-  { id: "usr-efua-ansah", name: "Efua Ansah", email: "efua@example.gh" },
-  { id: "usr-ama-boateng", name: "Ama Boateng", email: "ama@example.gh" },
-  { id: "usr-yaw-opoku", name: "Yaw Opoku", email: "yaw@example.gh" },
-  { id: "usr-naa-dzifa", name: "Naa Dzifa", email: "naa@example.gh" },
-];
-
 /**
  * The customers of one business, aggregated from the orders or tickets that
  * belong to its venues. The service role bypasses RLS, so the venue ids are
@@ -1197,36 +1130,7 @@ export async function listCustomers(
 ): Promise<ConsoleCustomer[]> {
   const client = createAdminClient();
 
-  if (!client) {
-    const kitchen = restaurants.find((entry) => entry.businessId === businessId);
-    const ownedEvents = events.filter((entry) => entry.businessId === businessId);
-    const totals = new Map<string, ConsoleCustomer>();
-
-    const add = (index: number, orders: number, tickets: number, spend: number) => {
-      const person = DEMO_CUSTOMERS[index % DEMO_CUSTOMERS.length];
-      const row = totals.get(person.id) ?? { ...person, orders: 0, tickets: 0, spend: 0 };
-      row.orders += orders;
-      row.tickets += tickets;
-      row.spend += spend;
-      totals.set(person.id, row);
-    };
-
-    if (kind === "restaurant" && kitchen) {
-      incomingOrders
-        .filter((order) => order.restaurantId === kitchen.id)
-        .forEach((order, index) => add(index, 1, 0, order.subtotal - order.discount));
-    } else {
-      incomingTickets
-        .filter((ticket) => ownedEvents.some((entry) => entry.id === ticket.eventId))
-        .forEach((ticket, index) => {
-          const event = ownedEvents.find((entry) => entry.id === ticket.eventId);
-          const tier = event?.tiers.find((entry) => entry.id === ticket.tierId);
-          add(index, 0, ticket.quantity, (tier?.price ?? 0) * ticket.quantity);
-        });
-    }
-
-    return [...totals.values()];
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   const readPurchases = async () => {
     if (kind === "restaurant") {
@@ -1304,7 +1208,7 @@ export async function listCustomers(
 /** Everything of the customer's that is still moving. */
 export async function listDeliveries(): Promise<Delivery[]> {
   const client = createAdminClient();
-  if (!client) return [];
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -1331,7 +1235,7 @@ export async function listDeliveries(): Promise<Delivery[]> {
 /** Everything that has already arrived. */
 export async function listPastDeliveries(): Promise<PastDelivery[]> {
   const client = createAdminClient();
-  if (!client) return [];
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return [];
@@ -1352,7 +1256,7 @@ export async function listPastDeliveries(): Promise<PastDelivery[]> {
 /** One delivery, for its own screen. */
 export async function getDelivery(id: string): Promise<Delivery | undefined> {
   const client = createAdminClient();
-  if (!client) return undefined;
+  if (!client) throw new Error("Database is not configured.");
 
   const userId = await currentUserId();
   if (!userId) return undefined;

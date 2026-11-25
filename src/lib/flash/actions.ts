@@ -24,9 +24,6 @@ import { createAdminClient, type AdminClient } from "@/lib/supabase/admin";
 
 import { haversineKm, type GeoPoint } from "./geo";
 import { findCover } from "./covers";
-import { events } from "./data/events";
-import { restaurants } from "./data/food";
-import { rideClasses } from "./data/rides";
 import {
   parcelQuote,
   parcelTrackingNumber,
@@ -53,7 +50,7 @@ import {
  * screens only ever see the reference that comes back.
  *
  * With Supabase connected the action writes a row. Without it, the action
- * answers from the demo fixtures and says so, which keeps the demo honest
+ * throw when the database is not configured; no fixture result is returned.
  * instead of pretending something was saved.
  */
 
@@ -137,39 +134,6 @@ function clampQuantity(quantity: number): number {
 /** The party size a ride can carry. */
 function clampPassengers(passengers: number): number {
   return Math.min(6, Math.max(1, Math.floor(passengers) || 1));
-}
-
-/* Demo-mode totals: the same story as the fixtures, used when no database is
- * connected so a purchase still confirms instead of failing. */
-function demoTierPrice(tierId: string): number {
-  for (const event of events) {
-    const tier = event.tiers.find((item) => item.id === tierId);
-    if (tier) return tier.price;
-  }
-  return 0;
-}
-
-function demoRidePrice(rideClassId: string): number {
-  return rideClasses.find((item) => item.id === rideClassId)?.price ?? 0;
-}
-
-function demoOrderTotal(
-  restaurantId: string,
-  lines: { menuItemId: string; size: string; quantity: number }[],
-  fulfilment: Fulfilment,
-): number {
-  const kitchen = restaurants.find((item) => item.id === restaurantId);
-  let subtotal = 0;
-  for (const line of lines) {
-    const item = kitchen?.menu.find((entry) => entry.id === line.menuItemId);
-    if (!item) continue;
-    const size = item.sizes.find((entry) => entry.id === line.size) ?? item.sizes[0];
-    subtotal += (size?.price ?? item.price) * line.quantity;
-  }
-  const fee = kitchen
-    ? Math.round(kitchen.deliveryFee * 10) / 10
-    : 0;
-  return subtotal + (fulfilment === "delivery" ? fee : 0);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -326,45 +290,7 @@ export async function bookTicket(input: {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to book a ticket." };
 
-  if (!client) {
-    const id = mintId("tkt");
-    const total = demoTierPrice(input.tierId) * quantity;
-    if (input.paymentMethod === "cash") {
-      return { ok: true, data: { id, reference: mintReference(), total, demo: true } };
-    }
-
-    const identity = await currentClerkIdentity();
-    const checkout = await startCheckout({
-      kind: "ticket",
-      userId,
-      email: identity?.email ?? "",
-      itemsCedis: total,
-      deliveryFeeCedis: 0,
-      selfDelivery: false,
-      ticketId: id,
-    });
-    if (!checkout.checkoutUrl) {
-      return { ok: false, error: "We could not start the payment. No ticket was booked." };
-    }
-
-    return {
-      ok: true,
-      data: {
-        id,
-        reference: checkout.reference,
-        total,
-        demo: true,
-        checkoutUrl: checkout.checkoutUrl,
-        checkout: {
-          reference: checkout.reference,
-          accessCode: checkout.accessCode,
-          amountPesewas: checkout.amountPesewas,
-          email: checkout.email,
-          checkoutUrl: checkout.checkoutUrl,
-        },
-      },
-    };
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   // Every row that carries a user_id needs the profile row to exist first.
   await ensureProfile(client, userId);
@@ -530,9 +456,7 @@ export async function requestTickets(input: {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to ask for a ticket." };
 
-  if (!client) {
-    return { ok: true, data: { id: mintId("treq") }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   const { data: existing } = userId
     ? await client
@@ -615,50 +539,7 @@ export async function placeOrder(input: {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to place an order." };
 
-  if (!client) {
-    const id = mintId("ord");
-    const kitchen = restaurants.find((item) => item.id === input.restaurantId);
-    const total = demoOrderTotal(input.restaurantId, lines, fulfilment);
-    const data = {
-      id,
-      reference: mintReference(),
-      number: mintNumber(),
-      total,
-      etaMinutes: kitchen?.etaMinutes ?? 30,
-      demo: true,
-    };
-    if (input.paymentMethod === "cash") return { ok: true, data };
-
-    const identity = await currentClerkIdentity();
-    const checkout = await startCheckout({
-      kind: "order",
-      userId,
-      email: identity?.email ?? "",
-      itemsCedis: total - (fulfilment === "delivery" ? kitchen?.deliveryFee ?? 0 : 0),
-      deliveryFeeCedis: fulfilment === "delivery" ? kitchen?.deliveryFee ?? 0 : 0,
-      selfDelivery: false,
-      orderId: id,
-    });
-    if (!checkout.checkoutUrl) {
-      return { ok: false, error: "We could not start the payment. No order was placed." };
-    }
-
-    return {
-      ok: true,
-      data: {
-        ...data,
-        reference: checkout.reference,
-        checkoutUrl: checkout.checkoutUrl,
-        checkout: {
-          reference: checkout.reference,
-          accessCode: checkout.accessCode,
-          amountPesewas: checkout.amountPesewas,
-          email: checkout.email,
-          checkoutUrl: checkout.checkoutUrl,
-        },
-      },
-    };
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   await ensureProfile(client, userId);
 
@@ -892,36 +773,7 @@ export async function requestRide(input: {
     return { ok: false, error: "Add a phone number so the rider can reach you." };
   }
 
-  if (!client) {
-    const id = mintId("ride");
-    const data = {
-      id,
-      reference: mintReference(),
-      number: mintNumber(),
-      price: demoRidePrice(input.rideClass),
-      etaMinutes: rideClasses.find((item) => item.id === input.rideClass)?.etaMinutes ?? 8,
-      demo: true,
-    };
-    const identity = await currentClerkIdentity();
-    const checkout = await checkoutForDispatch({
-      kind: "ride",
-      userId,
-      email: identity?.email ?? "",
-      price: data.price,
-      id,
-      paymentMethod,
-    });
-    if (paymentMethod !== "pod" && !checkout) {
-      return { ok: false, error: "We could not start the payment. No ride was booked." };
-    }
-
-    return {
-      ok: true,
-      data: checkout
-        ? { ...data, reference: checkout.reference, checkoutUrl: checkout.checkoutUrl, checkout }
-        : data,
-    };
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   await ensureProfile(client, userId);
 
@@ -1068,9 +920,7 @@ export async function updateCover(input: {
 
   if (!cover) return { ok: false, error: "That photograph is not yours to use." };
 
-  if (!client) {
-    return { ok: true, data: { imageSrc: cover.src }, demo: true };
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   const { data: kitchen, error: kitchenError } = await client
     .from("restaurants")
@@ -1161,33 +1011,7 @@ export async function sendParcel(input: {
     return { ok: false, error: "Add a phone number so the courier can reach the recipient." };
   }
 
-  if (!client) {
-    const id = mintId("par");
-    const data = {
-      id,
-      trackingNumber: parcelTrackingNumber(Math.floor(Math.random() * 9000) + 1000),
-      price,
-      etaMinutes: quote.etaMinutes,
-      demo: true,
-    };
-    const identity = await currentClerkIdentity();
-    const checkout = await checkoutForDispatch({
-      kind: "parcel",
-      userId,
-      email: identity?.email ?? "",
-      price,
-      id,
-      paymentMethod,
-    });
-    if (paymentMethod !== "pod" && !checkout) {
-      return { ok: false, error: "We could not start the payment. No parcel was booked." };
-    }
-
-    return {
-      ok: true,
-      data: checkout ? { ...data, checkoutUrl: checkout.checkoutUrl, checkout } : data,
-    };
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   await ensureProfile(client, userId);
 
@@ -1324,50 +1148,7 @@ export async function bookTicketBatch(input: {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "Sign in to book tickets." };
 
-  if (!client) {
-    const total = lines.reduce((sum, line) => sum + demoTierPrice(line.tierId) * line.quantity, 0);
-    if (input.paymentMethod === "cash") {
-      return {
-        ok: true,
-        data: {
-          references: lines.map(() => mintReference()),
-          total,
-          checkoutUrl: null,
-          demo: true,
-        },
-      };
-    }
-
-    const identity = await currentClerkIdentity();
-    const checkout = await startCheckout({
-      kind: "ticket",
-      userId,
-      email: identity?.email ?? "",
-      itemsCedis: total,
-      deliveryFeeCedis: 0,
-      selfDelivery: false,
-    });
-    if (!checkout.checkoutUrl) {
-      return { ok: false, error: "We could not start the payment. No tickets were booked." };
-    }
-
-    return {
-      ok: true,
-      data: {
-        references: [checkout.reference],
-        total,
-        checkoutUrl: checkout.checkoutUrl,
-        demo: true,
-        checkout: {
-          reference: checkout.reference,
-          accessCode: checkout.accessCode,
-          amountPesewas: checkout.amountPesewas,
-          email: checkout.email,
-          checkoutUrl: checkout.checkoutUrl,
-        },
-      },
-    };
-  }
+  if (!client) throw new Error("Database is not configured.");
 
   await ensureProfile(client, userId);
   const settings = await platformSettings();
