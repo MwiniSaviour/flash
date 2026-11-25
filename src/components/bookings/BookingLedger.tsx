@@ -8,7 +8,6 @@ import { SegmentedControl } from "@/components/flash/SegmentedControl";
 import { NoData } from "@/components/flash/NoData";
 import { ScreenHeader, StatusBadge } from "@/components/flash/ui";
 import { cedis, relativeDay } from "@/lib/flash/format";
-import { useLocalPurchases } from "@/lib/flash/local-purchases";
 import { TicketRow } from "@/components/tickets/TicketRow";
 import type { Booking, BookingKind, BookingStatus, Event, Ticket } from "@/lib/flash/types";
 
@@ -45,20 +44,10 @@ export function BookingLedger({
   events?: Event[];
 }) {
   const [filter, setFilter] = useState<Filter>("all");
-  const local = useLocalPurchases();
-
-  const allBookings = useMemo(
-    () => [...local.map((item) => item.booking), ...bookings],
-    [local, bookings],
-  );
-  const allTickets = useMemo(
-    () => [...local.flatMap((item) => (item.ticket ? [item.ticket] : [])), ...tickets],
-    [local, tickets],
-  );
 
   const visible = useMemo(
-    () => (filter === "all" ? allBookings : allBookings.filter((booking) => booking.kind === filter)),
-    [allBookings, filter],
+    () => (filter === "all" ? bookings : bookings.filter((booking) => booking.kind === filter)),
+    [bookings, filter],
   );
 
   /**
@@ -68,19 +57,19 @@ export function BookingLedger({
   const ticketRows = useMemo(() => {
     const eventById = new Map(events.map((event) => [event.id, event]));
 
-    return allTickets
+    return tickets
       .map((ticket) => ({ ticket, event: eventById.get(ticket.eventId) }))
       .filter((row): row is { ticket: Ticket; event: Event } => Boolean(row.event));
-  }, [events, allTickets]);
+  }, [events, tickets]);
 
   const counts = useMemo(
     () => ({
-      ride: allBookings.filter((booking) => booking.kind === "ride").length,
-      parcel: allBookings.filter((booking) => booking.kind === "parcel").length,
-      order: allBookings.filter((booking) => booking.kind === "order").length,
-      ticket: allBookings.filter((booking) => booking.kind === "ticket").length,
+      ride: bookings.filter((booking) => booking.kind === "ride").length,
+      parcel: bookings.filter((booking) => booking.kind === "parcel").length,
+      order: bookings.filter((booking) => booking.kind === "order").length,
+      ticket: bookings.filter((booking) => booking.kind === "ticket").length,
     }),
-    [allBookings],
+    [bookings],
   );
 
   return (
@@ -97,7 +86,7 @@ export function BookingLedger({
           value={filter}
           onChange={setFilter}
           options={[
-            { value: "all", label: "All", count: allBookings.length },
+            { value: "all", label: "All", count: bookings.length },
             { value: "ticket", label: "Tickets", count: counts.ticket },
             { value: "ride", label: "Rides", count: counts.ride },
             { value: "parcel", label: "Parcels", count: counts.parcel },

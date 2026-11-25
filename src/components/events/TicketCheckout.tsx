@@ -9,7 +9,6 @@ import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/
 import { useToast } from "@/components/flash/ToastProvider";
 import { DateBadge } from "@/components/flash/ui";
 import { bookTicket } from "@/lib/flash/actions";
-import { recordPurchase } from "@/lib/flash/local-purchases";
 import { payWithIntent } from "@/lib/payments/inline";
 import { cedis, dateBadge, distance, priceLabel } from "@/lib/flash/format";
 import type { Event } from "@/lib/flash/types";
@@ -57,23 +56,6 @@ export function TicketCheckout({
       }
 
       const complete = () => {
-        recordPurchase({
-          kind: "ticket",
-          id: result.data.id,
-          reference: result.data.reference,
-          title: event.title,
-          subtitle: `${tier?.name ?? "Ticket"} × ${quantity}`,
-          price: result.data.total,
-          paid: method !== "cash",
-          image: event.image,
-          details: [`${event.venue}, ${event.neighbourhood}`, `Show ${result.data.reference}`],
-          ticket: {
-            eventId: event.id,
-            tierId: tier?.id ?? "",
-            tierName: tier?.name ?? "Ticket",
-            quantity,
-          },
-        });
         setBooked({
           reference: result.data.reference,
           total: result.data.total,

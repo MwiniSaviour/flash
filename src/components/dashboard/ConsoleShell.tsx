@@ -48,6 +48,14 @@ export function ConsoleShell({
           <FlashLogo size="sm" />
         </Link>
 
+        <Link
+          href="/dashboard/products"
+          className={cn(ROW, "mt-4", pathname === "/dashboard/products" && "bg-brand-soft text-brand-ink")}
+        >
+          <Icon name="store" size={18} />
+          My products
+        </Link>
+
         {kind && businessId ? (
           <>
             <BusinessSwitcher businesses={businesses} currentId={currentId} className="mt-6" />

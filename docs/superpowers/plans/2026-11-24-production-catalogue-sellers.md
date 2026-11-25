@@ -360,3 +360,32 @@ git commit -m "docs: production smoke and handover checklist"
 - Review Focus inputs are pinned by tests in Tasks 0, 4, 6 and 7.
 - Types are consistent: `seller_user_id`, `assertSellerOwns`, `saveProduct`, `UploadedImage`, `DeliveryStage`.
 - Execution method was supplied by the owner (“I will take it from there”); no execution prompt is needed.
+
+---
+
+## Closure — 2026-11-25
+
+Status: implemented against the supplied credentials; seller CRUD shipped.
+
+Rulings made during execution:
+
+- **No `sellers` table / no DDL endpoint.** The live `DATABASE_API_URL` is
+  PostgREST-only (`/rest/v1`), with no `exec_sql` RPC. Ruling: use `profiles`
+  with `role='business'` and `owner_user_id` on products. Cost: ownership is
+  scoped by existing columns, not a dedicated sellers table.
+- **Clerk role mapping.** The DB check constraint permits `customer`, `business`,
+  `admin`; Clerk metadata uses `business_owner`. Ruling: create seller users
+  with `business_owner` metadata and matching `profiles.role='business'`. Cost:
+  two role vocabularies must stay in sync in the webhook.
+- **Archive.** No `active` column exists on restaurants. Ruling: events are
+  unlisted via `trending=false, live=false`; kitchens are edit-only. Cost: a
+  kitchen cannot be hidden without a schema change.
+- **Demo fixtures remain in the repository** for keyless local development, but
+  production env is wired to Postgres, so no runtime screen reads them. Cost:
+  a deployment without DB env would fall back; that must never be shipped.
+- **Browser purchase journal removed.** With Postgres wired it duplicated DB
+  rows. Cost: no local offline receipt journal.
+
+Verification: `npm run check`, `npm test` (37 tests), `npm run build`, live
+location smoke (Wa/Accra), DB query showing all product images on Cloudinary,
+and seller CRUD page smoke. See `docs/production-smoke.md`.

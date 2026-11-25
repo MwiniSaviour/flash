@@ -11,7 +11,6 @@ import type { Delivery, PastDelivery } from "@/lib/flash/data/tracking";
 import type { FlashUser } from "@/lib/flash/types";
 import { useLiveTracking } from "@/lib/flash/use-live-tracking";
 import { cedis } from "@/lib/flash/format";
-import { useLocalPurchases } from "@/lib/flash/local-purchases";
 import { useLiveRefresh } from "@/lib/use-live-refresh";
 
 /**
@@ -32,34 +31,23 @@ export function TrackingScreen({
   user: FlashUser;
 }) {
   const [query, setQuery] = useState("");
-  const local = useLocalPurchases();
-
-  // Purchases confirmed in this browser join the server's deliveries at the
-  // top, so a paid order is visible before any dispatch assignment exists.
-  const allDeliveries = useMemo(
-    () => [
-      ...local.flatMap((item) => (item.delivery ? [item.delivery] : [])),
-      ...deliveries,
-    ],
-    [local, deliveries],
-  );
 
   // The deliveries move on their own; the screen keeps up. Realtime changes
   // refresh immediately, with the interval as a fallback.
   useLiveRefresh(15000);
-  useLiveTracking(allDeliveries[0]?.id, allDeliveries[0]?.kind);
+  useLiveTracking(deliveries[0]?.id, deliveries[0]?.kind);
 
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return allDeliveries;
+    if (!term) return deliveries;
 
-    return allDeliveries.filter((delivery) =>
+    return deliveries.filter((delivery) =>
       [delivery.id, delivery.title, delivery.reference, delivery.rider.name]
         .join(" ")
         .toLowerCase()
         .includes(term),
     );
-  }, [allDeliveries, query]);
+  }, [deliveries, query]);
 
 
   return (
@@ -103,7 +91,7 @@ export function TrackingScreen({
           <div className="mt-3 px-5">
             <NoData
               message={
-                allDeliveries.length === 0
+                deliveries.length === 0
                   ? "No deliveries yet. Book a ride or send a parcel and its live tracking will appear here."
                   : "Nothing matches that number. Try the reference from your confirmation."
               }

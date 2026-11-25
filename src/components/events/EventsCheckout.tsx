@@ -9,7 +9,6 @@ import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/
 import { useToast } from "@/components/flash/ToastProvider";
 import { useCart } from "@/lib/cart";
 import { bookTicketBatch } from "@/lib/flash/actions";
-import { recordPurchase } from "@/lib/flash/local-purchases";
 import { payWithIntent } from "@/lib/payments/inline";
 import { cedis } from "@/lib/flash/format";
 
@@ -37,25 +36,6 @@ export function EventsCheckout() {
       }
 
       const complete = () => {
-        lines.forEach((line, index) => {
-          recordPurchase({
-            kind: "ticket",
-            id: `tkt-${line.tierId ?? line.lineId}-${Date.now()}-${index}`,
-            reference: result.data.references[index] ?? result.data.references[0],
-            title: line.eventTitle ?? "Event tickets",
-            subtitle: `${line.tierName ?? "Ticket"} × ${line.quantity}`,
-            price: line.price * line.quantity,
-            paid: method !== "cash",
-            image: line.image,
-            details: [`${line.quantity} ticket${line.quantity === 1 ? "" : "s"}`, "Show this reference at the door"],
-            ticket: {
-              eventId: line.eventId ?? "",
-              tierId: line.tierId ?? "",
-              tierName: line.tierName ?? "Ticket",
-              quantity: line.quantity,
-            },
-          });
-        });
         setDone(result.data.references);
         cart.clear();
       };
