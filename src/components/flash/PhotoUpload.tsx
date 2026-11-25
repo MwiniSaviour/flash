@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import { uploadImageAction } from "@/lib/media/actions";
 import { deliveryUrl } from "@/lib/media/url";
 import { cn } from "@/lib/utils";
@@ -27,13 +28,12 @@ export function PhotoUpload({
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const notify = useToast();
 
   async function choose(file: File | undefined) {
     if (!file) return;
 
     setBusy(true);
-    setError(null);
 
     const formData = new FormData();
     formData.set("file", file);
@@ -42,7 +42,7 @@ export function PhotoUpload({
     setBusy(false);
 
     if (!result.ok) {
-      setError(result.error);
+      notify(result.error);
       return;
     }
 
@@ -88,12 +88,6 @@ export function PhotoUpload({
       <p className="mt-1.5 text-[11.5px] leading-snug text-muted-soft">
         JPEG, PNG, WebP, AVIF or HEIC, up to 8 MB. Stored as compressed WebP.
       </p>
-
-      {error ? (
-        <p role="alert" className="mt-1 text-[12px] text-danger-ink">
-          {error}
-        </p>
-      ) : null}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { SegmentedControl } from "@/components/flash/SegmentedControl";
 import { Sheet } from "@/components/flash/Sheet";
 import { Stepper } from "@/components/flash/Stepper";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
+import { useToast } from "@/components/flash/ToastProvider";
 import { Field, SectionHeading, StatusBadge } from "@/components/flash/ui";
 import { sendParcel } from "@/lib/flash/actions";
 import { payWithIntent } from "@/lib/payments/inline";
@@ -61,8 +62,8 @@ export function ParcelBooking({
   const [details, setDetails] = useState("");
   const [method, setMethod] = useState<PaymentMethodId>("momo");
   const [sent, setSent] = useState<{ trackingNumber: string; demo: boolean } | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   const distanceKm =
     pickupPoint && dropoffPoint
@@ -76,8 +77,6 @@ export function ParcelBooking({
   const total = quote.price * quantity;
 
   function dispatch() {
-    setError(null);
-
     startTransition(async () => {
       const result = await sendParcel({
         parcelType: type.id,
@@ -97,7 +96,7 @@ export function ParcelBooking({
       });
 
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
 
@@ -286,6 +285,7 @@ export function ParcelBooking({
         <div className="mt-3 space-y-2.5">
           <Field label="Full name" icon="user">
             <input
+              data-field="recipient"
               value={recipient}
               onChange={(event) => setRecipient(event.target.value)}
               placeholder="Who should the courier hand it to?"
@@ -297,6 +297,7 @@ export function ParcelBooking({
 
           <Field label="Phone number" icon="phone">
             <input
+              data-field="phone"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
               placeholder="So the courier can call them"
@@ -404,8 +405,9 @@ export function ParcelBooking({
         </p>
       </section>
 
-      <SchedulePicker className="mt-6" value={schedule} onChange={setSchedule} />
-
+      <div data-field="schedule" tabIndex={-1}>
+        <SchedulePicker className="mt-6" value={schedule} onChange={setSchedule} />
+      </div>
 
       <section className="mt-6">
         <div className="rounded-[16px] border border-line/90 bg-surface p-4">
@@ -443,16 +445,6 @@ export function ParcelBooking({
           </div>
         </div>
       </section>
-
-
-      {error ? (
-        <p
-          role="alert"
-          className="mt-3 rounded-[12px] border border-danger/25 bg-danger-soft px-3.5 py-2.5 text-[13px] text-danger-ink"
-        >
-          {error}
-        </p>
-      ) : null}
     </Sheet>
   );
 }

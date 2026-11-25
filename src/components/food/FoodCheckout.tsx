@@ -8,6 +8,7 @@ import { Icon } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
 import { SearchableSelect } from "@/components/flash/SearchableSelect";
 import { SegmentedControl } from "@/components/flash/SegmentedControl";
+import { useToast } from "@/components/flash/ToastProvider";
 import { EmptyState, Price } from "@/components/flash/ui";
 import { useCart } from "@/lib/cart";
 import { placeOrder } from "@/lib/flash/actions";
@@ -42,15 +43,13 @@ export function FoodCheckout({
     total: number;
     demo: boolean;
   } | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   const deliveryFee = cart.restaurant ? deliveryQuote(cart.restaurant, fulfilment, rates) : 0;
   const total = cart.subtotal - cart.discount + deliveryFee;
 
   function place() {
-    setError(null);
-
     startTransition(async () => {
       const result = await placeOrder({
         restaurantId: cart.restaurantId ?? "",
@@ -68,7 +67,7 @@ export function FoodCheckout({
       });
 
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
 
@@ -274,6 +273,7 @@ export function FoodCheckout({
               value={address}
               onChange={(value) => setAddress(value)}
               placeholder="Where are you going?"
+              field="address"
             />
           </div>
         ) : (
@@ -346,15 +346,6 @@ export function FoodCheckout({
       ) : null}
 
       <div className="mt-6 px-5">
-        {error ? (
-          <p
-            role="alert"
-            className="mb-3 rounded-[12px] border border-danger/25 bg-danger-soft px-3.5 py-2.5 text-[13px] text-danger-ink"
-          >
-            {error}
-          </p>
-        ) : null}
-
         <SignInGate
           label="Sign in to place an order"
           className="flex h-[50px] w-full items-center justify-center rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover"

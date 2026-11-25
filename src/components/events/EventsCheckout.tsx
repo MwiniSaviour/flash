@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
+import { useToast } from "@/components/flash/ToastProvider";
 import { useCart } from "@/lib/cart";
 import { bookTicketBatch } from "@/lib/flash/actions";
 import { recordPurchase } from "@/lib/flash/local-purchases";
@@ -16,15 +17,14 @@ import { cedis } from "@/lib/flash/format";
 export function EventsCheckout() {
   const cart = useCart();
   const [method, setMethod] = useState<PaymentMethodId>("momo");
-  const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string[] | null>(null);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   const lines = cart.lines.filter((line) => line.kind === "ticket" && line.tierId);
   const total = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
 
   function checkout() {
-    setError(null);
     startTransition(async () => {
       const result = await bookTicketBatch({
         lines: lines.map((line) => ({ tierId: line.tierId!, quantity: line.quantity })),
@@ -32,7 +32,7 @@ export function EventsCheckout() {
       });
 
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
 
@@ -162,12 +162,6 @@ export function EventsCheckout() {
             <PaymentMethods value={method} onChange={setMethod} allowCash={false} />
             <PaymentNote />
           </div>
-
-          {error ? (
-            <p role="alert" className="mt-4 text-[13px] text-danger-ink">
-              {error}
-            </p>
-          ) : null}
 
           <div className="mt-6 flex items-center justify-between border-t border-line pt-4">
             <span className="text-[14px] font-semibold text-muted">Total</span>

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 
 import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import { confirmDeliveryAction } from "@/lib/flash/actions";
 
 /**
@@ -14,8 +15,8 @@ import { confirmDeliveryAction } from "@/lib/flash/actions";
  */
 export function ConfirmDeliveryButton({ orderId }: { orderId: string }) {
   const [done, setDone] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   if (done) {
     return (
@@ -37,10 +38,9 @@ export function ConfirmDeliveryButton({ orderId }: { orderId: string }) {
           disabled={isPending}
           onClick={() =>
             startTransition(async () => {
-              setError(null);
               const result = await confirmDeliveryAction({ orderId });
               if (!result.ok) {
-                setError(result.error);
+                notify(result.error);
                 return;
               }
               setDone(true);
@@ -52,11 +52,6 @@ export function ConfirmDeliveryButton({ orderId }: { orderId: string }) {
           {isPending ? "Confirming." : "I have received my order"}
         </button>
       </SignInGate>
-      {error ? (
-        <p role="alert" className="mt-1.5 text-[12px] text-danger-ink">
-          {error}
-        </p>
-      ) : null}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
 import { PhotoUpload } from "@/components/flash/PhotoUpload";
+import { useToast } from "@/components/flash/ToastProvider";
 import { updateCover } from "@/lib/flash/actions";
 import { COVER_IMAGES } from "@/lib/flash/covers";
 import type { Restaurant } from "@/lib/flash/types";
@@ -24,20 +25,19 @@ export function CoverPicker({
 }) {
   const [cover, setCover] = useState(kitchen.image.src);
   const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   const chosen = COVER_IMAGES.find((image) => image.src === cover);
 
   function save() {
-    setError(null);
     setSaved(false);
 
     startTransition(async () => {
       const result = await updateCover({ restaurantId: kitchen.id, imageSrc: cover });
 
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
 
@@ -119,11 +119,6 @@ export function CoverPicker({
           <Icon name="check" size={15} />
           {saved ? "Cover updated" : isPending ? "Saving…" : "Save cover"}
         </button>
-        {error ? (
-          <p role="alert" className="text-[13px] text-danger-ink">
-            {error}
-          </p>
-        ) : null}
       </div>
     </div>
   );

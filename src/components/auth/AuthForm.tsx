@@ -7,6 +7,7 @@ import { useSyncExternalStore, useState, type FormEvent } from "react";
 
 import { FlashLogo } from "@/components/flash/FlashLogo";
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import { signInHref, signUpHref } from "@/lib/auth/return-to";
 
 import { GoogleMark } from "./GoogleMark";
@@ -77,7 +78,6 @@ export function AuthForm({
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"form" | "code">("form");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   // Google's OAuth page refuses embedded WebViews. In the Capacitor shell we
   // keep the user on the email/password + email-code flow instead of handing
   // them to Chrome (which is what the cross-origin OAuth redirect would do).
@@ -87,6 +87,7 @@ export function AuthForm({
     nativeAppSnapshot,
     serverNativeAppSnapshot,
   );
+  const notify = useToast();
 
   const isSignIn = mode === "sign-in";
   const signIn = signInAuth.signIn;
@@ -105,7 +106,7 @@ export function AuthForm({
 
   async function finish(complete: boolean) {
     if (!complete) {
-      setError("This account needs another verification step. Check your email.");
+      notify("This account needs another verification step. Check your email.");
       return;
     }
     if (isSignIn) await signIn.finalize();
@@ -115,7 +116,6 @@ export function AuthForm({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    setError(null);
     if (!signIn && !signUp) return;
     setBusy(true);
 
@@ -129,7 +129,7 @@ export function AuthForm({
         await finish(signIn.status === "complete");
       } else if (stage === "form") {
         if (password.length < minPassword) {
-          setError(`Use at least ${minPassword} characters for your password.`);
+          notify(`Use at least ${minPassword} characters for your password.`);
           return;
         }
 
@@ -157,19 +157,18 @@ export function AuthForm({
         });
         if (failure) throw failure;
         if (signUp.status === "complete") await finish(true);
-        else setError("That code did not work. Check it and try again.");
+        else notify("That code did not work. Check it and try again.");
       }
     } catch (err) {
-      setError(clerkError(err));
+      notify(clerkError(err));
     } finally {
       setBusy(false);
     }
   }
 
   async function google() {
-    setError(null);
     if (nativeApp) {
-      setError("Google sign-in is available on the web. Use your email and password in the app.");
+      notify("Google sign-in is available on the web. Use your email and password in the app.");
       return;
     }
     try {
@@ -189,7 +188,7 @@ export function AuthForm({
         if (failure) throw failure;
       }
     } catch (err) {
-      setError(clerkError(err));
+      notify(clerkError(err));
     }
   }
 
@@ -259,6 +258,7 @@ export function AuthForm({
                       Full name
                     </span>
                     <input
+                      data-field="name"
                       value={name}
                       onChange={(event) => setName(event.target.value)}
                       placeholder="Saviour Mwini"
@@ -301,12 +301,6 @@ export function AuthForm({
                 </label>
               </>
             )}
-
-            {error ? (
-              <p role="alert" className="text-[12.5px] leading-snug text-danger-ink">
-                {error}
-              </p>
-            ) : null}
 
             <button
               type="submit"

@@ -47,6 +47,7 @@ export function LocationFields({
           onChange={onPickupChange}
           placeholder="Search a town or street"
           precise
+          field="pickup"
         />
       </div>
 
@@ -61,6 +62,7 @@ export function LocationFields({
           onChange={onDropoffChange}
           placeholder="Where are you going?"
           precise
+          field="dropoff"
         />
       </div>
 

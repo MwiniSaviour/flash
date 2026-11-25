@@ -41,11 +41,11 @@ export function FlashMark({
 }
 
 /**
- * The wordmark lock-up: the mark beside FLASH / ACCRA.
+ * The wordmark lock-up: the mark beside FLASH / "Experience the best!".
  *
  * The reference app stacks a heavy name over a wide-tracked category line
- * (PROTOTYPE / RADIO). Flash keeps that structure and swaps in its own name
- * and the city it runs in.
+ * (PROTOTYPE / RADIO). Flash keeps that structure but sets its own promise in
+ * sentence case, so the longer line still reads at header size.
  */
 export function FlashLogo({
   tone = "ink",
@@ -65,7 +65,7 @@ export function FlashLogo({
     <span
       className={cn("inline-flex items-center gap-[9px]", className)}
       style={{ height: 30 * scale }}
-      aria-label="Flash"
+      aria-label="Flash — Experience the best!"
       role="img"
     >
       <FlashMark height={30 * scale} color="#FC5303" />
@@ -83,17 +83,17 @@ export function FlashLogo({
             Flash
           </span>
           <span
-            className="font-semibold uppercase"
+            className="font-semibold whitespace-nowrap"
             style={{
               color: tone === "light" ? "rgba(255,255,255,0.92)" : "#6c665f",
-              fontSize: 8.6 * scale,
-              letterSpacing: "0.46em",
+              fontSize: Math.min(12, Math.max(9, 10 * scale)),
+              letterSpacing: "0.005em",
               marginTop: 3 * scale,
               marginLeft: 1.5 * scale,
               lineHeight: 1,
             }}
           >
-            Accra
+            Experience the best!
           </span>
         </span>
       ) : null}

@@ -10,7 +10,7 @@ commercial release; the legal notes at the bottom are load-bearing.
 
 | Class | Count | Origin | Licence status |
 |---|---|---|---|
-| Brand mark | 1 (inline SVG + `src/app/icon.svg`) | Drawn for this project | **Owned by this project.** |
+| Brand mark | 1 (inline SVG + `src/app/icon.svg` + `public/icon.svg`) | Drawn for this project | **Owned by this project.** |
 | Event photography (`images/event-*`) | 9 | Carried over from the reference app's research pass; 4 newly sourced from Unsplash | **Unverified (carried over) / Unsplash licence (new).** See §2. |
 | Food & restaurant photography (`images/dish-*`, `images/restaurant-*`) | 10 | Unsplash | **Unsplash licence — free to use, attribution appreciated.** |
 | Ride photography (`images/ride-*`) | 3 | Unsplash | **Unsplash licence.** |
@@ -18,8 +18,9 @@ commercial release; the legal notes at the bottom are load-bearing.
 | Line icons | — | Lucide (npm), rendered inline as SVG | **ISC licence.** Owned by the project in use. |
 | Support avatar (`images/customer-support.svg`) | 1 | Drawn for this project | **Owned by this project.** |
 | Empty-state illustration (`images/no-data-found.png`) | 1 | Supplied for this project's interface pass | **Unverified — prototype only.** See §7. |
+| Onboarding illustrations (`images/onboarding-*`) | 3 | Supplied for this project's onboarding pass, optimised to WebP | **Unverified — prototype only.** See §9. |
 
-Total files under `public/`: **34**.
+Total files under `public/`: **40**.
 
 ---
 
@@ -27,8 +28,9 @@ Total files under `public/`: **34**.
 
 | File | Source | Notes |
 |---|---|---|
-| `src/components/flash/FlashLogo.tsx` | Drawn for this project | The five-bar pulse mark and the FLASH / ACCRA lock-up. Inline SVG, so it stays crisp at every density and can flip to white over imagery. |
+| `src/components/flash/FlashLogo.tsx` | Drawn for this project | The five-bar pulse mark and the FLASH / "Experience the best!" lock-up. Inline SVG, so it stays crisp at every density and can flip to white over imagery. |
 | `src/app/icon.svg` | Drawn for this project | The same mark as the app icon. |
+| `public/icon.svg` | Copy of `src/app/icon.svg` | The native shell's favicon; Vite serves it from the shared `public/` folder. |
 
 The reference repository shipped the *Radio Waa* wordmark, icon set and PWA
 icons under `public/assets/logo/`. Those were removed when the project was
@@ -155,6 +157,25 @@ would be a lie about where anything is.
 
 ---
 
+## 9. Onboarding illustrations
+
+Three illustrations were supplied for the onboarding pass, one per service.
+They are AI-generated illustrations, not photographs of real people, places or
+vehicles, and no upstream licence was supplied with them: **prototype only**
+until cleared or replaced.
+
+| File | Subject | Alt text used onboarding |
+|---|---|---|
+| `images/onboarding-food-delivery.webp` | An orange delivery scooter with a rider and food boxes in front of a phone showing a food app | "An orange delivery scooter with a rider and food boxes in front of a phone showing a food app" |
+| `images/onboarding-event-tickets.webp` | A smiling person in an orange jacket holding a phone with event tickets among music notes and stage lights | "A smiling person in an orange jacket holding a phone with event tickets among music notes and stage lights" |
+| `images/onboarding-keke-ride.webp` | An orange keke tricycle with its driver on a dark background | "An orange keke tricycle with its driver on a dark background" |
+
+Each source JPEG was stripped of metadata, resized to 720px wide and encoded as
+WebP at quality 78 (method 6). The three files total about 77 KB, down from
+about 1.2 MB, and cover a 390 × 844 phone screen at 2× density.
+
+---
+
 ## Legal note (for a real launch)
 
 - "Flash" and the pulse mark are this project's own identity; they must not
@@ -171,3 +192,5 @@ would be a lie about where anything is.
 - The people depicted in `avatar-*` are stock portraits, and the people named
   in the fixtures are fictional. Nothing here should be presented as a real
   member of staff, rider or customer.
+- The three `onboarding-*` illustrations have no verified licence. Treat them as
+  prototype-only artwork and clear or replace them before a public launch.

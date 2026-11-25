@@ -5,20 +5,20 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import { markNotificationsRead, setNotificationsEnabled } from "@/lib/flash/profile-actions";
 import type { AppNotification } from "@/lib/flash/notifications";
 
 export function NotificationInbox({ items }: { items: AppNotification[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const notify = useToast();
 
   function mark(keys: string[]) {
-    setError(null);
     start(async () => {
       const result = await markNotificationsRead(keys);
       if (!result.ok) {
-        setError(result.error ?? "The alerts could not be updated.");
+        notify(result.error ?? "The alerts could not be updated.");
         return;
       }
       router.refresh();
@@ -27,12 +27,6 @@ export function NotificationInbox({ items }: { items: AppNotification[] }) {
 
   return (
     <div className="mt-5 px-5">
-      {error ? (
-        <p role="alert" className="mb-3 text-[12.5px] text-danger-ink">
-          {error}
-        </p>
-      ) : null}
-
       {items.length ? (
         <>
           <button

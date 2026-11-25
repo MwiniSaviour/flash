@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import { setMenuItemPrice, setTierPrice } from "@/lib/flash/business-actions";
 import { cn } from "@/lib/utils";
 
@@ -28,10 +29,10 @@ export function PriceEditor({
   label: string;
 }) {
   const [value, setValue] = useState(String(price));
-  const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
   const lastSaved = useRef(price);
+  const notify = useToast();
 
   useEffect(() => {
     if (price === lastSaved.current) return;
@@ -48,11 +49,9 @@ export function PriceEditor({
     const next = Number(value);
 
     if (!Number.isFinite(next) || next < 0) {
-      setError("Set a price.");
+      notify("Set a price.");
       return;
     }
-
-    setError(null);
 
     startTransition(async () => {
       const result =
@@ -61,7 +60,7 @@ export function PriceEditor({
           : await setTierPrice({ tierId: id, price: next });
 
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
 
@@ -77,6 +76,7 @@ export function PriceEditor({
       <label className="flex h-9 items-center gap-1 rounded-[10px] border border-line bg-surface px-2 focus-within:border-brand/50">
         <span className="text-[11.5px] font-semibold text-muted">GHC</span>
         <input
+          data-field="price"
           value={value}
           onChange={(event) => setValue(event.target.value)}
           inputMode="numeric"
@@ -105,12 +105,6 @@ export function PriceEditor({
           "Save"
         )}
       </button>
-
-      {error ? (
-        <span role="alert" className="text-[12px] text-danger-ink">
-          {error}
-        </span>
-      ) : null}
     </div>
   );
 }

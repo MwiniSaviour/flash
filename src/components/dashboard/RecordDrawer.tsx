@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Icon } from "@/components/flash/Icon";
 import { PhotoUpload } from "@/components/flash/PhotoUpload";
 import { Sheet } from "@/components/flash/Sheet";
+import { useToast } from "@/components/flash/ToastProvider";
 import { deliveryUrl } from "@/lib/media/url";
 import { cn } from "@/lib/utils";
 
@@ -50,18 +51,17 @@ export function RecordDrawer({
 }) {
   const [values, setValues] = useState<DrawerValues>(initial);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const notify = useToast();
 
   const set = (name: string, value: string | number) =>
     setValues((current) => ({ ...current, [name]: value }));
 
   async function save() {
     setBusy(true);
-    setError(null);
     const result = await onSave(values);
     setBusy(false);
     if (!result.ok) {
-      setError(result.error ?? "That change could not be saved.");
+      notify(result.error ?? "That change could not be saved.");
       return;
     }
     onClose();
@@ -143,6 +143,7 @@ export function RecordDrawer({
               </span>
               {field.type === "textarea" ? (
                 <textarea
+                  data-field={field.name}
                   value={String(values[field.name] ?? "")}
                   onChange={(event) => set(field.name, event.target.value)}
                   rows={3}
@@ -151,6 +152,7 @@ export function RecordDrawer({
               ) : field.type === "tags" ? (
                 <input
                   type="text"
+                  data-field={field.name}
                   value={String(values[field.name] ?? "")}
                   onChange={(event) => set(field.name, event.target.value)}
                   placeholder="Bestseller, Smoky"
@@ -159,6 +161,7 @@ export function RecordDrawer({
               ) : (
                 <input
                   type={field.type}
+                  data-field={field.name}
                   value={String(values[field.name] ?? "")}
                   onChange={(event) =>
                     set(
@@ -174,12 +177,6 @@ export function RecordDrawer({
             </label>
           );
         })}
-
-        {error ? (
-          <p role="alert" className="text-[12.5px] text-danger-ink">
-            {error}
-          </p>
-        ) : null}
       </div>
     </Sheet>
   );

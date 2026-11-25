@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { TableButton } from "@/components/dashboard/DataTable";
+import { useToast } from "@/components/flash/ToastProvider";
 import { reassignRide } from "@/lib/admin/actions";
 
 /** Row menu control that assigns a ride to a specific driver. */
@@ -16,17 +17,16 @@ export function ReassignRideControl({
   drivers: { id: string; name: string }[];
 }) {
   const [selected, setSelected] = useState(currentDriver ?? "");
-  const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [pending, startTransition] = useTransition();
+  const notify = useToast();
 
   function assign() {
     if (!selected) return;
-    setError(null);
     setDone(false);
     startTransition(async () => {
       const result = await reassignRide(rideId, selected);
-      if (!result.ok) setError(result.error);
+      if (!result.ok) notify(result.error);
       else setDone(true);
     });
   }
@@ -50,7 +50,6 @@ export function ReassignRideControl({
       <TableButton tone="primary" onClick={assign} disabled={!selected || selected === currentDriver || pending}>
         {pending ? "Saving…" : done ? "Assigned" : "Reassign"}
       </TableButton>
-      {error ? <p className="text-[11px] text-danger-ink">{error}</p> : null}
     </div>
   );
 }

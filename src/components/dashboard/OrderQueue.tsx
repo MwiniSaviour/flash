@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import { confirmOrder, completeOrder } from "@/lib/flash/business-actions";
 import type { Order } from "@/lib/flash/types";
 
@@ -13,12 +14,11 @@ import type { Order } from "@/lib/flash/types";
  * for a yes, and close the ones that are done. Two buttons, one decision each.
  */
 export function OrderQueue({ orders }: { orders: Order[] }) {
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const notify = useToast();
 
   function act(orderId: string, action: "confirm" | "complete") {
-    setError(null);
     setBusy(orderId);
 
     startTransition(async () => {
@@ -28,7 +28,7 @@ export function OrderQueue({ orders }: { orders: Order[] }) {
           : await completeOrder({ orderId });
 
       setBusy(null);
-      if (!result.ok) setError(result.error);
+      if (!result.ok) notify(result.error);
     });
   }
 
@@ -42,15 +42,6 @@ export function OrderQueue({ orders }: { orders: Order[] }) {
 
   return (
     <div>
-      {error ? (
-        <p
-          role="alert"
-          className="mb-2 rounded-[12px] border border-danger/25 bg-danger-soft px-3.5 py-2.5 text-[13px] text-danger-ink"
-        >
-          {error}
-        </p>
-      ) : null}
-
       <ul className="space-y-2.5">
         {orders.map((order) => {
           const waiting = order.status === "awaiting confirmation";

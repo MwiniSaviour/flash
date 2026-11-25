@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import {
   getSettlementBanks,
   saveSettlementDetails,
@@ -18,9 +19,9 @@ export function SettlementForm({ businessId }: { businessId: string }) {
   const [code, setCode] = useState("");
   const [account, setAccount] = useState("");
   const [name, setName] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   useEffect(() => {
     getSettlementBanks()
@@ -28,13 +29,12 @@ export function SettlementForm({ businessId }: { businessId: string }) {
         setMomo(result.momo);
         setBanks(result.banks);
       })
-      .catch(() => setError("We could not load the payment providers."));
-  }, []);
+      .catch(() => notify("We could not load the payment providers."));
+  }, [notify]);
 
   const providers = type === "mobile_money" ? momo : banks;
 
   function save() {
-    setError(null);
     setSaved(false);
     startTransition(async () => {
       const result = await saveSettlementDetails({
@@ -45,7 +45,7 @@ export function SettlementForm({ businessId }: { businessId: string }) {
         accountName: name,
       });
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
       setSaved(true);
@@ -113,6 +113,7 @@ export function SettlementForm({ businessId }: { businessId: string }) {
             Name on the account
           </span>
           <input
+            data-field="name"
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="Your business name"
@@ -120,12 +121,6 @@ export function SettlementForm({ businessId }: { businessId: string }) {
           />
         </label>
       </div>
-
-      {error ? (
-        <p role="alert" className="mt-3 text-[12.5px] text-danger-ink">
-          {error}
-        </p>
-      ) : null}
 
       <button
         type="button"

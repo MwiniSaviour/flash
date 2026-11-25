@@ -5,6 +5,7 @@ import "./globals.css";
 
 import { CapacitorBackButton } from "@/components/CapacitorBackButton";
 import { PushRegistrationBridge } from "@/components/flash/PushRegistrationBridge";
+import { ToastProvider } from "@/components/flash/ToastProvider";
 import { SessionProvider } from "@/lib/auth/session";
 import { getEnv } from "@/lib/env";
 
@@ -44,8 +45,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-dvh bg-paper text-ink antialiased">
         <SessionProvider>
-          <PushRegistrationBridge />
-          {children}
+          <ToastProvider>
+            <PushRegistrationBridge />
+            {children}
+          </ToastProvider>
         </SessionProvider>
         <CapacitorBackButton />
       </body>

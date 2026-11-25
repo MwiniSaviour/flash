@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 
 import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import { requestTickets } from "@/lib/flash/actions";
 
 /** Ask the planner and the platform for a place when a tier has sold out. */
@@ -22,11 +23,10 @@ export function SoldOutRequest({
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
   const [sent, setSent] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   function submit() {
-    setError(null);
     startTransition(async () => {
       const result = await requestTickets({
         eventId,
@@ -39,7 +39,7 @@ export function SoldOutRequest({
       });
 
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
       setSent(true);
@@ -73,6 +73,7 @@ export function SoldOutRequest({
       <p className="text-[13px] font-bold text-ink">Request a place · {tierName}</p>
       <div className="mt-2 space-y-2">
         <input
+          data-field="name"
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder="Your name"
@@ -81,6 +82,7 @@ export function SoldOutRequest({
         />
         <div className="grid grid-cols-2 gap-2">
           <input
+            data-field="phone"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
             placeholder="Phone"
@@ -103,11 +105,6 @@ export function SoldOutRequest({
           className="h-10 w-full rounded-[10px] border border-line px-2.5 text-[13px] text-ink placeholder:text-muted focus:border-brand/50 focus:outline-none"
         />
       </div>
-      {error ? (
-        <p role="alert" className="mt-2 text-[12px] text-danger-ink">
-          {error}
-        </p>
-      ) : null}
       <SignInGate
         label="Sign in to ask"
         className="mt-2.5 flex h-10 w-full items-center justify-center rounded-[10px] bg-brand-solid text-[13px] font-bold text-white"

@@ -2,21 +2,21 @@
 
 import { useState, useTransition } from "react";
 
+import { useToast } from "@/components/flash/ToastProvider";
 import { decideApplication } from "@/lib/admin/actions";
 import type { AdminApplication } from "@/lib/flash/admin-repository";
 
 /** The approval queue: one decision per business application. */
 export function ApplicationTable({ rows }: { rows: AdminApplication[] }) {
-  const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Record<string, string>>({});
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   function decide(id: string, status: "approved" | "declined") {
-    setError(null);
     startTransition(async () => {
       const result = await decideApplication(id, status);
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
       setDone((current) => ({ ...current, [id]: status }));
@@ -33,12 +33,6 @@ export function ApplicationTable({ rows }: { rows: AdminApplication[] }) {
 
   return (
     <div className="space-y-2">
-      {error ? (
-        <p role="alert" className="text-[12.5px] text-danger-ink">
-          {error}
-        </p>
-      ) : null}
-
       {rows.map((row) => (
         <div
           key={row.id}

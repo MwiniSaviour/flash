@@ -24,6 +24,7 @@ export function SearchableSelect({
   placeholder,
   precise = false,
   className,
+  field,
 }: {
   label: string;
   value: string;
@@ -31,6 +32,7 @@ export function SearchableSelect({
   placeholder: string;
   precise?: boolean;
   className?: string;
+  field?: string;
 }) {
   const listId = useId();
   const [suggestions, setSuggestions] = useState<Place[]>([]);
@@ -148,6 +150,7 @@ export function SearchableSelect({
         <input
           ref={inputRef}
           value={value}
+          data-field={field}
           onChange={(event) => {
             setBusy(true);
             setNotice(null);

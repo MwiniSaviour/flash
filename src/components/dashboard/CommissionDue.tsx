@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import { payCommission } from "@/lib/flash/business-actions";
 import { cedis } from "@/lib/flash/format";
 
@@ -14,20 +15,19 @@ export function CommissionDue({
   businessId: string;
   charges: { id: string; amountPesewas: number; label: string }[];
 }) {
-  const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   const total = charges.reduce((sum, charge) => sum + charge.amountPesewas, 0);
 
   function pay(chargeId: string) {
-    setError(null);
     setPendingId(chargeId);
     startTransition(async () => {
       const result = await payCommission({ paymentId: chargeId, businessId });
       setPendingId(null);
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
       if (result.data.checkoutUrl) window.location.href = result.data.checkoutUrl;
@@ -66,12 +66,6 @@ export function CommissionDue({
           </li>
         ))}
       </ul>
-
-      {error ? (
-        <p role="alert" className="mt-2 text-[12px] text-danger-ink">
-          {error}
-        </p>
-      ) : null}
     </section>
   );
 }

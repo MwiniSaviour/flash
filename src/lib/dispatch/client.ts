@@ -23,7 +23,7 @@ function headers(): Record<string, string> {
   const env = getEnv();
   return {
     "content-type": "application/json",
-    "x-jobfinder-key": env.dispatchApiKey ?? "",
+    "x-dispatch-key": env.dispatchApiKey ?? "",
     "x-app-id": env.dispatchAppId ?? "",
     accept: "application/json",
   };

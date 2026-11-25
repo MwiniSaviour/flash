@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import { applyForBusiness } from "@/lib/flash/business-actions";
 import type { BusinessKind } from "@/lib/flash/types";
 import { cn } from "@/lib/utils";
@@ -39,13 +40,11 @@ export function BusinessApplicationForm() {
   const [phone, setPhone] = useState("");
   const [neighbourhood, setNeighbourhood] = useState("");
   const [about, setAbout] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   function submit() {
-    setError(null);
-
     startTransition(async () => {
       const result = await applyForBusiness({
         kind,
@@ -57,7 +56,7 @@ export function BusinessApplicationForm() {
       });
 
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
 
@@ -147,6 +146,7 @@ export function BusinessApplicationForm() {
             The name of the business
           </span>
           <input
+            data-field="name"
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="Auntie Muni's Kitchen"
@@ -159,6 +159,7 @@ export function BusinessApplicationForm() {
             <span className="mb-1.5 block text-[12px] font-semibold text-muted">Email</span>
             <input
               type="email"
+              data-field="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.gh"
@@ -199,15 +200,6 @@ export function BusinessApplicationForm() {
           />
         </label>
       </div>
-
-      {error ? (
-        <p
-          role="alert"
-          className="mt-4 rounded-[12px] border border-danger/25 bg-danger-soft px-3.5 py-2.5 text-[13px] text-danger-ink"
-        >
-          {error}
-        </p>
-      ) : null}
 
       <button
         type="button"

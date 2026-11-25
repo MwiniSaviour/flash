@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import { updateProfile } from "@/lib/flash/profile-actions";
 import type { FlashUser } from "@/lib/flash/types";
 
@@ -12,16 +13,15 @@ export function AccountSettingsForm({ initial }: { initial: FlashUser }) {
   const [name, setName] = useState(initial.name);
   const [email, setEmail] = useState(initial.email);
   const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const notify = useToast();
 
   function save() {
-    setError(null);
     setSaved(false);
     start(async () => {
       const result = await updateProfile({ name, email });
       if (!result.ok) {
-        setError(result.error ?? "The profile could not be saved.");
+        notify(result.error ?? "The profile could not be saved.");
         return;
       }
       setSaved(true);
@@ -37,6 +37,7 @@ export function AccountSettingsForm({ initial }: { initial: FlashUser }) {
         <label className="block">
           <span className="mb-1 block text-[12px] font-semibold text-muted">Name</span>
           <input
+            data-field="name"
             value={name}
             onChange={(event) => setName(event.target.value)}
             className="h-11 w-full rounded-[11px] border border-line bg-surface px-3 text-[13.5px] text-ink focus:border-brand/50 focus:outline-none"
@@ -46,17 +47,13 @@ export function AccountSettingsForm({ initial }: { initial: FlashUser }) {
           <span className="mb-1 block text-[12px] font-semibold text-muted">Email</span>
           <input
             type="email"
+            data-field="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             className="h-11 w-full rounded-[11px] border border-line bg-surface px-3 text-[13.5px] text-ink focus:border-brand/50 focus:outline-none"
           />
         </label>
       </div>
-      {error ? (
-        <p role="alert" className="mt-2.5 text-[12.5px] text-danger-ink">
-          {error}
-        </p>
-      ) : null}
       <button
         type="button"
         disabled={pending}

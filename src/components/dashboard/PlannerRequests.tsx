@@ -3,21 +3,21 @@
 import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import { decideTicketRequest } from "@/lib/flash/business-actions";
 import type { TicketRequest } from "@/lib/flash/types";
 
 /** Requests for a sold-out tier, decided by the event planner. */
 export function PlannerRequests({ rows }: { rows: TicketRequest[] }) {
   const [done, setDone] = useState<Record<string, string>>({});
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   function decide(id: string, status: "fulfilled" | "declined") {
-    setError(null);
     startTransition(async () => {
       const result = await decideTicketRequest({ requestId: id, status });
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
       setDone((current) => ({ ...current, [id]: status }));
@@ -34,12 +34,6 @@ export function PlannerRequests({ rows }: { rows: TicketRequest[] }) {
 
   return (
     <div className="space-y-2">
-      {error ? (
-        <p role="alert" className="text-[12.5px] text-danger-ink">
-          {error}
-        </p>
-      ) : null}
-
       {rows.map((row) => (
         <div key={row.id} className="rounded-[16px] border border-line/90 bg-surface p-3.5">
           <div className="flex items-start justify-between gap-3">

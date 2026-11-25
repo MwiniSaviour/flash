@@ -52,3 +52,4 @@ android/capacitor-cordova-android-plugins/
 *.apk
 *.aab
 .vercel
+.env*

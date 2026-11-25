@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
 import { Sheet } from "@/components/flash/Sheet";
+import { useToast } from "@/components/flash/ToastProvider";
 import { StatusBadge } from "@/components/flash/ui";
 import { cedis, dayMonth } from "@/lib/flash/format";
 import {
@@ -40,21 +41,20 @@ type ActionResult = { ok: boolean; error?: string };
 function useTableAction() {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const notify = useToast();
 
   const run = (action: () => Promise<ActionResult>) => {
-    setError(null);
     start(async () => {
       const result = await action();
       if (!result.ok) {
-        setError(result.error ?? "That change did not save.");
+        notify(result.error ?? "That change did not save.");
         return;
       }
       router.refresh();
     });
   };
 
-  return { run, pending, error };
+  return { run, pending };
 }
 
 function ConfirmDelete({
@@ -96,15 +96,6 @@ function ConfirmDelete({
     >
       <p className="text-[13.5px] leading-relaxed text-ink-soft">{detail}</p>
     </Sheet>
-  );
-}
-
-function ErrorLine({ error }: { error: string | null }) {
-  if (!error) return null;
-  return (
-    <p role="alert" className="mt-2 text-[12.5px] text-danger-ink">
-      {error}
-    </p>
   );
 }
 
@@ -178,7 +169,7 @@ export function DishesTable({
   const router = useRouter();
   const [editing, setEditing] = useState<MenuItem | "new" | null>(null);
   const [removing, setRemoving] = useState<MenuItem | null>(null);
-  const { run, pending, error } = useTableAction();
+  const { run, pending } = useTableAction();
 
   const rows: TableRow[] = items.map((item) => ({
     id: item.id,
@@ -276,7 +267,6 @@ export function DishesTable({
         }
         empty="No dishes yet. Add the first one."
       />
-      <ErrorLine error={error} />
 
       {editing ? (
         <RecordDrawer
@@ -328,7 +318,7 @@ export function DishesTable({
 
 /** Orders with their status actions. */
 export function OrdersTable({ orders }: { orders: Order[] }) {
-  const { run, pending, error } = useTableAction();
+  const { run, pending } = useTableAction();
 
   const rows: TableRow[] = orders.map((order) => ({
     id: order.id,
@@ -417,7 +407,6 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
         rows={rows}
         empty="No orders yet."
       />
-      <ErrorLine error={error} />
     </>
   );
 }
@@ -502,7 +491,7 @@ export function EventsTable({
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Event | null>(null);
   const [closing, setClosing] = useState<Event | null>(null);
-  const { run, pending, error } = useTableAction();
+  const { run, pending } = useTableAction();
 
   const rows: TableRow[] = events.map((event) => {
     const status = event.live ? "Live" : event.date >= today ? "Scheduled" : "Closed";
@@ -574,7 +563,6 @@ export function EventsTable({
         }
         empty="No events yet. Post the first one."
       />
-      <ErrorLine error={error} />
 
       {creating ? (
         <RecordDrawer
@@ -693,7 +681,7 @@ export function TiersTable({
 }) {
   const [editing, setEditing] = useState<{ event: Event; tier: TicketTier } | null>(null);
   const [removing, setRemoving] = useState<{ event: Event; tier: TicketTier } | null>(null);
-  const { run, pending, error } = useTableAction();
+  const { run, pending } = useTableAction();
 
   const rows: TableRow[] = events.flatMap((event) =>
     event.tiers.map((tier) => ({
@@ -758,7 +746,6 @@ export function TiersTable({
         rows={rows}
         empty="No ticket types yet."
       />
-      <ErrorLine error={error} />
 
       {editing ? (
         <RecordDrawer
@@ -809,7 +796,7 @@ export function TiersTable({
 
 /** Tickets with confirmation. */
 export function TicketsTable({ tickets, events }: { tickets: Ticket[]; events: Event[] }) {
-  const { run, pending, error } = useTableAction();
+  const { run, pending } = useTableAction();
 
   const rows: TableRow[] = tickets.map((ticket) => {
     const event = events.find((entry) => entry.id === ticket.eventId);
@@ -885,7 +872,6 @@ export function TicketsTable({ tickets, events }: { tickets: Ticket[]; events: E
         rows={rows}
         empty="No tickets yet."
       />
-      <ErrorLine error={error} />
     </>
   );
 }

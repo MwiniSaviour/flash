@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
+import { useToast } from "@/components/flash/ToastProvider";
 import { DateBadge } from "@/components/flash/ui";
 import { bookTicket } from "@/lib/flash/actions";
 import { recordPurchase } from "@/lib/flash/local-purchases";
@@ -32,8 +33,8 @@ export function TicketCheckout({
   const [booked, setBooked] = useState<{ reference: string; total: number; demo: boolean } | null>(
     null,
   );
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   const tier = event.tiers.find((item) => item.id === tierId) ?? event.tiers[0];
   const badge = dateBadge(event.date);
@@ -42,8 +43,6 @@ export function TicketCheckout({
   const isFree = total === 0;
 
   function confirm() {
-    setError(null);
-
     startTransition(async () => {
       const result = await bookTicket({
         eventId: event.id,
@@ -53,7 +52,7 @@ export function TicketCheckout({
       });
 
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
 
@@ -209,15 +208,6 @@ export function TicketCheckout({
       </div>
 
       <div className="mt-6 px-5">
-        {error ? (
-          <p
-            role="alert"
-            className="mb-3 rounded-[12px] border border-danger/25 bg-danger-soft px-3.5 py-2.5 text-[13px] text-danger-ink"
-          >
-            {error}
-          </p>
-        ) : null}
-
         <SignInGate
           label="Sign in to pay"
           className="flex h-[50px] w-full items-center justify-center rounded-[12px] bg-brand-solid text-[15px] font-bold text-white shadow-brand transition hover:bg-brand-solid-hover"

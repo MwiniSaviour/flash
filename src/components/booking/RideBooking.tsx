@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import { SignInGate } from "@/components/auth/SignInGate";
 import { Icon, type IconName } from "@/components/flash/Icon";
 import { PaymentMethods, PaymentNote, type PaymentMethodId } from "@/components/flash/PaymentMethods";
+import { useToast } from "@/components/flash/ToastProvider";
 import { recordPurchase } from "@/lib/flash/local-purchases";
 import { LocationFields } from "@/components/flash/LocationFields";
 import { LiveMap } from "@/components/flash/LiveMap";
@@ -62,8 +63,8 @@ export function RideBooking({
   const [schedule, setSchedule] = useState<Schedule>({ mode: "now" });
   const [reference, setReference] = useState<{ value: string; demo: boolean } | null>(null);
   const [searching, setSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   const distanceKm =
     pickupPoint && dropoffPoint
@@ -97,7 +98,6 @@ export function RideBooking({
   }
 
   function request() {
-    setError(null);
     setSearching(true);
 
     startTransition(async () => {
@@ -116,7 +116,7 @@ export function RideBooking({
       });
 
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         setSearching(false);
         return;
       }
@@ -308,6 +308,7 @@ export function RideBooking({
         <SectionHeading title="How can the rider reach you?" />
         <Field label="Phone number" icon="phone" className="mt-3">
           <input
+            data-field="phone"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
             placeholder="So the rider can call you"
@@ -416,17 +417,9 @@ export function RideBooking({
         </ul>
       </section>
 
-      <SchedulePicker className="mt-6" value={schedule} onChange={setSchedule} />
-
-
-      {error ? (
-        <p
-          role="alert"
-          className="mt-3 rounded-[12px] border border-danger/25 bg-danger-soft px-3.5 py-2.5 text-[13px] text-danger-ink"
-        >
-          {error}
-        </p>
-      ) : null}
+      <div data-field="schedule" tabIndex={-1}>
+        <SchedulePicker className="mt-6" value={schedule} onChange={setSchedule} />
+      </div>
     </Sheet>
   );
 }

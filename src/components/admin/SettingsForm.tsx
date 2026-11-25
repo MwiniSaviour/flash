@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
+import { useToast } from "@/components/flash/ToastProvider";
 import { updatePlatformSettings } from "@/lib/admin/actions";
 import type { PlatformSettings } from "@/lib/payments/commission";
 
@@ -21,12 +22,11 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
   const [parcelPerKm, setParcelPerKm] = useState(String(initial.parcelPerKmPesewas / 100));
   const [deliveryPerKm, setDeliveryPerKm] = useState(String(initial.deliveryPerKmPesewas / 100));
   const [deliveryBaseKm, setDeliveryBaseKm] = useState(String(initial.deliveryBaseKm));
-  const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const notify = useToast();
 
   function save() {
-    setError(null);
     setSaved(false);
 
     startTransition(async () => {
@@ -43,7 +43,7 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
       });
 
       if (!result.ok) {
-        setError(result.error);
+        notify(result.error);
         return;
       }
 
@@ -120,6 +120,7 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
                 onChange={(event) => field.set(event.target.value)}
                 inputMode="decimal"
                 aria-label={field.label}
+                data-field={field.label === "On what is sold" ? "rate" : undefined}
                 className="min-w-0 flex-1 bg-transparent text-right text-[14px] font-bold text-ink focus:outline-none"
               />
               <span className="text-[12px] font-semibold text-muted">{field.unit}</span>
@@ -138,18 +139,13 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
               onChange={(event) => setHold(event.target.value)}
               inputMode="numeric"
               aria-label="Payout hold hours"
+              data-field="holdHours"
               className="min-w-0 flex-1 bg-transparent text-right text-[14px] font-bold text-ink focus:outline-none"
             />
             <span className="text-[12px] font-semibold text-muted">h</span>
           </span>
         </label>
       </div>
-
-      {error ? (
-        <p role="alert" className="mt-3 text-[12.5px] text-danger-ink">
-          {error}
-        </p>
-      ) : null}
 
       <button
         type="button"

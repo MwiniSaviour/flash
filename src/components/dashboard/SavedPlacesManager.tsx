@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/flash/Icon";
 import { NoData } from "@/components/flash/NoData";
+import { useToast } from "@/components/flash/ToastProvider";
 import {
   addSavedPlace,
   deleteSavedPlace,
@@ -16,11 +17,11 @@ import type { SavedPlace } from "@/lib/flash/types";
 export function SavedPlacesManager({ initial }: { initial: SavedPlace[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [label, setLabel] = useState("");
   const [detail, setDetail] = useState("");
+  const notify = useToast();
 
   function reset() {
     setLabel("");
@@ -30,11 +31,10 @@ export function SavedPlacesManager({ initial }: { initial: SavedPlace[] }) {
   }
 
   function run(action: () => Promise<{ ok: boolean; error?: string }>) {
-    setError(null);
     start(async () => {
       const result = await action();
       if (!result.ok) {
-        setError(result.error ?? "That change could not be saved.");
+        notify(result.error ?? "That change could not be saved.");
         return;
       }
       reset();
@@ -44,12 +44,6 @@ export function SavedPlacesManager({ initial }: { initial: SavedPlace[] }) {
 
   return (
     <div className="mt-5 px-5">
-      {error ? (
-        <p role="alert" className="mb-3 text-[12.5px] text-danger-ink">
-          {error}
-        </p>
-      ) : null}
-
       {initial.length === 0 && !adding ? (
         <NoData message="No saved places yet. Add the addresses you use most for one-tap booking." />
       ) : null}
@@ -64,6 +58,7 @@ export function SavedPlacesManager({ initial }: { initial: SavedPlace[] }) {
               {editing === place.id ? (
                 <div className="space-y-2.5">
                   <input
+                    data-field="name"
                     value={label}
                     onChange={(event) => setLabel(event.target.value)}
                     aria-label="Place name"
@@ -71,6 +66,7 @@ export function SavedPlacesManager({ initial }: { initial: SavedPlace[] }) {
                     className="h-10 w-full rounded-[10px] border border-line bg-paper px-3 text-[13px] focus:border-brand/50 focus:outline-none"
                   />
                   <input
+                    data-field="address"
                     value={detail}
                     onChange={(event) => setDetail(event.target.value)}
                     aria-label="Place address"
@@ -143,6 +139,7 @@ export function SavedPlacesManager({ initial }: { initial: SavedPlace[] }) {
       {adding ? (
         <div className="mt-3 space-y-2.5 rounded-[14px] border border-line/90 bg-surface p-3.5">
           <input
+            data-field="name"
             value={label}
             onChange={(event) => setLabel(event.target.value)}
             aria-label="Place name"
@@ -150,6 +147,7 @@ export function SavedPlacesManager({ initial }: { initial: SavedPlace[] }) {
             className="h-10 w-full rounded-[10px] border border-line bg-paper px-3 text-[13px] focus:border-brand/50 focus:outline-none"
           />
           <input
+            data-field="address"
             value={detail}
             onChange={(event) => setDetail(event.target.value)}
             aria-label="Place address"

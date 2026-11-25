@@ -1,111 +1,136 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { FlashLogo } from "~/components/ui/FlashLogo";
 import { Icon } from "~/components/ui/Icon";
-import { PulseLogo } from "~/components/ui/PulseLogo";
 import { cn } from "~/lib/cn";
 
 const SLIDES = [
   {
-    headline: ["More Than", "Just Music."],
-    accent: "It’s Your Community.",
-    body: "Stream live radio, discover local events, book tickets and be part of what’s happening around you.",
+    headline: ["Your city,", "your ticket."],
+    accent: "Never miss a night.",
+    body: "Concerts, comedy and festivals — find what is on and book in seconds.",
+    image: "/assets/images/onboarding-event-tickets.webp",
+    alt: "A smiling person in an orange jacket holding a phone with event tickets among music notes and stage lights",
   },
   {
-    headline: ["Live Radio,", "Every Hour."],
-    accent: "Wa to the World.",
-    body: "One station, all day. Wake up with Good Morning Wa, drive home with the Evening Bulletin.",
+    headline: ["Good food,", "right to your door."],
+    accent: "Dinner, handled.",
+    body: "Order from the kitchens you love and follow every bite on the way.",
+    image: "/assets/images/onboarding-food-delivery.webp",
+    alt: "An orange delivery scooter with a rider and food boxes in front of a phone showing a food app",
   },
   {
-    headline: ["Your Tickets,", "One Wallet."],
-    accent: "Never Miss a Night.",
-    body: "Book Sunset Live Sessions, comedy nights and festivals, then walk in with your ticket already on your phone.",
+    headline: ["Around town,", "in a flash."],
+    accent: "Get going.",
+    body: "A keke, a taxi or a ride for the whole crew — one tap and you are moving.",
+    image: "/assets/images/onboarding-keke-ride.webp",
+    alt: "An orange keke tricycle with its driver on a dark background",
   },
 ];
 
 /**
- * Onboarding: full-bleed photography, the wordmark at the top, the three-slide
- * copy block, page dots and the primary "Get Started" action.
+ * First-run onboarding: one full-bleed illustration per service, a single
+ * promise per slide, and one way in. Progress is visible but never blocks the
+ * product — Skip and Sign In enter from any slide.
  */
 export function OnboardingScreen() {
   const navigate = useNavigate();
   const [index, setIndex] = useState(0);
   const slide = SLIDES[index];
+  const enter = () => navigate("/", { replace: true });
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#0b0b0d]">
-      <img
-        src="/assets/images/onboarding-hero.jpg"
-        alt="A woman listening to Prototype Radio on headphones on a Wa street at night"
-        className="absolute inset-0 h-full w-full object-cover object-[50%_32%]"
-        draggable={false}
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-black/92" />
-      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/92 via-black/45 to-transparent" />
+    <div className="relative h-full w-full overflow-hidden bg-media">
+      {SLIDES.map((item, i) => (
+        <img
+          key={item.image}
+          src={item.image}
+          alt={i === index ? item.alt : ""}
+          aria-hidden={i !== index}
+          draggable={false}
+          className={cn(
+            "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-500 ease-out",
+            i === index ? "opacity-100" : "opacity-0",
+          )}
+        />
+      ))}
+      <div className="absolute inset-x-0 top-0 h-44 bg-gradient-to-b from-black/60 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-[64%] bg-gradient-to-t from-black via-black/70 to-transparent" />
 
       <div className="relative flex h-full flex-col px-5">
-        {/* Full-bleed photo behind the device's own status bar; the safe-area
-            padding keeps the wordmark clear of it on a notched phone. */}
         <div className="safe-top shrink-0" />
-        <div className="flex pt-5">
-          <PulseLogo tone="light" size="lg" className="scale-[1.3] origin-left" />
+        <div className="flex items-start justify-between gap-3 pt-5">
+          <FlashLogo tone="light" size="lg" />
+          <button
+            type="button"
+            onClick={enter}
+            className="-mr-2 grid h-11 min-w-11 place-items-center rounded-full px-3 text-[12.5px] font-semibold text-white/85 transition active:bg-white/10"
+          >
+            Skip
+          </button>
         </div>
 
-        <div className="mt-auto pb-1">
-          <div className="animate-fade" key={index}>
-            <h1 className="text-[34px] font-bold leading-[1.04] tracking-[-0.03em] text-white">
+        <div className="mt-auto">
+          <div key={index} className="animate-fade">
+            <h1 className="max-w-[19rem] text-[34px] font-bold leading-[1.05] tracking-[-0.035em] text-white">
               {slide.headline[0]}
               <br />
               {slide.headline[1]}
             </h1>
-            <p className="mt-1.5 text-[25px] font-bold leading-tight tracking-[-0.025em] text-brand">
+            <p className="mt-2.5 text-[18px] font-semibold leading-tight tracking-[-0.02em] text-brand">
               {slide.accent}
             </p>
-            <p className="mt-4 max-w-[19rem] text-[14px] leading-[1.55] text-white/82">
+            <p className="mt-3.5 max-w-[19rem] text-[13.5px] leading-[1.55] text-white/80">
               {slide.body}
             </p>
           </div>
 
-          <div className="mt-9 flex items-center gap-2" role="tablist" aria-label="Onboarding slides">
-            {SLIDES.map((_, dot) => (
-              <button
-                key={dot}
-                type="button"
-                role="tab"
-                aria-selected={dot === index}
-                aria-label={`Slide ${dot + 1}`}
-                onClick={() => setIndex(dot)}
-                className={cn(
-                  "h-[7px] w-[7px] rounded-full transition-colors",
-                  dot === index ? "bg-brand" : "bg-white/35",
-                )}
-              />
-            ))}
+          <div className="mt-8 flex items-center justify-between">
+            <div className="flex items-center gap-2" role="tablist" aria-label="Onboarding slides">
+              {SLIDES.map((item, dot) => {
+                const active = dot === index;
+                return (
+                  <button
+                    key={item.image}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    aria-label={`Slide ${dot + 1}: ${item.accent}`}
+                    onClick={() => setIndex(dot)}
+                    className={cn(
+                      "h-1.5 rounded-full transition-all duration-300",
+                      active ? "w-5 bg-brand" : "w-1.5 bg-white/40",
+                    )}
+                  />
+                );
+              })}
+            </div>
+            <span className="text-[11px] font-semibold tabular-nums tracking-[0.08em] text-white/60">
+              {String(index + 1).padStart(2, "0")} / {String(SLIDES.length).padStart(2, "0")}
+            </span>
           </div>
 
           <button
             type="button"
-            // The mock's single action is "Get Started": it enters the app from
-            // any slide. Paging is what the dots are for.
-            onClick={() => navigate("/", { replace: true })}
+            onClick={enter}
             className={cn(
-              "mt-5 flex h-[54px] w-full items-center justify-center gap-2.5 rounded-full bg-brand",
-              "text-[14.5px] font-semibold text-white shadow-[0_16px_34px_-14px_rgb(252_83_3/0.9)]",
-              "transition active:scale-[0.99] active:bg-brand-pressed",
+              "mt-5 flex h-[54px] w-full items-center justify-center gap-2.5 rounded-full bg-brand-solid",
+              "text-[15px] font-semibold text-brand-fg shadow-brand transition active:scale-[0.99] active:bg-brand-ink",
             )}
           >
-            Get Started
+            Get started
             <Icon name="arrow-right" size={18} />
           </button>
 
-          <p className="mt-[26px] pb-[max(env(safe-area-inset-bottom),30px)] text-center text-[11.5px] text-white/65">
+          <p className="mt-5 pb-[max(env(safe-area-inset-bottom),26px)] text-center text-[11.5px] text-white/70">
             Already have an account?{" "}
             <button
               type="button"
-              onClick={() => navigate("/", { replace: true })}
-              className="font-semibold text-white underline-offset-2 active:underline"
+              onClick={enter}
+              className="font-semibold text-white underline-offset-4 active:underline"
             >
-              Sign In
+              Sign in
             </button>
           </p>
         </div>
