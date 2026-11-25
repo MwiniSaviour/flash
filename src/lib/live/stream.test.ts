@@ -13,7 +13,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/env", () => ({
-  getEnv: () => ({ supabaseServiceRoleKey: "server-only-key" }),
+  getEnv: () => ({ databaseServiceRoleKey: "server-only-key" }),
 }));
 
 vi.mock("@/lib/supabase/admin", () => ({

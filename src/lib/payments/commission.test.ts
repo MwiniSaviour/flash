@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/lib/env", () => ({ hasSupabaseAdminEnv: () => mocks.hasAdminEnv }));
+vi.mock("@/lib/env", () => ({ hasDatabaseAdminEnv: () => mocks.hasAdminEnv }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: mocks.createAdminClient }));
 
 import { DEMO_SETTINGS, displaySettings, platformSettings } from "./commission";

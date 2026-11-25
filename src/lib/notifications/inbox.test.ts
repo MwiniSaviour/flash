@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({ hasAdminEnv: false }));
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/server", () => ({ currentUserId: async () => "usr-1" }));
-vi.mock("@/lib/env", () => ({ hasSupabaseAdminEnv: () => mocks.hasAdminEnv }));
+vi.mock("@/lib/env", () => ({ hasDatabaseAdminEnv: () => mocks.hasAdminEnv }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => null }));
 vi.mock("./copy", () => ({ notificationHref: () => "/profile/notifications" }));
 

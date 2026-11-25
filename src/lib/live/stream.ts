@@ -64,7 +64,7 @@ export async function buildLiveDigest(userId: string): Promise<string> {
     notifications: fingerprint((notifications.data ?? []) as FingerprintRow[]),
   });
 
-  const serviceKey = getEnv().supabaseServiceRoleKey;
+  const serviceKey = getEnv().databaseServiceRoleKey;
   if (!serviceKey) throw new Error("Database is not configured");
   const key = createHash("sha256").update(`flash-live:${serviceKey}`).digest();
   return createHmac("sha256", key).update(payload).digest("hex");

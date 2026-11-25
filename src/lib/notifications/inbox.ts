@@ -1,7 +1,7 @@
 import "server-only";
 
 import { currentUserId } from "@/lib/auth/server";
-import { hasSupabaseAdminEnv } from "@/lib/env";
+import { hasDatabaseAdminEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { notificationHref } from "./copy";
@@ -62,7 +62,7 @@ function toItem(row: Row): PersistedNotification {
 export async function getPersistedNotifications(): Promise<PersistedNotification[]> {
   // The storefront demo has no persisted rows at all, so an empty inbox is the
   // truthful answer rather than invented data. Console reads below require a DB.
-  if (!hasSupabaseAdminEnv()) return [];
+  if (!hasDatabaseAdminEnv()) return [];
   return (await rowsFor("user")).map(toItem);
 }
 

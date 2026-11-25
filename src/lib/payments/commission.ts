@@ -1,6 +1,6 @@
 import "server-only";
 
-import { hasSupabaseAdminEnv } from "@/lib/env";
+import { hasDatabaseAdminEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { DEMO_SETTINGS, type PlatformSettings } from "./commission-math";
@@ -47,6 +47,6 @@ export async function platformSettings(): Promise<PlatformSettings> {
  * this call: those paths use platformSettings() and fail closed without a DB.
  */
 export async function displaySettings(): Promise<PlatformSettings> {
-  if (!hasSupabaseAdminEnv()) return DEMO_SETTINGS;
+  if (!hasDatabaseAdminEnv()) return DEMO_SETTINGS;
   return platformSettings();
 }

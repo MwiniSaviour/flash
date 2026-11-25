@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { TiersTable } from "@/components/dashboard/ConsoleTables";
-import { hasSupabaseAdminEnv } from "@/lib/env";
+import { hasDatabaseAdminEnv } from "@/lib/env";
 import { DEMO_TODAY } from "@/lib/flash/format";
 import { getOwnedBusiness, listEventsForBusiness } from "@/lib/flash/repository";
 
@@ -20,7 +20,7 @@ export default async function EventsTiersPage({
 
   if (!business) return null;
 
-  const today = hasSupabaseAdminEnv() ? new Date().toISOString().slice(0, 10) : DEMO_TODAY;
+  const today = hasDatabaseAdminEnv() ? new Date().toISOString().slice(0, 10) : DEMO_TODAY;
 
   return (
     <>

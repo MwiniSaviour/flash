@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { DishesTable } from "@/components/dashboard/ConsoleTables";
 import { EmptyState } from "@/components/flash/ui";
-import { hasSupabaseAdminEnv } from "@/lib/env";
+import { hasDatabaseAdminEnv } from "@/lib/env";
 import { DEMO_TODAY } from "@/lib/flash/format";
 import { getOwnedBusiness, listKitchen } from "@/lib/flash/repository";
 
@@ -29,7 +29,7 @@ export default async function RestaurantDishesPage({
     );
   }
 
-  const today = hasSupabaseAdminEnv() ? new Date().toISOString().slice(0, 10) : DEMO_TODAY;
+  const today = hasDatabaseAdminEnv() ? new Date().toISOString().slice(0, 10) : DEMO_TODAY;
 
   return (
     <>

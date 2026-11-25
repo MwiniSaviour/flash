@@ -1,19 +1,17 @@
 // Environment for both the server and the browser, parsed once and reported
 // without throwing.
 //
-// Every value is optional: the app falls back to fixtures when Supabase is not
-// configured and to the demo customer when Clerk is not. Reads stay as full
-// `process.env.NAME` expressions so Next can inline the public values at build.
-// The `server-only` guard is not used because the browser client imports the
-// presence helpers; secret keys are simply never read into the client bundle.
+// The database API is the VPS PostgREST endpoint, not a Supabase cloud project.
+// Locally, absent keys keep the seeded demo session and catalogue; production
+// fails fast through `assertProductionEnv()`. Reads stay as full
+// `process.env.NAME` expressions so Next can inline public values at build.
 
 export type FlashEnv = {
   readonly siteUrl: string;
   readonly adminHost: string | null;
   readonly supportEmail: string | null;
-  readonly supabaseUrl: string | null;
-  readonly supabaseAnonKey: string | null;
-  readonly supabaseServiceRoleKey: string | null;
+  readonly databaseApiUrl: string | null;
+  readonly databaseServiceRoleKey: string | null;
   readonly clerkPublishableKey: string | null;
   readonly clerkSecretKey: string | null;
   readonly clerkWebhookSecret: string | null;
@@ -80,9 +78,11 @@ export function getEnv(): FlashEnv {
     siteUrl: readSiteUrl(),
     adminHost: clean(process.env.ADMIN_HOST),
     supportEmail: clean(process.env.NEXT_PUBLIC_SUPPORT_EMAIL),
-    supabaseUrl: clean(process.env.NEXT_PUBLIC_SUPABASE_URL),
-    supabaseAnonKey: clean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
-    supabaseServiceRoleKey: clean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    databaseApiUrl:
+      clean(process.env.DATABASE_API_URL) ?? clean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+    databaseServiceRoleKey:
+      clean(process.env.DATABASE_SERVICE_ROLE_KEY) ??
+      clean(process.env.SUPABASE_SERVICE_ROLE_KEY),
     clerkPublishableKey: clean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
     clerkSecretKey: clean(process.env.CLERK_SECRET_KEY),
     clerkWebhookSecret: clean(process.env.CLERK_WEBHOOK_SECRET),
@@ -110,16 +110,10 @@ export function getEnv(): FlashEnv {
   return cached;
 }
 
-/** True when the browser-safe Supabase pair is present. */
-export function hasSupabasePublicEnv(): boolean {
+/** True when the server-only database admin pair is present. */
+export function hasDatabaseAdminEnv(): boolean {
   const env = getEnv();
-  return Boolean(env.supabaseUrl && env.supabaseAnonKey);
-}
-
-/** True when the server-only Supabase admin pair is present. */
-export function hasSupabaseAdminEnv(): boolean {
-  const env = getEnv();
-  return Boolean(env.supabaseUrl && env.supabaseServiceRoleKey);
+  return Boolean(env.databaseApiUrl && env.databaseServiceRoleKey);
 }
 
 /** True when both halves of the Clerk pair are present. */
@@ -176,34 +170,22 @@ export function envIssues(): string[] {
   const env = getEnv();
   const issues: string[] = [];
 
-  if (env.supabaseUrl && !env.supabaseAnonKey) {
+  if (env.clerkPublishableKey && !env.databaseApiUrl) {
     issues.push(
-      "NEXT_PUBLIC_SUPABASE_URL is set but NEXT_PUBLIC_SUPABASE_ANON_KEY is missing.",
-    );
-  }
-
-  if (!env.supabaseUrl && env.supabaseAnonKey) {
-    issues.push(
-      "NEXT_PUBLIC_SUPABASE_ANON_KEY is set but NEXT_PUBLIC_SUPABASE_URL is missing.",
-    );
-  }
-
-  if (env.clerkPublishableKey && !env.supabaseUrl) {
-    issues.push(
-      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is set but NEXT_PUBLIC_SUPABASE_URL is missing; signed-in users would have no data store.",
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is set but DATABASE_API_URL is missing; signed-in users would have no data store.",
     );
   }
 
   if (typeof window === "undefined") {
-    if (env.supabaseUrl && !env.supabaseServiceRoleKey) {
+    if (env.databaseApiUrl && !env.databaseServiceRoleKey) {
       issues.push(
-        "NEXT_PUBLIC_SUPABASE_URL is set but SUPABASE_SERVICE_ROLE_KEY is missing — server reads fall back to fixtures.",
+        "DATABASE_API_URL is set but DATABASE_SERVICE_ROLE_KEY is missing — server reads fall back to fixtures.",
       );
     }
 
-    if (!env.supabaseUrl && env.supabaseServiceRoleKey) {
+    if (!env.databaseApiUrl && env.databaseServiceRoleKey) {
       issues.push(
-        "SUPABASE_SERVICE_ROLE_KEY is set but NEXT_PUBLIC_SUPABASE_URL is missing.",
+        "DATABASE_SERVICE_ROLE_KEY is set but DATABASE_API_URL is missing.",
       );
     }
 
@@ -261,8 +243,8 @@ export function envIssues(): string[] {
 export function assertProductionEnv(): void {
   const env = getEnv();
   const required: [string, string | null][] = [
-    ["NEXT_PUBLIC_SUPABASE_URL", env.supabaseUrl],
-    ["SUPABASE_SERVICE_ROLE_KEY", env.supabaseServiceRoleKey],
+    ["DATABASE_API_URL", env.databaseApiUrl],
+    ["DATABASE_SERVICE_ROLE_KEY", env.databaseServiceRoleKey],
     ["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", env.clerkPublishableKey],
     ["CLERK_SECRET_KEY", env.clerkSecretKey],
     ["CLOUDINARY_CLOUD_NAME", env.cloudinaryCloudName],

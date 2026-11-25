@@ -34,9 +34,8 @@ deployment with no service keys is a fully working demo.
 | `NEXT_PUBLIC_SITE_URL` | Production | Final origin, no trailing slash. Leave unset to use the Vercel host. |
 | `NEXT_PUBLIC_SUPPORT_EMAIL` | All | Support address shown in Help & Support. |
 | `ADMIN_HOST` | Production | Host that serves the superadmin console, e.g. `admin.flash.scalmint.com`. |
-| `NEXT_PUBLIC_SUPABASE_URL` | All | Supabase project URL. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | All | Browser-safe Supabase key. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server only | Bypasses RLS; never exposed to the browser. |
+| `DATABASE_API_URL` | Server only | VPS PostgREST HTTPS endpoint, e.g. `https://db-api.flash.scalmint.com`. No Supabase cloud project. |
+| `DATABASE_SERVICE_ROLE_KEY` | Server only | Signed HS256 `service_role` JWT for PostgREST; bypasses RLS. |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | All | Clerk session provider. |
 | `CLERK_SECRET_KEY` | Server only | Clerk server session. |
 | `CLERK_WEBHOOK_SECRET` | Server only | Optional webhook verification. |
@@ -86,9 +85,10 @@ update immediately.
 
 ## Database
 
-Apply `supabase/migrations/*.sql` to the Supabase project (in filename order),
-then load `supabase/seed.sql` for the demo content. The schema mirror and seed
-are generated — after changing a migration or fixture run:
+Flash uses the VPS Postgres/PostgREST stack in `ops/flash/`, not a Supabase cloud
+project. Apply `supabase/migrations/*.sql` in filename order, then load
+`supabase/seed.sql` for the demo content (see `ops/flash/deploy.sh`). The schema
+mirror and seed are generated — after changing a migration or fixture run:
 
 ```bash
 npm run db:schema
@@ -99,6 +99,13 @@ npm run db:check
 `npm run db:check` proves the seed matches the migrations; it should stay green
 in CI. Schema changes are additive: add a new migration instead of editing one
 that a database has already run.
+
+### Database API hostname
+
+PostgREST binds to `127.0.0.1:3001` on the VPS. `ops/flash/nginx-db-api.conf`
+exposes it at `https://db-api.flash.scalmint.com/rest/v1/` over HTTPS. The DNS A
+record `db-api.flash` points at the VPS; TLS is a Let's Encrypt certificate
+managed by certbot. Set `DATABASE_API_URL` to that HTTPS origin in production.
 
 ## Rendering and previews
 

@@ -21,7 +21,10 @@ Flash does not use a Supabase cloud project. The server talks to the VPS
 PostgREST API through `DATABASE_API_URL`, set to
 `https://db-api.flash.scalmint.com` in Vercel. The server-only
 `DATABASE_SERVICE_ROLE_KEY` is an HS256 JWT signed with the VPS
-`PGRST_JWT_SECRET`. There is no browser database credential.
+`PGRST_JWT_SECRET`. There is no browser database credential. Alongside Clerk,
+Cloudinary, Paystack and dispatch credentials, `assertProductionEnv()` fails the
+production path with `Flash is not configured: <missing keys>` when any required
+key is absent; no fixture is presented as real data.
 
 ## Location-sensitive catalogue
 

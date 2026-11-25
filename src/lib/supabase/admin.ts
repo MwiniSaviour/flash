@@ -15,15 +15,15 @@ import { getEnv } from "@/lib/env";
  */
 export function createAdminClient() {
   const env = getEnv();
-  if (!env.supabaseUrl || !env.supabaseServiceRoleKey) {
-    console.error("[admin] Supabase admin client unavailable", {
-      hasUrl: Boolean(env.supabaseUrl),
-      hasServiceRoleKey: Boolean(env.supabaseServiceRoleKey),
+  if (!env.databaseApiUrl || !env.databaseServiceRoleKey) {
+    console.error("[admin] database admin client unavailable", {
+      hasUrl: Boolean(env.databaseApiUrl),
+      hasServiceRoleKey: Boolean(env.databaseServiceRoleKey),
     });
     return null;
   }
 
-  return createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
+  return createClient(env.databaseApiUrl, env.databaseServiceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 }

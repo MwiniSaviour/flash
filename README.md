@@ -120,8 +120,8 @@ cp .env.example .env.local   # optional — without the keys the app runs on dem
 
 | Variable | What it switches on |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Live data instead of fixtures |
-| `SUPABASE_SERVICE_ROLE_KEY` | The server's database access. Without it the server still serves fixtures. |
+| `DATABASE_API_URL` | Live data from the VPS PostgREST API instead of fixtures |
+| `DATABASE_SERVICE_ROLE_KEY` | The server's signed `service_role` JWT. Without it the server still serves fixtures. |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Real sessions instead of the demo customer |
 | `CLERK_WEBHOOK_SECRET` | Verified Clerk → profile sync (`/api/webhooks/clerk`) |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Photo uploads; without them the catalogue is used |

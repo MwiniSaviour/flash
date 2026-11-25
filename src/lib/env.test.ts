@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { assertProductionEnv, resetEnvCache } from "./env";
 
 const REQUIRED = [
-  "NEXT_PUBLIC_SUPABASE_URL",
-  "SUPABASE_SERVICE_ROLE_KEY",
+  "DATABASE_API_URL",
+  "DATABASE_SERVICE_ROLE_KEY",
   "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
   "CLERK_SECRET_KEY",
   "CLOUDINARY_CLOUD_NAME",
@@ -35,10 +35,10 @@ describe("assertProductionEnv", () => {
 
   it("lists one missing key", () => {
     stubAll();
-    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "");
+    vi.stubEnv("DATABASE_SERVICE_ROLE_KEY", "");
     resetEnvCache();
     expect(() => assertProductionEnv()).toThrow(
-      "Flash is not configured: SUPABASE_SERVICE_ROLE_KEY",
+      "Flash is not configured: DATABASE_SERVICE_ROLE_KEY",
     );
   });
 
