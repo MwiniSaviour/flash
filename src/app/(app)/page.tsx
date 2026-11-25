@@ -7,6 +7,8 @@ import { HeroCarousel, type HeroSlide } from "@/components/home/HeroCarousel";
 import { UpNextTile } from "@/components/home/UpNextTile";
 import { RideBriefCard } from "@/components/ride/RideBriefCard";
 import { clock, relativeDay } from "@/lib/flash/format";
+import { filterByCity } from "@/lib/flash/location";
+import { currentCity } from "@/lib/flash/location-server";
 import type { ImageAsset } from "@/lib/flash/types";
 import {
   getCurrentUser,
@@ -27,6 +29,7 @@ import {
  * to eat and a ride brief.
  */
 export default async function HomePage() {
+  const city = await currentCity();
   const [user, trendingEvents, restaurants, quote, upcoming] = await Promise.all([
     getCurrentUser(),
     getTrendingEvents(3),
@@ -35,13 +38,18 @@ export default async function HomePage() {
     getUpcomingEvents(),
   ]);
 
-  const trendingFood = await getTrendingRestaurants(2);
-  const featured = upcoming.find((event) => event.featured) ?? upcoming[0];
-  const moreEvents = upcoming.filter((event) => event.id !== featured?.id).slice(0, 4);
+  const inCity = <T,>(items: T[], placeOf: (item: T) => string | null) =>
+    filterByCity(items, city, placeOf);
+  const cityEvents = inCity(upcoming, (event) => event.city ?? event.neighbourhood);
+  const cityTrendingEvents = inCity(trendingEvents, (event) => event.city ?? event.neighbourhood);
+  const cityRestaurants = inCity(restaurants, (restaurant) => restaurant.neighbourhood);
+  const cityTrendingFood = inCity(await getTrendingRestaurants(2), (restaurant) => restaurant.neighbourhood);
+  const featured = cityEvents.find((event) => event.featured) ?? cityEvents[0];
+  const moreEvents = cityEvents.filter((event) => event.id !== featured?.id).slice(0, 4);
 
   // Five slides: three trending shows and two trending kitchens.
   const slides: HeroSlide[] = [
-    ...trendingEvents.slice(0, 3).map((event) => ({
+    ...cityTrendingEvents.slice(0, 3).map((event) => ({
       id: event.id,
       kind: "event" as const,
       badge: "Trending event",
@@ -51,7 +59,7 @@ export default async function HomePage() {
       image: event.image,
       href: `/events/${event.slug}`,
     })),
-    ...trendingFood.map((restaurant) => ({
+    ...cityTrendingFood.map((restaurant) => ({
       id: restaurant.id,
       kind: "food" as const,
       badge: "Trending food",
@@ -63,8 +71,8 @@ export default async function HomePage() {
     })),
   ];
 
-  const nextShow = upcoming[0];
-  const topKitchen = restaurants[0];
+  const nextShow = cityEvents[0];
+  const topKitchen = cityRestaurants[0];
 
   const nextTiles: {
     href?: string;
@@ -96,11 +104,14 @@ export default async function HomePage() {
       booking: { kind: "ride" as const, dropoff: "Labadi Beach, Accra" },
     },
     {
-      href: `/food/${topKitchen.slug}`,
-      artwork: topKitchen.image,
-      title: topKitchen.name,
-      meta: `${topKitchen.etaMinutes} min delivery`,
-      sub: `${topKitchen.cuisine} · ${topKitchen.neighbourhood}`,
+      href: topKitchen ? `/food/${topKitchen.slug}` : "/food",
+      artwork: topKitchen?.image ?? {
+        src: "/assets/images/dish-fried-rice.jpg",
+        alt: "Fried rice with chicken, sweetcorn and spring onion on a square plate",
+      },
+      title: topKitchen?.name ?? "Nothing nearby",
+      meta: topKitchen ? `${topKitchen.etaMinutes} min delivery` : "Browse food",
+      sub: topKitchen ? `${topKitchen.cuisine} · ${topKitchen.neighbourhood}` : "Find a kitchen",
     },
     {
       href: "/bookings",
@@ -146,7 +157,7 @@ export default async function HomePage() {
       <section className="mt-6">
         <SectionHeading title="Trending Now" action="Order food" actionHref="/food" className="px-5" />
         <div className="rail-grid no-scrollbar mt-3 gap-3 px-5">
-          {restaurants.slice(0, 4).map((restaurant) => (
+          {cityRestaurants.slice(0, 4).map((restaurant) => (
             <RestaurantRailCard key={restaurant.id} restaurant={restaurant} />
           ))}
         </div>

@@ -21,7 +21,13 @@ type CuisineFilter = (typeof CUISINES)[number];
  * Flash is moving most. Search and the cuisine chips narrow both rails, and
  * "View all" turns a rail into the full list it stands for.
  */
-export function FoodBrowser({ restaurants }: { restaurants: Restaurant[] }) {
+export function FoodBrowser({
+  restaurants,
+  city,
+}: {
+  restaurants: Restaurant[];
+  city?: string | null;
+}) {
   const cart = useCart();
   const [active, setActive] = useState<CuisineFilter>("All");
   const [query, setQuery] = useState("");
@@ -66,7 +72,7 @@ export function FoodBrowser({ restaurants }: { restaurants: Restaurant[] }) {
     <div className="pb-5">
       <ScreenHeader
         title="Food"
-        subtitle="Kitchens that deliver to your door tonight."
+        subtitle={city ? `Kitchens delivering in ${city} tonight.` : "Kitchens that deliver to your door tonight."}
         className="pt-2"
       />
 

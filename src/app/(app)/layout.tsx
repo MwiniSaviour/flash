@@ -4,6 +4,7 @@ import { SideRail } from "@/components/flash/SideRail";
 import { TopBar } from "@/components/flash/TopBar";
 import { CartProvider } from "@/lib/cart";
 import { BookingProvider } from "@/lib/booking";
+import { LocationProvider } from "@/components/flash/LocationProvider";
 import {
   getCurrentUser,
   getRideQuote,
@@ -39,6 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ]);
 
   return (
+    <LocationProvider>
     <CartProvider>
       <BookingProvider quote={quote} savedPlaces={savedPlaces} rates={settings}>
         <div className="min-h-dvh">
@@ -65,5 +67,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </BookingProvider>
     </CartProvider>
+    </LocationProvider>
   );
 }

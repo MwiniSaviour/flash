@@ -19,7 +19,7 @@ type Filter = (typeof FILTERS)[number];
  * event, the venue and the neighbourhood — it behaves like the site's search
  * rather than as a decorative input.
  */
-export function EventsBrowser({ events }: { events: Event[] }) {
+export function EventsBrowser({ events, city }: { events: Event[]; city?: string | null }) {
   const [active, setActive] = useState<Filter>("All");
   const [query, setQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -50,7 +50,7 @@ export function EventsBrowser({ events }: { events: Event[] }) {
     <div className="pb-5">
       <ScreenHeader
         title="Events"
-        subtitle="Events, shows and experiences near you."
+        subtitle={city ? `Events, shows and experiences in ${city}.` : "Events, shows and experiences near you."}
         className="pt-2"
       />
 

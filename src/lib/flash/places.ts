@@ -271,3 +271,29 @@ export async function nearbyPlaces(point: GeoPoint, signal?: AbortSignal): Promi
 export function distanceBetween(from: GeoPoint, to: GeoPoint): number {
   return haversineKm(from, to);
 }
+
+/** The city label for a device position, used to filter the storefront. */
+export async function reverseCity(point: GeoPoint, signal?: AbortSignal): Promise<string | null> {
+  const params = new URLSearchParams({
+    lon: String(point.lng),
+    lat: String(point.lat),
+    limit: "1",
+    lang: "en",
+  });
+
+  try {
+    const response = await fetch(`${GEOCODER_URL}/reverse?${params.toString()}`, {
+      signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return null;
+
+    const body = (await response.json()) as { features?: PhotonFeature[] };
+    const properties = body.features?.[0]?.properties;
+    if (!properties) return null;
+
+    return properties.city ?? properties.town ?? properties.village ?? properties.locality ?? null;
+  } catch {
+    return null;
+  }
+}
