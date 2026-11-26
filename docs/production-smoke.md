@@ -59,6 +59,20 @@ key is absent; no fixture is presented as real data.
 - Progress and ETA appear only once a rider is assigned and the state is on the
   way, arriving or delivered.
 
+## Smart dispatch assignment
+
+1. Confirm `DISPATCH_APP_KEYS=flash:<key>` is set on `scalmart-api` (the legacy
+   `JOBFINDER_API_KEY` alone rejects Flash with 401). Redeploy that project after
+   changing the variable.
+2. Confirm a fresh approved, online Flash driver membership exists; a stale
+   `last_location_at` makes assignment report `no-drivers`.
+3. `POST /v1/jobs` with `x-jobfinder-key` and `x-app-id`, then `GET /v1/jobs/:id`.
+   The expected first state is `unassigned`; after
+   `POST /v1/admin/assignment-sweep` it becomes `offered` with
+   `assignmentStatus = "offered"`.
+4. Flash's adapter maps `offered` to "Rider offered" and `accepted` to "Rider
+   assigned" without exposing distance or ETA before a rider is assigned.
+
 ## Live tracking
 
 - `GET /api/live` returns 401 without a session and `text/event-stream` with

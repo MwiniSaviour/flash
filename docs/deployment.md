@@ -44,8 +44,9 @@ deployment with no service keys is a fully working demo.
 | `CLOUDINARY_API_SECRET` | Server only | Upload credential. |
 | `CLOUDINARY_FOLDER` | All | Defaults to `flash`. |
 
-Every value is optional. A half-configured environment renders the fixtures and
-reports the inconsistency rather than throwing (`src/lib/env.ts`).
+Locally every value is optional and a half-configured environment keeps the
+seeded demo. In production `assertProductionEnv()` fails loudly with the missing
+key names; no fixture is presented as real data.
 
 ## Superadmin subdomain
 
@@ -106,6 +107,20 @@ PostgREST binds to `127.0.0.1:3001` on the VPS. `ops/flash/nginx-db-api.conf`
 exposes it at `https://db-api.flash.scalmint.com/rest/v1/` over HTTPS. The DNS A
 record `db-api.flash` points at the VPS; TLS is a Let's Encrypt certificate
 managed by certbot. Set `DATABASE_API_URL` to that HTTPS origin in production.
+
+## Shared dispatch provisioning
+
+The engine lives in the ecommerce repo's `scalmart-api` Vercel project. Flash's
+`DISPATCH_API_KEY` must be registered there as
+`DISPATCH_APP_KEYS=flash:<key>`; the legacy `JOBFINDER_API_KEY` alone will reject
+Flash with 401. After changing that variable, redeploy `scalmart-api`.
+
+Assignment needs at least one driver with a membership in `scalmart.driver_app_memberships`
+where `app_id = 'flash'`, `status = 'approved'`, `availability = 'online'` and
+`last_location_at` is recent. A stale location makes the engine report
+`assignmentStatus = "no-drivers"` even though a membership exists. Driver
+location is written by the driver app's location endpoint, not by the customer
+app.
 
 ## Rendering and previews
 
