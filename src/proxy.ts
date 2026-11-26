@@ -20,7 +20,7 @@ const clerk = clerkMiddleware();
 
 const UNIFIED_ADMIN =
   process.env.NEXT_PUBLIC_SCALMART_ADMIN_URL?.replace(/\/+$/, "") ??
-  "https://scalmart.scalmint.com/admin";
+  "https://admin.scalmint.com/admin";
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
   const env = getEnv();
