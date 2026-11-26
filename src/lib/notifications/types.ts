@@ -10,7 +10,7 @@ export type NotificationKind =
 export type ChannelStatus = "skipped" | "sent" | "failed";
 export type NotificationPriority = "normal" | "high";
 export type NotificationRefType = "order" | "ticket" | "ride" | "parcel";
-export type DevicePlatform = "web" | "android" | "ios";
+export type DevicePlatform = "web" | "fcm" | "android" | "ios";
 
 export type NotifyInput = {
   userId: string;

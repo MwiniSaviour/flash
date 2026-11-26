@@ -22,7 +22,7 @@ create table public.notifications (
 create table public.notification_tokens (
   token text primary key,
   user_id text not null references public.profiles (id) on delete cascade,
-  platform text not null default 'web' check (platform in ('web', 'android', 'ios')),
+  platform text not null default 'web' check (platform in ('web', 'fcm', 'android', 'ios')),
   app_id text not null default 'flash',
   p256dh text,
   auth text,

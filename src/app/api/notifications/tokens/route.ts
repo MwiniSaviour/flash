@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { currentUserId } from "@/lib/auth/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const PLATFORMS = new Set(["web", "android", "ios"]);
+const PLATFORMS = new Set(["web", "fcm", "android", "ios"]);
 
 export async function POST(request: Request) {
   const userId = await currentUserId();

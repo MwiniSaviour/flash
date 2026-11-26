@@ -1,7 +1,7 @@
 -- Flash schema.
 --
 -- GENERATED FILE — do not edit.
--- Source: supabase/migrations (14 migrations)
+-- Source: supabase/migrations (15 migrations)
 -- Refresh: npm run db:schema
 --
 -- supabase/migrations/20261116115441_init.sql
@@ -1179,7 +1179,7 @@ create table public.notifications (
 create table public.notification_tokens (
   token text primary key,
   user_id text not null references public.profiles (id) on delete cascade,
-  platform text not null default 'web' check (platform in ('web', 'android', 'ios')),
+  platform text not null default 'web' check (platform in ('web', 'fcm', 'android', 'ios')),
   app_id text not null default 'flash',
   p256dh text,
   auth text,
@@ -1257,3 +1257,12 @@ comment on column public.menu_items.seller_user_id is
   'Owning seller Clerk user id. Writes require currentUserId() to equal this value, or an admin role.';
 comment on column public.ride_classes.seller_user_id is
   'Owning seller Clerk user id. Writes require currentUserId() to equal this value, or an admin role.';
+
+-- supabase/migrations/20261126120000_fcm_web_tokens.sql
+-- FCM web tokens share the same table as Web Push and native tokens.
+alter table public.notification_tokens
+  drop constraint if exists notification_tokens_platform_check;
+
+alter table public.notification_tokens
+  add constraint notification_tokens_platform_check
+  check (platform in ('web', 'fcm', 'android', 'ios'));

@@ -7,7 +7,9 @@ export type { DeviceToken, NotifyInput } from "./types";
 export function splitTokens(tokens: DeviceToken[]) {
   return {
     web: tokens.filter((token) => token.platform === "web"),
-    native: tokens.filter((token) => token.platform === "android" || token.platform === "ios"),
+    native: tokens.filter(
+      (token) => token.platform === "fcm" || token.platform === "android" || token.platform === "ios",
+    ),
   };
 }
 
@@ -24,8 +26,18 @@ export function webPushPayload(input: NotifyInput) {
   };
 }
 
-export function fcmMessage(token: string, input: NotifyInput) {
-  return {
+export function fcmMessage(token: string, input: NotifyInput): {
+  token: string;
+  notification: { title: string; body: string };
+  data: Record<string, string>;
+  android: { priority: string };
+} {
+  const message: {
+    token: string;
+    notification: { title: string; body: string };
+    data: Record<string, string>;
+    android: { priority: string };
+  } = {
     token,
     notification: { title: input.title, body: input.body },
     data: {
@@ -38,6 +50,7 @@ export function fcmMessage(token: string, input: NotifyInput) {
     },
     android: { priority: input.priority === "high" ? "HIGH" : "NORMAL" },
   };
+  return message;
 }
 
 export function anySent(statuses: ("skipped" | "sent" | "failed")[]) {
