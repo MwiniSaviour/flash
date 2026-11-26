@@ -52,6 +52,7 @@ export function GreetingHeader({ user }: { user: FlashUser }) {
 const stageTone: Record<DeliveryStage, { tone: StatusTone; icon: IconName }> = {
   confirmed: { tone: "success", icon: "check-circle" },
   "pending delivery": { tone: "warning", icon: "clock" },
+  cancelled: { tone: "neutral", icon: "close" },
   scheduled: { tone: "brand", icon: "calendar" },
   preparing: { tone: "warning", icon: "clock" },
   "on the way": { tone: "brand", icon: "truck" },

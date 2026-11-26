@@ -62,3 +62,14 @@ export function createDispatchJob(input: CreateDispatchJobInput): Promise<Dispat
 export function getDispatchJob(jobId: string): Promise<DispatchJobDTO> {
   return request(`/v1/jobs/${encodeURIComponent(jobId)}`, { method: "GET" });
 }
+
+/**
+ * Cancels one job. The engine derives the tenant from the service key, so a
+ * guessed job id from another product cannot be cancelled through this call.
+ */
+export function cancelDispatchJob(jobId: string): Promise<DispatchJobDTO> {
+  return request(`/v1/jobs/${encodeURIComponent(jobId)}/cancel`, {
+    method: "POST",
+    body: "{}",
+  });
+}

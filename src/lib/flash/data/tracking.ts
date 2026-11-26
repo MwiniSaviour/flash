@@ -11,6 +11,7 @@ export type DeliveryKind = "order" | "ride" | "parcel";
 export type DeliveryStage =
   | "confirmed"
   | "pending delivery"
+  | "cancelled"
   | "scheduled"
   | "preparing"
   | "on the way"

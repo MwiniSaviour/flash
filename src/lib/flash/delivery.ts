@@ -54,6 +54,7 @@ const ORDER_STAGE: Record<string, DeliveryStage> = {
   "on the way": "on the way",
   arriving: "arriving",
   delivered: "delivered",
+  cancelled: "cancelled",
 };
 
 const ORDER_LABEL: Record<string, string> = {

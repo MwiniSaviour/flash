@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { currentClerkIdentity, currentUserId } from "@/lib/auth/server";
-import { createDispatchJob, dispatchConfigured } from "@/lib/dispatch/client";
-import { dispatchPatch } from "@/lib/dispatch/status";
+import { cancelDispatchJob, createDispatchJob, dispatchConfigured } from "@/lib/dispatch/client";
+import { dispatchPatch, isDispatchTerminal } from "@/lib/dispatch/status";
 import {
   engineRideClass,
   type CreateDispatchJobInput,
@@ -1136,6 +1136,70 @@ export async function confirmDeliveryAction(input: {
   revalidatePath("/orders");
 
   return { ok: true, data: { confirmed: true } };
+}
+
+/**
+ * Cancels a customer's ride or parcel. The engine cancels its own job first;
+ * Flash only marks the local row cancelled after the engine confirms it, so a
+ * failed dispatch call never leaves the two sides disagreeing.
+ */
+export async function cancelDeliveryAction(input: {
+  id: string;
+  kind: "ride" | "parcel";
+}): Promise<ActionResult<{ status: "cancelled" }>> {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "Sign in to cancel a booking." };
+
+  const client = createAdminClient();
+  if (!client) throw new Error("Database is not configured");
+
+  const table = input.kind === "ride" ? "rides" : "parcels";
+  const { data: row, error: readError } = await client
+    .from(table)
+    .select("id, user_id, status, dispatch_job_id, dispatch_task_status")
+    .eq("id", input.id)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (readError) throw readError;
+  if (!row) return { ok: false, error: "That booking is not yours to cancel." };
+
+  const current = row as {
+    user_id: string;
+    status: string;
+    dispatch_job_id: string | null;
+    dispatch_task_status: string | null;
+  };
+
+  if (current.user_id !== userId) {
+    return { ok: false, error: "That booking is not yours to cancel." };
+  }
+
+  if (current.status === "cancelled" || isDispatchTerminal(current.dispatch_task_status ?? current.status)) {
+    return { ok: true, data: { status: "cancelled" } };
+  }
+
+  let patch: Record<string, unknown> = { status: "cancelled" };
+  if (current.dispatch_job_id) {
+    if (!dispatchConfigured()) {
+      return { ok: false, error: "Dispatch is not configured." };
+    }
+    const job = await cancelDispatchJob(current.dispatch_job_id);
+    patch = { ...dispatchPatch(job, input.kind), status: "cancelled" };
+  }
+
+  const { error: updateError } = await client
+    .from(table)
+    .update(patch)
+    .eq("id", input.id)
+    .eq("user_id", userId);
+
+  if (updateError) throw updateError;
+
+  revalidatePath("/track");
+  revalidatePath("/bookings");
+  revalidatePath(input.kind === "ride" ? `/rides/${input.id}` : `/parcels/${input.id}`);
+  return { ok: true, data: { status: "cancelled" } };
 }
 
 /**

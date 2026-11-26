@@ -33,6 +33,7 @@ const STATES: Record<string, DispatchView> = {
   "en-route": { stage: "on the way", label: "On the way", progress: 0.68, step: 2, active: true },
   arriving: { stage: "arriving", label: "Arriving", progress: 0.84, step: 2, active: true },
   delivered: { stage: "delivered", label: "Delivered", progress: 1, step: 4, active: false },
+  cancelled: { stage: "cancelled", label: "Cancelled", progress: 0, step: 0, active: false },
   failed: { stage: "preparing", label: "Not completed", progress: 0, step: 0, active: false },
   returned: { stage: "preparing", label: "Returned", progress: 0, step: 0, active: false },
 };

@@ -72,6 +72,9 @@ key is absent; no fixture is presented as real data.
    `assignmentStatus = "offered"`.
 4. Flash's adapter maps `offered` to "Rider offered" and `accepted` to "Rider
    assigned" without exposing distance or ETA before a rider is assigned.
+5. `POST /v1/jobs/:id/cancel` cancels the engine job and clears the offer; a
+   second call is a safe no-op. The customer's Cancel control on the ride or
+   parcel detail page calls it before Flash marks the local row cancelled.
 
 ## Live tracking
 

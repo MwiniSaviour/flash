@@ -6,6 +6,7 @@ import { NoData } from "@/components/flash/NoData";
 import { Icon } from "@/components/flash/Icon";
 import { PassActions } from "@/components/flash/PassActions";
 import { StatusBadge } from "@/components/flash/ui";
+import { CancelDeliveryButton } from "@/components/track/CancelDeliveryButton";
 import { LiveDeliveryTracking } from "@/components/track/LiveDeliveryTracking";
 import { getDelivery } from "@/lib/flash/repository";
 
@@ -124,6 +125,10 @@ export default async function ParcelDetailPage({
           shareLabel="Share tracking"
         />
       </div>
+
+      {parcel.status !== "cancelled" && parcel.status !== "delivered" ? (
+        <CancelDeliveryButton id={parcel.id} kind="parcel" label="Cancel parcel" />
+      ) : null}
     </div>
   );
 }

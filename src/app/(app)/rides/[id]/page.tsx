@@ -6,6 +6,7 @@ import { Icon } from "@/components/flash/Icon";
 import { NoData } from "@/components/flash/NoData";
 import { PassActions } from "@/components/flash/PassActions";
 import { StatusBadge } from "@/components/flash/ui";
+import { CancelDeliveryButton } from "@/components/track/CancelDeliveryButton";
 import { LiveDeliveryTracking } from "@/components/track/LiveDeliveryTracking";
 import { cedis, distance } from "@/lib/flash/format";
 import { getDelivery } from "@/lib/flash/repository";
@@ -102,12 +103,9 @@ export default async function RideDetailPage({ params }: { params: Promise<{ id:
         <PassActions reference={ride.reference} title={`ScalDive ride ${ride.number}`} shareLabel="Share trip" />
       </div>
 
-      <button
-        type="button"
-        className="mt-2 h-[44px] w-full rounded-[12px] border border-line bg-surface text-[13.5px] font-semibold text-danger transition active:scale-[0.99]"
-      >
-        Cancel ride
-      </button>
+      {ride.status !== "cancelled" && ride.status !== "delivered" ? (
+        <CancelDeliveryButton id={ride.id} kind="ride" label="Cancel ride" />
+      ) : null}
 
       <p className="mt-4 flex items-start gap-2 text-[12px] leading-relaxed text-muted">
         <Icon name="info" size={13} className="mt-0.5 shrink-0" />
