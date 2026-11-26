@@ -1,13 +1,7 @@
-import { notFound } from "next/navigation";
-
-import { AdminShell } from "@/components/admin/AdminShell";
-import { requireAdmin } from "@/lib/admin/auth";
-
+// Admin UI was merged into the ScalMart dashboard. Any /admin/* URL redirects
+// there with the Flash project selected; the unified dashboard owns the gate.
 export const dynamic = "force-dynamic";
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const identity = await requireAdmin();
-  if (!identity) notFound();
-
-  return <AdminShell identity={identity}>{children}</AdminShell>;
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

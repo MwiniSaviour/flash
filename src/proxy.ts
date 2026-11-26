@@ -18,29 +18,28 @@ import { getEnv } from "@/lib/env";
  */
 const clerk = clerkMiddleware();
 
+const UNIFIED_ADMIN =
+  process.env.NEXT_PUBLIC_SCALMART_ADMIN_URL?.replace(/\/+$/, "") ??
+  "https://scalmart.scalmint.com/admin";
+
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
   const env = getEnv();
   const { pathname, hostname } = request.nextUrl;
 
-  if (
-    process.env.VERCEL_ENV === "production" &&
-    env.adminHost &&
-    pathname.startsWith("/admin") &&
-    hostname !== env.adminHost
-  ) {
-    return new NextResponse(null, { status: 404 });
+  // Superadmin lives in the shared ScalMart dashboard now. Send every admin
+  // URL there with the Flash project selected, instead of rendering a second
+  // dashboard with a second gate.
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    return NextResponse.redirect(`${UNIFIED_ADMIN}?project=flash`);
+  }
+
+  if (env.adminHost && hostname === env.adminHost && pathname === "/") {
+    return NextResponse.redirect(`${UNIFIED_ADMIN}?project=flash`);
   }
 
   if (env.adminHost && hostname === env.adminHost) {
-    if (pathname === "/") {
-      return NextResponse.redirect(new URL("/admin", request.url));
-    }
-
     const allowed =
-      pathname.startsWith("/admin") ||
-      pathname.startsWith("/sign-in") ||
-      pathname.startsWith("/api/webhooks");
-
+      pathname.startsWith("/sign-in") || pathname.startsWith("/api/webhooks");
     if (!allowed) return new NextResponse(null, { status: 404 });
   }
 
