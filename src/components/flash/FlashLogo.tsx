@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
 /**
- * The Flash mark.
+ * The ScalDive mark.
  *
  * Five rounded bars in the brand orange — the reference app's waveform, kept
- * because it is the one graphic the product owns, and re-pointed at what Flash
+ * because it is the one graphic the product owns, and re-pointed at what ScalDive
  * actually does: a signal that arrives fast. Drawn as SVG so it stays crisp on
  * every density and can flip to white over imagery.
  */
@@ -41,10 +41,10 @@ export function FlashMark({
 }
 
 /**
- * The wordmark lock-up: the mark beside FLASH / "Experience the best!".
+ * The wordmark lock-up: the mark beside SCALDIVE / "Experience the best!".
  *
  * The reference app stacks a heavy name over a wide-tracked category line
- * (PROTOTYPE / RADIO). Flash keeps that structure but sets its own promise in
+ * (PROTOTYPE / RADIO). ScalDive keeps that structure but sets its own promise in
  * sentence case, so the longer line still reads at header size.
  */
 export function FlashLogo({
@@ -65,7 +65,7 @@ export function FlashLogo({
     <span
       className={cn("inline-flex items-center gap-[9px]", className)}
       style={{ height: 30 * scale }}
-      aria-label="Flash — Experience the best!"
+      aria-label="ScalDive — Experience the best!"
       role="img"
     >
       <FlashMark height={30 * scale} color="#FC5303" />
@@ -80,7 +80,7 @@ export function FlashLogo({
               lineHeight: 1,
             }}
           >
-            Flash
+            ScalDive
           </span>
           <span
             className="font-semibold whitespace-nowrap"

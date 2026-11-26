@@ -36,7 +36,7 @@ export const navItems: NavItem[] = [
  * The phone's bottom bar: five destinations with the ride button raised out of
  * the middle — Home, Events, Ride, Food and Track.
  *
- * Food earned a tab because ordering a meal is one of the three things Flash
+ * Food earned a tab because ordering a meal is one of the three things ScalDive
  * does, and the phone should not have to dig for it. Bookings gave its slot
  * up: the ledger is a record of what you already committed to, so it belongs
  * in the profile next to the account, which is where the phone already keeps

@@ -49,7 +49,7 @@ export default async function TicketPassPage({
       <article className="mt-4 overflow-hidden rounded-[20px] border border-line/90 bg-surface shadow-raised">
         <div className="bg-brand-solid px-4 py-4 text-white">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/75">
-            Flash event pass
+            ScalDive event pass
           </p>
           <h2 className="mt-1.5 text-[21px] font-bold leading-tight tracking-[-0.02em]">
             {event.title}

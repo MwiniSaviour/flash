@@ -1,5 +1,5 @@
 ---
-name: Flash
+name: ScalDive
 description: Tickets, rides and food in one app — a warm-paper interface with one live orange signal.
 colors:
   signal-orange: "#fc5303"
@@ -193,13 +193,13 @@ components:
     padding: "4px"
 ---
 
-# Design System: Flash
+# Design System: ScalDive
 
 ## Overview
 
 **Creative North Star: "The Warm Signal"**
 
-Flash looks like a piece of good printed paper with one live signal running
+ScalDive looks like a piece of good printed paper with one live signal running
 through it. The ground is warm off-white, the cards are plain white sheets on
 top of it, the type is black and confident, and the only colour in the whole
 system is a single broadcast orange. That orange is not decoration: it marks
@@ -209,7 +209,7 @@ the pulse meter, the route on the map, the rider's position — everything
 
 The inherited reference (a radio station's app) already knew this: one hot
 orange on warm paper, white date chips, photographic panels with a black scrim,
-a five-bar waveform as the only graphic. Flash keeps that language and points
+a five-bar waveform as the only graphic. ScalDive keeps that language and points
 it at three urban services instead of a radio schedule. The pulse mark survives
 as the brand's one graphic — five rounded bars, now animated, now the signal
 that a ticket, a ride or a meal is on its way.
@@ -286,7 +286,7 @@ Signal (#d63f08), never Signal Orange. The vivid orange is for graphics.
 **Body Font:** Inter Variable (the same family — one voice, two weights)
 
 **Character:** The reference app's lettering is a single geometric grotesque,
-and Flash keeps exactly that: one family, weight doing the work. Display text
+and ScalDive keeps exactly that: one family, weight doing the work. Display text
 is tight and heavy (26px/700 at -0.03em); supporting text is small and plain
 (13px/400). There is no second typeface, no serif, no mono except for
 booking references, which are set in a tracked monospace so they can be read
@@ -327,7 +327,7 @@ inline.
 typeface is a new brand decision, not a styling choice.
 
 **The Heavy Head Rule.** Headings carry their own weight. There are no
-eyebrows or kickers above a heading in Flash — the reference app used one
+eyebrows or kickers above a heading in ScalDive — the reference app used one
 ("BROADCAST"), and it was dropped because the heading says it better.
 
 ## Layout
@@ -383,7 +383,7 @@ on filter chips, status badges and the action pills. Radii step down as the
 object gets smaller and more numerous, which keeps a busy screen from turning
 into a field of identical blobs.
 
-Two shapes are Flash's own: the **five-bar pulse mark** (the brand's only
+Two shapes are ScalDive's own: the **five-bar pulse mark** (the brand's only
 graphic, drawn in SVG, used as the wordmark's companion, as the carousel
 pagination and as the animated signal in the hero) and the **date badge** — a
 small white chip with a hairline-free drop shadow carrying weekday, day and
@@ -440,7 +440,7 @@ be a satellite image of a place.
 
 ### The booking code (proof)
 
-Every booking in Flash produces a proof: an event pass, an order receipt, a
+Every booking in ScalDive produces a proof: an event pass, an order receipt, a
 ride confirmation, a parcel receipt. The proof carries a **real, scannable QR**
 generated on the server from the booking reference itself, the facts a gate, a
 rider or a recipient will check (date, venue, tier, items, driver, plate), and

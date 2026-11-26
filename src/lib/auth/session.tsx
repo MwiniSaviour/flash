@@ -9,7 +9,7 @@ import type { FlashUser } from "@/lib/flash/types";
 /**
  * The session seam.
  *
- * Flash runs signed-in as a demo customer until Clerk is connected. When
+ * ScalDive runs signed-in as a demo customer until Clerk is connected. When
  * `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is present the real Clerk session is
  * mounted and mapped onto the same `FlashUser` shape the screens already read,
  * so nothing downstream changes.
@@ -54,10 +54,10 @@ function ClerkSession({ children }: { children: ReactNode }) {
           name:
             user.fullName ||
             [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-            "Flash customer",
+            "ScalDive customer",
           email: user.primaryEmailAddress?.emailAddress ?? "",
           avatarUrl: user.imageUrl,
-          memberSince: "Flash customer",
+          memberSince: "ScalDive customer",
           notificationsEnabled: true,
         }
       : null,

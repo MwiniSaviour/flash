@@ -58,7 +58,7 @@ function slugify(value: string): string {
 /* Applying                                                                    */
 /* -------------------------------------------------------------------------- */
 
-/** Apply to run a kitchen, promote events, or drive for Flash. */
+/** Apply to run a kitchen, promote events, or drive for ScalDive. */
 export async function applyForBusiness(
   input: BusinessInput,
 ): Promise<BusinessResult<{ id: string; status: BusinessStatus }>> {
@@ -500,7 +500,7 @@ export async function publishEvent(input: {
       id,
       slug,
       title,
-      subtitle: "New on Flash",
+      subtitle: "New on ScalDive",
       description: title,
       venue: input.venue.trim(),
       neighbourhood: input.neighbourhood.trim(),
@@ -550,7 +550,7 @@ export async function publishEvent(input: {
     id: eventId,
     slug,
     title,
-    subtitle: "New on Flash",
+    subtitle: "New on ScalDive",
     description: input.title.trim(),
     venue: input.venue.trim(),
     neighbourhood: input.neighbourhood.trim(),

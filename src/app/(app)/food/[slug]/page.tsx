@@ -14,7 +14,7 @@ export async function generateMetadata({
 
   return {
     title: restaurant?.name ?? "Kitchen",
-    description: restaurant?.tagline ?? "Order food on Flash.",
+    description: restaurant?.tagline ?? "Order food on ScalDive.",
   };
 }
 

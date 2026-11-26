@@ -169,7 +169,7 @@ export function CourierBar({ delivery }: { delivery: Delivery }) {
       </a>
 
       <a
-        href={`https://wa.me/${RIDER_PHONE_E164}?text=${encodeURIComponent(`Hello ${delivery.rider.name}, I'm your Flash customer on the ${delivery.title} trip.`)}`}
+        href={`https://wa.me/${RIDER_PHONE_E164}?text=${encodeURIComponent(`Hello ${delivery.rider.name}, I'm your ScalDive customer on the ${delivery.title} trip.`)}`}
         aria-label={`Message ${delivery.rider.name} on WhatsApp`}
         title={RIDER_PHONE}
         className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-solid text-white shadow-brand transition active:scale-95"

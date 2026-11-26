@@ -1,6 +1,6 @@
-# Flash
+# ScalDive
 
-**Tickets, rides and food in one app.** Flash is a mobile-first web client for
+**Tickets, rides and food in one app.** ScalDive is a mobile-first web client for
 three urban services in Accra: booking event tickets, booking a ride, and
 ordering food — with one account and one bookings ledger behind all three.
 
@@ -23,9 +23,9 @@ npm run build    # production build
 | **Home** | The blend. A five-slide hero of what is trending tonight (events and food), an "Up Next" rail across the services, the next event with its price, what is trending to eat, and a ride brief. |
 | **Events** | Search, category chips, a featured event and the upcoming list → event page → ticket checkout → the ticket lands in your wallet. |
 | **Ride** | The raised button in the middle of the bar. Where to, the active ride on a route diagram, the courier, and the class you want to book. |
-| **Food** | Search, cuisine chips, and the kitchens near you and the kitchens Flash is moving most — each a card with the rating on the photograph and the delivery charge and ready time under the name. Tap a kitchen, then a dish: the portion, the extras and how many. |
+| **Food** | Search, cuisine chips, and the kitchens near you and the kitchens ScalDive is moving most — each a card with the rating on the photograph and the delivery charge and ready time under the name. Tap a kitchen, then a dish: the portion, the extras and how many. |
 | **Track** | Everything in motion: food orders, rides and parcels with their number, their stage, their ETA and their position on the map. Each card opens its own page. |
-| **Send a parcel** | Flash moves things, not only people. Pick-up, drop-off, what is inside, how big it is — and a courier who quotes from those. |
+| **Send a parcel** | ScalDive moves things, not only people. Pick-up, drop-off, what is inside, how big it is — and a courier who quotes from those. |
 | **Bookings** | The ledger — event tickets, rides and orders, filtered by service, with references and states. It lives in the profile on the phone, and in the rail on the desktop. |
 | **Your kitchen** | The kitchen owner's surface: the cover their customers see, and a printable poster with a real code that opens the kitchen on a phone. |
 | **Profile** | The account, the stats and the alerts. Not a tab — it lives behind the avatar. |

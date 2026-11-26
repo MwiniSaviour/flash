@@ -5,7 +5,7 @@ Status: approved for implementation
 
 ## Goal
 
-Give every Flash business its own durable console: two businesses of the same
+Give every ScalDive business its own durable console: two businesses of the same
 kind own separate venues, orders, tickets, and menus, reached at a URL that
 names the business. Keep the phone shell exactly as it is today, and give the
 desktop screen a dedicated console chrome instead of the social rail.
@@ -42,7 +42,7 @@ flow, auth changes, and hardening the remaining server actions.
   route groups cannot own the same URL, so every dashboard page moves.
 - **Desktop chrome is per page.** A layout cannot read a child's `params`, so
   each console page renders a client `ConsoleShell` around server-rendered
-  children: a fixed ~240px sidebar (Flash mark back-link, business switcher,
+  children: a fixed ~240px sidebar (ScalDive mark back-link, business switcher,
   section nav with scroll-spy, then Your dashboard / Your account) beside a
   widened single content column. `ConsoleHeader` stays a server component.
 - **Mobile keeps today's pattern.** `ConsoleShell` hides at `lg`; the existing

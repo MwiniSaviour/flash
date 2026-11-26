@@ -10,7 +10,7 @@ import type { FlashUser } from "@/lib/flash/types";
 /**
  * Parcels.
  *
- * Flash sends parcels as well as moving people. The request itself — where it
+ * ScalDive sends parcels as well as moving people. The request itself — where it
  * goes, who receives it, what is inside — happens in the sheet the button
  * opens, so this page is the service's front door rather than its form.
  */

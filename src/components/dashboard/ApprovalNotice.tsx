@@ -29,8 +29,8 @@ export function ApprovalNotice({ business }: { business: Business }) {
           </p>
           <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
             {declined
-              ? "The Flash team did not approve this application. You can still read the console, but nothing can be posted or sold."
-              : "You can look around the console, but nothing can be posted or sold until the Flash team approves the application."}
+              ? "The ScalDive team did not approve this application. You can still read the console, but nothing can be posted or sold."
+              : "You can look around the console, but nothing can be posted or sold until the ScalDive team approves the application."}
           </p>
         </div>
       </div>

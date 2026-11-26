@@ -31,7 +31,7 @@ export default function Error({
           We could not load this
         </h1>
         <p className="mx-auto mt-1.5 max-w-[34ch] text-[13.5px] leading-relaxed text-muted">
-          The connection to Flash failed. Nothing you booked was lost — try again in a moment.
+          The connection to ScalDive failed. Nothing you booked was lost — try again in a moment.
         </p>
 
         <button

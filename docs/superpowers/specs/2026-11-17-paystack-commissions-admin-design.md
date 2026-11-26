@@ -5,7 +5,7 @@ Status: approved for implementation
 
 ## Goal
 
-Wire Flash to Paystack for orders and tickets, charge a configurable platform
+Wire ScalDive to Paystack for orders and tickets, charge a configurable platform
 commission, hold seller/driver money until delivery is confirmed, and give an
 admin the controls that set those rates and approve businesses.
 
@@ -26,16 +26,16 @@ pay items + delivery, exactly as today.
 
 - Goods commission: 3% of the item total, or 4% when the seller delivers it
   themselves.
-- Delivery commission: 3% of the delivery fee, charged only when Flash
+- Delivery commission: 3% of the delivery fee, charged only when ScalDive
   arranges the delivery. A seller-delivered order has no delivery fee and no
   delivery commission.
 - Total platform commission = goods commission + delivery commission.
-- Online: the customer pays goods + delivery to Flash's Paystack account.
-  Flash holds the seller's net and the driver's fee. On customer confirmation
+- Online: the customer pays goods + delivery to ScalDive's Paystack account.
+  ScalDive holds the seller's net and the driver's fee. On customer confirmation
   of delivery, a Paystack transfer releases the driver's fee and the seller's
   net; the platform keeps the commission.
 - Cash on delivery: no Paystack charge. The driver collects cash, hands it to
-  the seller, and Flash records the commission as a receivable for the seller.
+  the seller, and ScalDive records the commission as a receivable for the seller.
 
 Rates live in one `platform_settings` row in basis points (300 / 400 / 300).
 No rate is hard-coded in checkout; the admin dashboard edits them.

@@ -15,7 +15,7 @@ export default async function SettlementPage({
     <>
       <ConsoleHeader
         title="Payments"
-        description="The account Flash pays your share into after a sale."
+        description="The account ScalDive pays your share into after a sale."
       />
       <div className="mt-5 max-w-[520px]">
         <SettlementForm businessId={businessId} />

@@ -61,12 +61,12 @@ import {
 } from "lucide-react";
 
 /**
- * Flash's icon set.
+ * ScalDive's icon set.
  *
  * One library (Lucide) drawn on a 24×24 grid with a 1.75 stroke, round caps and
  * round joins — the same optical weight as the reference app's line icons, so
  * icons and type sit on the same visual footing at any size. The semantic names
- * below are Flash's own vocabulary; the glyph behind each one is the library's,
+ * below are ScalDive's own vocabulary; the glyph behind each one is the library's,
  * which keeps the set modern and consistent instead of hand-drawn per feature.
  */
 export type IconName =

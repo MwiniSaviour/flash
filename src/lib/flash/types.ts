@@ -1,5 +1,5 @@
 /**
- * Flash domain types.
+ * ScalDive domain types.
  *
  * These mirror the shape of the Postgres tables in `src/lib/supabase/schema.sql`
  * — snake_case columns on the way in, the camelCase view models below on the way

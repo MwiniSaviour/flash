@@ -16,7 +16,7 @@ export default async function ProfileSettingsPage() {
     <>
       <ProfilePageHeader
         title="Settings"
-        subtitle="Your account details and how Flash reaches you."
+        subtitle="Your account details and how ScalDive reaches you."
       />
       <AccountSettingsForm initial={user} />
 
@@ -25,7 +25,7 @@ export default async function ProfileSettingsPage() {
         <div className="mt-3 flex items-center gap-3 rounded-[14px] border border-line/90 bg-surface p-3.5">
           <Icon name="user" size={18} className="text-icon-idle" />
           <span className="flex-1 text-[13.5px] font-semibold text-ink">
-            Manage account &amp; password
+            Edit your profile details
           </span>
           <ProfileControl user={user} variant="button" />
         </div>

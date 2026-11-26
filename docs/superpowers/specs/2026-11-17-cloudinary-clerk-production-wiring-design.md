@@ -5,7 +5,7 @@ Status: approved for implementation
 
 ## Goal
 
-Move Flash's three product-image fields (kitchen cover, dish photo, event poster)
+Move ScalDive's three product-image fields (kitchen cover, dish photo, event poster)
 to Cloudinary, keep PostgreSQL as the only data store, and make Clerk the real
 session source — without losing the keyless demo that the current UI and
 fixtures provide. Every file that reaches storage must be compressed as far as

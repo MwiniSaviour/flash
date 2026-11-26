@@ -286,7 +286,7 @@ async function releasePayout(payoutId: string, recipient: string | null): Promis
   const transfer = await requestTransfer({
     recipient: code,
     amountPesewas: payout.amount_pesewas,
-    reason: payout.reason || "Flash payout",
+    reason: payout.reason || "ScalDive payout",
   });
 
   if (!transfer.ok) {

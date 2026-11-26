@@ -34,7 +34,7 @@ export function HomeScreen() {
   return (
     <div className="pb-4">
       {/* The design has no visible page title; screen readers still need one h1. */}
-      <h1 className="sr-only">Prototype Radio — Home</h1>
+      <h1 className="sr-only">ScalDive — Home</h1>
       <header className="flex items-center justify-between px-5 pt-3 pb-3.5">
         <PulseLogo />
         <div className="flex items-center gap-3">

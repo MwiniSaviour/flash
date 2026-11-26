@@ -44,7 +44,7 @@ import {
 /**
  * The writes.
  *
- * Every mutation in Flash goes through one of these actions, so there is a
+ * Every mutation in ScalDive goes through one of these actions, so there is a
  * single place where a customer can commit to something. The server checks the
  * price against the database — never against what the browser sent — and the
  * screens only ever see the reference that comes back.
@@ -141,7 +141,7 @@ function clampPassengers(passengers: number): number {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Flash has no maps yet, so every route still uses the demo distance and one
+ * ScalDive has no maps yet, so every route still uses the demo distance and one
  * Accra anchor. The engine needs coordinates to assign a driver; these are
  * reference points, not a map tile or a live location.
  */
@@ -175,7 +175,7 @@ async function dispatchContact(
   const identity = await currentClerkIdentity();
 
   return {
-    name: profile.name || identity?.name || "Flash customer",
+    name: profile.name || identity?.name || "ScalDive customer",
     phone: phone.trim(),
     email: profile.email || identity?.email || undefined,
   };

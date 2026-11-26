@@ -56,7 +56,7 @@ export function SettlementForm({ businessId }: { businessId: string }) {
     <section className="rounded-[16px] border border-line/90 bg-surface p-4">
       <h2 className="text-[15px] font-bold text-ink">How you get paid</h2>
       <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
-        Customers pay Flash securely. We send your share to this account after the sale is
+        Customers pay ScalDive securely. We send your share to this account after the sale is
         fulfilled. Register a Mobile Money number or a bank account.
       </p>
 

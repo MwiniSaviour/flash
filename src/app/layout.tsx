@@ -12,23 +12,23 @@ import { getEnv } from "@/lib/env";
 export const metadata: Metadata = {
   metadataBase: new URL(getEnv().siteUrl),
   title: {
-    default: "Flash — tickets, rides and food in one app",
-    template: "%s · Flash",
+    default: "ScalDive — tickets, rides and food in one app",
+    template: "%s · ScalDive",
   },
   description:
-    "Flash books event tickets, rides and food in one place. Find what is on in Accra, get a ride to it, and have dinner waiting when you arrive.",
-  applicationName: "Flash",
+    "ScalDive books event tickets, rides and food in one place. Find what is on in Accra, get a ride to it, and have dinner waiting when you arrive.",
+  applicationName: "ScalDive",
   appleWebApp: {
     capable: true,
-    title: "Flash",
+    title: "ScalDive",
     statusBarStyle: "default",
   },
   openGraph: {
     type: "website",
-    siteName: "Flash",
-    title: "Flash — tickets, rides and food in one app",
+    siteName: "ScalDive",
+    title: "ScalDive — tickets, rides and food in one app",
     description:
-      "Flash books event tickets, rides and food in one place. Find what is on in Accra, get a ride to it, and have dinner waiting when you arrive.",
+      "ScalDive books event tickets, rides and food in one place. Find what is on in Accra, get a ride to it, and have dinner waiting when you arrive.",
   },
 };
 

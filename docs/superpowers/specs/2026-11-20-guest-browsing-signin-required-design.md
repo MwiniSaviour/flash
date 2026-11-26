@@ -5,7 +5,7 @@ Status: approved for implementation
 
 ## Goal
 
-Anyone can browse Flash: home, search, event and kitchen detail, ride quote and
+Anyone can browse ScalDive: home, search, event and kitchen detail, ride quote and
 parcel quote. The moment a visitor shows buy intent — adding to a cart, opening
 a booking sheet, asking for a sold-out place, paying or placing an order — they
 are asked to sign in and returned to the page they came from.

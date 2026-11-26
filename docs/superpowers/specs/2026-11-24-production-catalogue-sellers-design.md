@@ -5,7 +5,7 @@ Status: approved for implementation; blocked on infrastructure credentials
 
 ## Goal
 
-Turn Flash from a fixture-backed prototype into a production system: every
+Turn ScalDive from a fixture-backed prototype into a production system: every
 product and booking is a database row owned by a real Clerk seller, sellers can
 create and manage only their own products, all images live in Cloudinary after
 compression, and no screen can silently fall back to demo data.
@@ -144,7 +144,7 @@ compression, and no screen can silently fall back to demo data.
 
 ## Dependencies — hard blockers
 
-- Database endpoint and service-role credential (Flash Supabase project, or a
+- Database endpoint and service-role credential (ScalDive Supabase project, or a
   public HTTPS PostgREST endpoint for `ops/flash/` plus its JWT secret).
 - Authenticated Clerk access (secret key or CLI login) to create five sellers.
 - Cloudinary cloud name, API key and API secret.
@@ -154,7 +154,7 @@ pretend otherwise.
 
 ## Risks
 
-- Reusing another product's credentials mixes tenants and funds; each Flash
+- Reusing another product's credentials mixes tenants and funds; each ScalDive
   environment must have its own database and provider keys.
 - Backfilling product ownership before deleting fixtures is irreversible
   without a database backup.

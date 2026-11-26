@@ -74,7 +74,7 @@ export function BusinessApplicationForm() {
           Application sent
         </h2>
         <p className="mx-auto mt-1.5 max-w-[36ch] text-[13.5px] leading-relaxed text-muted">
-          The Flash team reads every application. You will hear at {email || "your email"} once it is
+          The ScalDive team reads every application. You will hear at {email || "your email"} once it is
           approved — and the console opens the moment it is.
         </p>
         <div className="mt-5 flex flex-col gap-2">
@@ -212,7 +212,7 @@ export function BusinessApplicationForm() {
       </button>
 
       <p className="mt-3 text-center text-[12px] leading-relaxed text-muted-soft">
-        You can browse Flash as a guest while you wait.
+        You can browse ScalDive as a guest while you wait.
       </p>
     </div>
   );

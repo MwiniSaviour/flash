@@ -23,7 +23,7 @@ export function purchaseCopy(refType: NotificationRefType, reference: string, to
   return {
     title,
     body: `${money(total)} · ${reference}. We'll update you as it moves.`,
-    email: `${title}.\n\nReference ${reference} · ${money(total)}.\n\nThank you for choosing Flash.`,
+    email: `${title}.\n\nReference ${reference} · ${money(total)}.\n\nThank you for choosing ScalDive.`,
   };
 }
 
@@ -49,7 +49,7 @@ export function paymentCopy(total: number, reference: string) {
   return {
     title: "Payment received",
     body: `${money(total)} received for ${reference}.`,
-    email: `We received ${money(total)} for ${reference}. Your Flash payment is confirmed.`,
+    email: `We received ${money(total)} for ${reference}. Your ScalDive payment is confirmed.`,
   };
 }
 
@@ -58,7 +58,7 @@ export function completionCopy(refType: NotificationRefType, reference: string) 
   const title = order ? "Order completed" : "Booking completed";
   return {
     title,
-    body: `${reference} is complete. Thank you for using Flash.`,
-    email: `${reference} is now complete.\n\nThank you for ${order ? "ordering" : "booking"} with Flash.`,
+    body: `${reference} is complete. Thank you for using ScalDive.`,
+    email: `${reference} is now complete.\n\nThank you for ${order ? "ordering" : "booking"} with ScalDive.`,
   };
 }

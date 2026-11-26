@@ -56,7 +56,7 @@ function serverNativeAppSnapshot(): boolean {
 }
 
 /**
- * Flash's own account forms.
+ * ScalDive's own account forms.
  *
  * Clerk supplies the session and the OAuth redirect, but no Clerk interface is
  * rendered: no hosted page, no instance name, no external sign-up hop.

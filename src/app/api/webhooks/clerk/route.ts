@@ -14,7 +14,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * reliable path: a customer has a profile before their first write, whether or
  * not they ever open the profile screen.
  *
- * Every request is verified with svix before its body is trusted. Flash has no
+ * Every request is verified with svix before its body is trusted. ScalDive has no
  * Clerk keys in the demo, so the endpoint reports that it is not configured
  * rather than accepting anything.
  */
@@ -36,7 +36,7 @@ function nameOf(user: ClerkUser): string {
   return (
     user.full_name ??
     [user.first_name, user.last_name].filter(Boolean).join(" ") ??
-    "Flash customer"
+    "ScalDive customer"
   );
 }
 
@@ -145,6 +145,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
   }
 
-  // An event Flash does not use is still a valid event.
+  // An event ScalDive does not use is still a valid event.
   return NextResponse.json({ received: true });
 }

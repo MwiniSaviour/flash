@@ -1,8 +1,8 @@
 /**
  * The shared dispatch engine's wire contract.
  *
- * These are the bytes Flash sends to and reads from the ecommerce repo's
- * `/v1/jobs` endpoints. The engine owns assignment and task state; Flash only
+ * These are the bytes ScalDive sends to and reads from the ecommerce repo's
+ * `/v1/jobs` endpoints. The engine owns assignment and task state; ScalDive only
  * keeps a snapshot of the ids and the status it last saw. Nothing here executes
  * on the client — client.ts is server-only, and this file holds just the types.
  */
@@ -104,7 +104,7 @@ export type DispatchJobDTO = {
   guest?: unknown;
 };
 
-/** Flash's ride products map onto the engine's three classes. */
+/** ScalDive's ride products map onto the engine's three classes. */
 export function engineRideClass(flashClass: string): DispatchRideClass {
   if (flashClass === "flash-comfort") return "comfort";
   if (flashClass === "flash-xl") return "suv";

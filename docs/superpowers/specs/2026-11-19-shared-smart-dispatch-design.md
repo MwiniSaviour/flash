@@ -1,12 +1,12 @@
-# Shared smart dispatch for Flash and ScalMart — design
+# Shared smart dispatch for ScalDive and ScalMart — design
 
 Date: 2026-11-19
 Status: approved for implementation
 
 ## Goal
 
-One dispatch engine and one driver pool serve both Flash and ScalMart in
-production. Flash and ScalMart each post ride/parcel jobs to the mature engine
+One dispatch engine and one driver pool serve both ScalDive and ScalMart in
+production. ScalDive and ScalMart each post ride/parcel jobs to the mature engine
 in the ecommerce repo; JobFinder is a prototype to be mined for good pieces,
 not deployed. Ride and parcel jobs may be scheduled for the future.
 
@@ -19,13 +19,13 @@ not deployed. Ride and parcel jobs may be scheduled for the future.
 - ScalMart, `origin/main` 315aec5: `assignment.ts`, `fulfillment.ts`,
   `routes/v1/driver.ts`, `routes/v1/jobs.ts`, `driver_app_memberships`, mature
   driver UI. Multi-tenant at the data layer but single-product at the edges.
-- Flash: faked assignment, static status/progress tables, parcel booking exists
+- ScalDive: faked assignment, static status/progress tables, parcel booking exists
   but no dispatch seam and no ledger entry.
 
 ## Decisions
 
-1. **Host the engine in the ecommerce repo.** No rewrite. Flash and ScalMart
-   call `POST /v1/jobs` / `GET /v1/jobs/:id` through server-only clients; Flash
+1. **Host the engine in the ecommerce repo.** No rewrite. ScalDive and ScalMart
+   call `POST /v1/jobs` / `GET /v1/jobs/:id` through server-only clients; ScalDive
    stores the external job/task ids and a synced status snapshot locally.
 2. **Tenant identity is authenticated, never defaulted.** Per-product API keys
    map to `app_id`; idempotency keys are scoped by `(app_id, key)`; driver
@@ -37,9 +37,9 @@ not deployed. Ride and parcel jobs may be scheduled for the future.
    "active" treatment before the window opens. Port JobFinder's *service
    booking* validation rules, not its client-only scheduling.
 4. **One driver UI.** Add an app switcher and per-app apply/approval to the
-   mature ScalMart driver app so the same person can be online for Flash and
+   mature ScalMart driver app so the same person can be online for ScalDive and
    ScalMart. Send `appId` on location, availability and profile writes.
-5. **Payments follow the platform-collect model.** Flash's Paystack handles
+5. **Payments follow the platform-collect model.** ScalDive's Paystack handles
    paid rides/parcels; the engine's `delivered` event releases driver payout.
    Keyless demo mode keeps the existing fixture contract.
 6. **Discard from JobFinder:** browser-exposed service key, local source of
@@ -53,13 +53,13 @@ not deployed. Ride and parcel jobs may be scheduled for the future.
   hard-coded `app_id` branches in pricing/assignment.
 - **B — ecommerce driver UI:** app switcher, per-app membership apply, correct
   `appId` on every write, scheduled-job display, no backend changes.
-- **C — Flash:** `src/lib/dispatch/` server client + status adapter, migration
+- **C — ScalDive:** `src/lib/dispatch/` server client + status adapter, migration
   for job refs/scheduling/payment, wire `requestRide`/`sendParcel`, replace
   static progress tables, extend payments and bookings ledger to rides/parcels.
 
 ## Verification
 
-Each stream runs its own checks and reports; integration then runs Flash's
+Each stream runs its own checks and reports; integration then runs ScalDive's
 `npm run check`, `build`, `db:check`, `media:check`, `payments:check`, plus
 backend tests in the ecommerce repo. Live cross-app dispatch smoke tests need
 both engines running and are reported as unexercised otherwise.

@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * Prototype Radio — Capacitor shell.
+ * ScalDive — Capacitor shell.
  *
  * The web bundle is the app; Capacitor wraps it in a native WebView so the
  * design ships to iOS and Android unchanged. `server.url` is intentionally not
@@ -11,7 +11,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const config: CapacitorConfig = {
   appId: "com.pulseradio.app",
-  appName: "Prototype Radio",
+  appName: "ScalDive",
   webDir: "dist",
   backgroundColor: "#F6F3EF",
   ios: {

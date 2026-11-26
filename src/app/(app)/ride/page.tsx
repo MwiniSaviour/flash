@@ -9,7 +9,7 @@ import {
 
 export const metadata: Metadata = {
   title: "Ride",
-  description: "Book a keke, taxi, trotro or private ride across Accra with Flash.",
+  description: "Book a keke, taxi, trotro or private ride across Accra with ScalDive.",
 };
 
 export default async function RidePage() {

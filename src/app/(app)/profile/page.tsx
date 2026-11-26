@@ -96,7 +96,7 @@ export default async function ProfilePage() {
                   <p className="mt-1 text-[12.5px] leading-snug text-muted">
                     {business.status === "approved"
                       ? "Your business is approved. Manage your menu, your prices and the orders that come in."
-                      : "Your application is with the Flash team. You can look around the console, but you cannot post or take orders until it is approved."}
+                      : "Your application is with the ScalDive team. You can look around the console, but you cannot post or take orders until it is approved."}
                   </p>
                 </>
               ) : (
@@ -156,7 +156,7 @@ export default async function ProfilePage() {
       </section>
 
       <footer className="mt-7 px-5 text-center text-[12.5px] leading-relaxed text-muted">
-        <p>Flash · Accra, Ghana</p>
+        <p>ScalDive · Accra, Ghana</p>
         <p className="mt-1">Member since {user.memberSince}</p>
       </footer>
     </div>

@@ -201,7 +201,7 @@ export interface DispatchRowFields {
   dispatch_job_id: string | null;
   dispatch_app_id: string | null;
   dispatch_task_id: string | null;
-  /** Raw engine task state; `status` holds Flash's mapped state. */
+  /** Raw engine task state; `status` holds ScalDive's mapped state. */
   dispatch_task_status: string | null;
   dispatch_status_synced_at: string | null;
   dispatch_last_payload: Record<string, unknown>;

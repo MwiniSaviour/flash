@@ -1,7 +1,7 @@
 /**
  * The one status adapter.
  *
- * The engine and Flash speak different words for the same journey. Every screen
+ * The engine and ScalDive speak different words for the same journey. Every screen
  * that moves something — Track, the bookings ledger, the ride and parcel cards —
  * reads its stage, label, progress and step through this module. There is no
  * second lookup table hidden in a mapper.
@@ -37,7 +37,7 @@ const STATES: Record<string, DispatchView> = {
   returned: { stage: "preparing", label: "Returned", progress: 0, step: 0, active: false },
 };
 
-/** Flash's older status words, normalised to the engine's vocabulary. */
+/** ScalDive's older status words, normalised to the engine's vocabulary. */
 const LEGACY: Record<string, string> = {
   requested: "unassigned",
   booked: "unassigned",
@@ -78,7 +78,7 @@ export function adaptDispatchStatus(
   return STATES[state] ?? STATES.unassigned;
 }
 
-/** The status Flash stores locally, always one the table's CHECK accepts. */
+/** The status ScalDive stores locally, always one the table's CHECK accepts. */
 export function flashStatusForEngine(
   status: string | null | undefined,
   kind: DispatchRequestType,
@@ -101,7 +101,7 @@ export function isDispatchTerminal(status: string | null | undefined): boolean {
   return state === "delivered" || state === "failed" || state === "returned" || state === "cancelled";
 }
 
-/** The engine's driver, folded into Flash's existing drivers catalogue shape. */
+/** The engine's driver, folded into ScalDive's existing drivers catalogue shape. */
 export function driverFromDispatchJob(job: DispatchJobDTO): DriverRow | null {
   const driver = job.task?.driver ?? job.driver;
   if (!driver?.name) return null;

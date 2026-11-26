@@ -1,7 +1,7 @@
 /**
  * Demo parcel fixtures.
  *
- * Flash sends parcels as well as moving people and food. The prices are the
+ * ScalDive sends parcels as well as moving people and food. The prices are the
  * courier's own list — invented for this pass, shaped so a real quote endpoint
  * can replace them without touching a screen.
  */
@@ -101,7 +101,7 @@ export const parcelQuote: ParcelQuote = {
   durationMinutes: 19,
   price: 18,
   etaMinutes: 25,
-  courier: { name: "Flash Courier", vehicle: "Motorbike • Document bag", etaMinutes: 25 },
+  courier: { name: "ScalDive Courier", vehicle: "Motorbike • Document bag", etaMinutes: 25 },
 };
 
 /** What the parcel screen quotes: the type and the size decide the price. */
@@ -119,7 +119,7 @@ export function quoteParcel(
     price: parcelFareCedis(type.fareFactor, multiplier, distanceKm, rates),
     etaMinutes: Math.round(type.etaMinutes + (distanceKm - 4.6) * 1.4),
     courier: {
-      name: "Flash Courier",
+      name: "ScalDive Courier",
       vehicle: size === "large" ? "Van • Parcel bay" : "Motorbike • Parcel bag",
       etaMinutes: Math.round(type.etaMinutes + (distanceKm - 4.6) * 1.4),
     },

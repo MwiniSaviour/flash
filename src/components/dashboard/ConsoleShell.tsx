@@ -44,7 +44,7 @@ export function ConsoleShell({
   return (
     <div className="min-h-dvh lg:flex">
       <aside className="no-print sticky top-0 hidden h-dvh w-[240px] shrink-0 flex-col border-r border-line/70 px-4 py-5 lg:flex">
-        <Link href="/" className="px-2" aria-label="Flash — home">
+        <Link href="/" className="px-2" aria-label="ScalDive — home">
           <FlashLogo size="sm" />
         </Link>
 

@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/flash/repository";
 
 export const metadata: Metadata = {
   title: "Send a parcel",
-  description: "Send documents, electronics, clothes and groceries across Accra with Flash.",
+  description: "Send documents, electronics, clothes and groceries across Accra with ScalDive.",
 };
 
 export default async function ParcelPage() {

@@ -14,7 +14,7 @@ export async function generateMetadata({
 
   return {
     title: event?.title ?? "Event",
-    description: event?.description ?? "Tickets on Flash.",
+    description: event?.description ?? "Tickets on ScalDive.",
   };
 }
 

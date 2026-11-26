@@ -1,4 +1,4 @@
-# Asset Provenance — Flash (interface prototype)
+# Asset Provenance — ScalDive (interface prototype)
 
 Every file under `public/assets/` is catalogued below with its origin and licence
 status. This is a **local UI prototype**. Nothing here is cleared for public
@@ -28,14 +28,14 @@ Total files under `public/`: **40**.
 
 | File | Source | Notes |
 |---|---|---|
-| `src/components/flash/FlashLogo.tsx` | Drawn for this project | The five-bar pulse mark and the FLASH / "Experience the best!" lock-up. Inline SVG, so it stays crisp at every density and can flip to white over imagery. |
+| `src/components/flash/FlashLogo.tsx` | Drawn for this project | The five-bar pulse mark and the SCALDIVE / "Experience the best!" lock-up. Inline SVG, so it stays crisp at every density and can flip to white over imagery. |
 | `src/app/icon.svg` | Drawn for this project | The same mark as the app icon. |
 | `public/icon.svg` | Copy of `src/app/icon.svg` | The native shell's favicon; Vite serves it from the shared `public/` folder. |
 
 The reference repository shipped the *Radio Waa* wordmark, icon set and PWA
 icons under `public/assets/logo/`. Those were removed when the project was
 rebranded: they are another broadcaster's trade dress and are not licensed for
-reuse. Nothing from that folder survived into Flash.
+reuse. Nothing from that folder survived into ScalDive.
 
 ---
 
@@ -53,7 +53,7 @@ renamed to what they depict:
 | `event-highlife-night.jpg` | A live band playing under stage lights |
 | `event-urban-vibes.jpg` | Festival-goers in front of an illuminated main stage |
 
-Newly sourced for Flash from Unsplash, each checked by eye before use:
+Newly sourced for ScalDive from Unsplash, each checked by eye before use:
 
 | File | Subject | Unsplash photo id |
 |---|---|---|
@@ -127,7 +127,7 @@ customer, the riders and the kitchen staff. They are stock portraits and are
 ## 6. Icons
 
 The interface draws its icons from **Lucide** (`lucide-react`, ISC licence),
-rendered inline as SVG by `src/components/flash/Icon.tsx` under Flash's own
+rendered inline as SVG by `src/components/flash/Icon.tsx` under ScalDive's own
 semantic names. No icon font, no sprite sheet, no network request — the bundle
 stays offline-safe for the Capacitor build.
 
@@ -178,7 +178,7 @@ about 1.2 MB, and cover a 390 × 844 phone screen at 2× density.
 
 ## Legal note (for a real launch)
 
-- "Flash" and the pulse mark are this project's own identity; they must not
+- "ScalDive" and the pulse mark are this project's own identity; they must not
   collide with an existing mark in the same market before launch.
 - The photographs carried over from the reference app (`event-sunset-live`,
   `event-afrobeats-zone`, `event-comedy-night`, `event-highlife-night`,

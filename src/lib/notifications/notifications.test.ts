@@ -41,7 +41,7 @@ describe("notification copy", () => {
     expect(paymentCopy(42.5, "FLS-1").title).toBe("Payment received");
     const done = completionCopy("order", "FLS-1");
     expect(done.title).toBe("Order completed");
-    expect(done.email).toContain("Thank you for ordering with Flash");
+    expect(done.email).toContain("Thank you for ordering with ScalDive");
   });
 });
 

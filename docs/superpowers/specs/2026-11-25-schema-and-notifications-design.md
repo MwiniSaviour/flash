@@ -1,7 +1,7 @@
 # Seller schema and notifications — design
 
 Date: 2026-11-25
-Status: ready for implementation; blocked on direct DDL access to the Flash database
+Status: ready for implementation; blocked on direct DDL access to the ScalDive database
 
 ## Goal
 
@@ -17,7 +17,7 @@ messages, an inbox with read state, and links that open the right record.
   It exposes `/rest/v1` and two RPCs (`reserve_ticket`, `release_ticket`) but no
   `exec_sql` endpoint, so migrations cannot be applied through it.
 - The available Supabase MCP server is bound to project ref
-  `yfdytegvozhgoczcnfiz` (POS/ScalMint), not the Flash database. No Firebase MCP
+  `yfdytegvozhgoczcnfiz` (POS/ScalMint), not the ScalDive database. No Firebase MCP
   tool is available in this environment.
 - Seller identity currently uses `profiles.role='business'` plus
   `owner_user_id` on `events` and `restaurants`. There is no `sellers` table and
@@ -101,8 +101,8 @@ messages, an inbox with read state, and links that open the right record.
 
 ## Blockers
 
-- Direct DDL access to the Flash database (Postgres connection string, or a
-  Supabase MCP server configured for the Flash project ref) is required to apply
+- Direct DDL access to the ScalDive database (Postgres connection string, or a
+  Supabase MCP server configured for the ScalDive project ref) is required to apply
   the migrations.
 - A Firebase MCP tool is not present in this environment. The available MCP
   server is Supabase and targets the POS project; using it would apply schema to

@@ -18,7 +18,7 @@ Secondary consideration: the same user on a desktop browser, where the product m
 
 ## Product Purpose
 
-**Flash** is one app for three urban services: booking event tickets, booking a ride, and ordering food. The name carries the promise — speed of delivery — and it is the organizing idea of the product, not decoration.
+**ScalDive** is one app for three urban services: booking event tickets, booking a ride, and ordering food. The name carries the promise — speed of delivery — and it is the organizing idea of the product, not decoration.
 
 Success means the user can, in a single session on a phone: find something happening tonight, get a ticket, get a ride to it, and have food waiting when they arrive — without re-orienting in a different mental model for each service.
 
@@ -39,7 +39,7 @@ The mechanism is a single blended surface: one home feed that mixes event discov
 Confirmed:
 
 - Five primary destinations on the phone: **Home, Events, Ride, Food, Track**, with the ride button raised out of the middle of the phone's bottom bar.
-- **Food took the Bookings slot.** Ordering a meal is one of the three things Flash does, so it earns a tab rather than a dig. Bookings gave the slot up: the ledger is a record of what the customer already committed to, so it lives in the profile beside the account, and the desktop rail keeps it for convenience.
+- **Food took the Bookings slot.** Ordering a meal is one of the three things ScalDive does, so it earns a tab rather than a dig. Bookings gave the slot up: the ledger is a record of what the customer already committed to, so it lives in the profile beside the account, and the desktop rail keeps it for convenience.
 - The fifth destination was named "Activities" in the original brief and renamed during init to **Bookings** — it records the user's booked services (ride bookings, food orders, ticket purchases), not "activities" in the leisure sense.
 - **Track** (the fifth destination) is the delivery surface: what is on its way to the user — food orders, rides in progress and parcels — each with its number, its stage, its ETA and its position on the route diagram. Each card opens the delivery's own page.
 - **Parcels are a service of their own.** The user can send a parcel (pick-up, drop-off, what is inside, how big it is) as well as receive one.
@@ -47,7 +47,7 @@ Confirmed:
 - Every booking produces **proof**: an event pass, an order receipt, a ride confirmation and a parcel receipt, each carrying a scannable QR of the booking reference, the facts a gate or a rider will check, and share and print actions.
 - Home uses the reference app's radio-style information architecture, re-purposed: a five-item slideshow banner of trending events and trending food, a horizontal "Up Next" rail, an "Upcoming Events" section, and a "Trending Now" section. Home briefs all the services.
 - Events keeps the reference product's structure: search, category filter chips, a featured event, and an upcoming-events list.
-- **Food follows the reference food app's structure**: search, cuisine chips, then two card rails — the kitchens near you and the kitchens Flash is moving most — with the rating on the photograph, the delivery charge and the ready time under the name, and a "View all" that opens the full list.
+- **Food follows the reference food app's structure**: search, cuisine chips, then two card rails — the kitchens near you and the kitchens ScalDive is moving most — with the rating on the photograph, the delivery charge and the ready time under the name, and a "View all" that opens the full list.
 - **A dish is ordered, not just added.** The dish page takes the kitchen's banner, names the portion, offers the extras the kitchen actually adds, and carries a quantity stepper and one "Add to cart" button.
 - **An order can be collected.** The customer chooses delivered, picked up or eaten in. Collecting costs nothing, because nobody rides anywhere.
 - **The delivery charge depends on the distance.** A kitchen's base fee covers the first few kilometres across Accra; beyond that the customer pays per kilometre.
@@ -68,8 +68,8 @@ Explicitly undecided:
 
 ## Brand Commitments
 
-- **Name: Flash.** The name means speed of delivery and is the product's organizing promise.
-- **Design language: inherited from the reference product.** The four reference screenshots (Prototype Radio — Home, Events, My Tickets, Profile) are the binding visual authority: warm off-white ground, one vivid orange accent used for primary action and active state, near-black display type, white rounded cards with a hairline border, pill chips, square date badges, and a bottom tab bar with an orange active state. The same language governs Ride, Track, Food, Parcels, Bookings and the desktop layout.
+- **Name: ScalDive.** The name means speed of delivery and is the product's organizing promise.
+- **Design language: inherited from the reference product.** The four reference screenshots (ScalDive — Home, Events, My Tickets, Profile) are the binding visual authority: warm off-white ground, one vivid orange accent used for primary action and active state, near-black display type, white rounded cards with a hairline border, pill chips, square date badges, and a bottom tab bar with an orange active state. The same language governs Ride, Track, Food, Parcels, Bookings and the desktop layout.
 - No radio broadcasting content: the reference's radio subject is replaced by the services above. The reference's *layout* is the borrowing, not its content.
 
 ## Evidence on Hand

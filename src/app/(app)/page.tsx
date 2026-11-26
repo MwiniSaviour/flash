@@ -23,7 +23,7 @@ import {
  * Home — the blend.
  *
  * The reference app opens on a live broadcast, then what is on next, then the
- * next event and then what is trending. Flash keeps that composition and
+ * next event and then what is trending. ScalDive keeps that composition and
  * fills it with the three services it sells: a slideshow of what is trending
  * tonight, the next thing in each service, the next events, what is trending
  * to eat and a ride brief.
@@ -127,7 +127,7 @@ export default async function HomePage() {
 
   return (
     <div className="pb-5">
-      <h1 className="sr-only">Flash — tickets, rides and food in Accra</h1>
+      <h1 className="sr-only">ScalDive — tickets, rides and food in Accra</h1>
 
       <BrandHeader user={user} />
 

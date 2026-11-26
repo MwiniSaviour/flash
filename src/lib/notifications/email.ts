@@ -22,7 +22,7 @@ export async function sendEmail(
         from: env.notificationsFromEmail,
         to: [to],
         subject,
-        text: `${text}\n\n— Flash`,
+        text: `${text}\n\n— ScalDive`,
       }),
       signal: AbortSignal.timeout(8000),
     });

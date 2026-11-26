@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "My products",
-  description: "Create and manage the events and kitchens you sell on Flash.",
+  description: "Create and manage the events and kitchens you sell on ScalDive.",
 };
 
 export default async function ProductsPage() {

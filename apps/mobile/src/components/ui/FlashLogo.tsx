@@ -1,8 +1,8 @@
 import { cn } from "~/lib/cn";
 
 /**
- * The Flash lock-up for the native shell: the five-bar pulse mark beside
- * FLASH / "Experience the best!". Drawn in SVG so it stays crisp on every
+ * The ScalDive lock-up for the native shell: the five-bar pulse mark beside
+ * SCALDIVE / "Experience the best!". Drawn in SVG so it stays crisp on every
  * density and can flip to white over the full-bleed onboarding artwork.
  */
 export function FlashLogo({
@@ -23,7 +23,7 @@ export function FlashLogo({
     <span
       className={cn("inline-flex items-center gap-[9px]", className)}
       style={{ height: 30 * scale }}
-      aria-label="Flash — Experience the best!"
+      aria-label="ScalDive — Experience the best!"
       role="img"
     >
       <svg
@@ -53,7 +53,7 @@ export function FlashLogo({
               lineHeight: 1,
             }}
           >
-            Flash
+            ScalDive
           </span>
           <span
             className="font-semibold whitespace-nowrap"

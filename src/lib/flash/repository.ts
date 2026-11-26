@@ -727,7 +727,7 @@ export async function getRestaurantBySlug(slug: string): Promise<Restaurant | un
   return toRestaurant(toRestaurantRecord(data as RestaurantWithMenuRow));
 }
 
-/** Restaurants ordered by how much Flash is moving them this week. */
+/** Restaurants ordered by how much ScalDive is moving them this week. */
 export async function getTrendingRestaurants(limit = 4): Promise<Restaurant[]> {
   const all = await listRestaurants();
   return [...all]
@@ -738,7 +738,7 @@ export async function getTrendingRestaurants(limit = 4): Promise<Restaurant[]> {
 /**
  * The quote the Ride screen opens with.
  *
- * The distance and duration are still the demo route — Flash has no maps yet —
+ * The distance and duration are still the demo route — ScalDive has no maps yet —
  * but the classes and their fares come from the database.
  */
 export async function getRideQuote(): Promise<RideQuote> {

@@ -49,7 +49,7 @@ export default async function DashboardPage() {
         <header>
           <p className="text-[12.5px] font-medium text-muted">Your business</p>
           <h1 className="mt-0.5 text-[27px] font-bold leading-[1.1] tracking-[-0.03em] text-ink">
-            {businesses.length ? "What you run" : "Run something on Flash"}
+            {businesses.length ? "What you run" : "Run something on ScalDive"}
           </h1>
         </header>
 
@@ -70,7 +70,7 @@ export default async function DashboardPage() {
                 </div>
               </div>
               <p className="mt-2.5 text-[13px] leading-snug text-muted">
-                Your application is with the Flash team. You can look around the console, but you
+                Your application is with the ScalDive team. You can look around the console, but you
                 cannot post services or take orders until it is approved.
               </p>
             </div>
@@ -133,7 +133,7 @@ export default async function DashboardPage() {
         {!businesses.length && !kitchens.length && !events.length ? (
           <div className="mt-5">
             <EmptyState
-              message="Run a kitchen, promote events or drive for Flash. Apply once and the console opens as soon as the team approves it."
+              message="Run a kitchen, promote events or drive for ScalDive. Apply once and the console opens as soon as the team approves it."
               action="Apply to run a business"
               href="/business/apply"
             />

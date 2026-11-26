@@ -1,10 +1,10 @@
-# Smart notifications for Flash Implementation Plan
+# Smart notifications for ScalDive Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** One server-only notification funnel in Flash that pushes purchase/booking and completion alerts to customers, new-order alerts to food vendors and event managers, an order-completion email, and interoperates with the shared engine's driver offers — on both web and the Capacitor app.
+**Goal:** One server-only notification funnel in ScalDive that pushes purchase/booking and completion alerts to customers, new-order alerts to food vendors and event managers, an order-completion email, and interoperates with the shared engine's driver offers — on both web and the Capacitor app.
 
-**Architecture:** A new `src/lib/notifications/` module persists a row per recipient then fans out through two transports selected by a token's `platform`: Web Push/VAPID for `web` and FCM HTTP v1 for `android`/`ios`, plus Resend for email. Missing keys degrade to `skipped`; failures never break a write. Triggers are wired into Flash's four write actions, payment fulfilment and delivery/dispatch completion, and the existing inbox component is extended for customers and both business consoles.
+**Architecture:** A new `src/lib/notifications/` module persists a row per recipient then fans out through two transports selected by a token's `platform`: Web Push/VAPID for `web` and FCM HTTP v1 for `android`/`ios`, plus Resend for email. Missing keys degrade to `skipped`; failures never break a write. Triggers are wired into ScalDive's four write actions, payment fulfilment and delivery/dispatch completion, and the existing inbox component is extended for customers and both business consoles.
 
 **Tech Stack:** Next.js 16 server actions/route handlers, Supabase Postgres (`public`), Clerk-or-demo session, `web-push` (new dep), Node `crypto` for FCM JWT, Resend over `fetch`, Vitest.
 
@@ -106,7 +106,7 @@ describe("notification copy", () => {
     expect(paymentCopy(42.5).title).toBe("Payment received");
     const done = completionCopy("order", "FLS-1");
     expect(done.title).toBe("Order completed");
-    expect(done.email).toContain("Thank you for ordering with Flash");
+    expect(done.email).toContain("Thank you for ordering with ScalDive");
   });
 });
 
@@ -229,7 +229,7 @@ export function purchaseCopy(refType: NotificationRefType, reference: string, to
   return {
     title: label,
     body: `${money(total)} · ${reference}. We'll update you as it moves.`,
-    email: `${label}.\n\nReference ${reference} · ${money(total)}.\n\nThank you for choosing Flash.`,
+    email: `${label}.\n\nReference ${reference} · ${money(total)}.\n\nThank you for choosing ScalDive.`,
   };
 }
 
@@ -253,7 +253,7 @@ export function paymentCopy(total: number, reference: string) {
   return {
     title: "Payment received",
     body: `${money(total)} received for ${reference}.`,
-    email: `We received ${money(total)} for ${reference}. Your Flash payment is confirmed.`,
+    email: `We received ${money(total)} for ${reference}. Your ScalDive payment is confirmed.`,
   };
 }
 
@@ -262,8 +262,8 @@ export function completionCopy(refType: NotificationRefType, reference: string) 
   const title = order ? "Order completed" : "Booking completed";
   return {
     title,
-    body: `${reference} is complete. Thank you for using Flash.`,
-    email: `${reference} is now complete.\n\nThank you for ordering with Flash.`.replace(
+    body: `${reference} is complete. Thank you for using ScalDive.`,
+    email: `${reference} is now complete.\n\nThank you for ordering with ScalDive.`.replace(
       order ? "ordering" : "ordering",
       order ? "ordering" : "booking",
     ),
@@ -541,7 +541,7 @@ export async function sendEmail(
         from: env.notificationsFromEmail,
         to: [to],
         subject,
-        text: `${text}\n\n— Flash`,
+        text: `${text}\n\n— ScalDive`,
       }),
       signal: AbortSignal.timeout(8000),
     });
@@ -1182,7 +1182,7 @@ self.addEventListener("push", (event) => {
     data = {};
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "Flash", {
+    self.registration.showNotification(data.title || "ScalDive", {
       body: data.body || "",
       tag: `flash-${data.kind || "notification"}`,
       data: { url: data.url || "/profile/notifications" },

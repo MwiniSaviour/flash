@@ -5,7 +5,7 @@ import { listBookings, listEvents, listTickets } from "@/lib/flash/repository";
 
 export const metadata: Metadata = {
   title: "Bookings",
-  description: "Every ticket, ride and order you have made with Flash.",
+  description: "Every ticket, ride and order you have made with ScalDive.",
 };
 
 export default async function BookingsPage() {

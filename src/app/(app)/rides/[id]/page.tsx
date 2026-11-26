@@ -57,7 +57,7 @@ export default async function RideDetailPage({ params }: { params: Promise<{ id:
       <article className="mt-4 overflow-hidden rounded-[20px] border border-line/90 bg-surface shadow-raised">
         <div className="bg-brand-solid px-4 py-4 text-white">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/75">
-            Flash · {ride.number}
+            ScalDive · {ride.number}
           </p>
           <h2 className="mt-1.5 text-[21px] font-bold leading-tight tracking-[-0.02em]">
             {ride.title}
@@ -99,7 +99,7 @@ export default async function RideDetailPage({ params }: { params: Promise<{ id:
       <LiveDeliveryTracking delivery={ride} />
 
         <div className="mt-4">
-        <PassActions reference={ride.reference} title={`Flash ride ${ride.number}`} shareLabel="Share trip" />
+        <PassActions reference={ride.reference} title={`ScalDive ride ${ride.number}`} shareLabel="Share trip" />
       </div>
 
       <button

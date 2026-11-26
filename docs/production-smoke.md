@@ -1,4 +1,4 @@
-# Production smoke — Flash
+# Production smoke — ScalDive
 
 Run these after any deploy. Secrets are set on the Vercel project only; never
 paste values into a file, chat or commit.

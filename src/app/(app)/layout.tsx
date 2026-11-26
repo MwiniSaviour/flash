@@ -13,14 +13,14 @@ import {
 import { platformSettings } from "@/lib/payments/commission";
 
 /**
- * Every screen in Flash reads the database, so nothing here can be
+ * Every screen in ScalDive reads the database, so nothing here can be
  * prerendered: a ticket booked at 10:00 has to show up on the Bookings screen
  * at 10:01, not at the next build.
  */
 export const dynamic = "force-dynamic";
 
 /**
- * The Flash shell.
+ * The ScalDive shell.
  *
  * On the phone this is a single column with a fixed bottom tab bar. From `lg`
  * the same content is re-composed into the desktop idiom the product asked for:

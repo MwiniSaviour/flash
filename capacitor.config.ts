@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * Flash — Capacitor configuration.
+ * ScalDive — Capacitor configuration.
  *
  * The web deployment keeps its Next.js server; the mobile build is a static
  * export of the demo-mode app (see scripts/build-mobile.mjs), so the native
@@ -10,7 +10,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const config: CapacitorConfig = {
   appId: "com.scalmint.flash",
-  appName: "Flash",
+  appName: "ScalDive",
   webDir: "out",
   android: {
     allowMixedContent: false,
@@ -19,7 +19,7 @@ const config: CapacitorConfig = {
   },
   server: {
     // Capacitor's default WebViewClient hands every navigation to a host that
-    // is not the app origin to the system browser (Bridge.launchIntent). Flash
+    // is not the app origin to the system browser (Bridge.launchIntent). ScalDive
     // legitimately navigates to Clerk's frontend API/account portal and to
     // Paystack's hosted checkout, so without this the app jumps to Chrome.
     // `*` keeps every http(s) navigation inside the WebView; non-web schemes
@@ -34,7 +34,7 @@ if (process.env.FLASH_CAP_LIVE) {
   config.server.url = `http://${process.env.FLASH_CAP_LIVE}`;
   config.server.cleartext = true;
 } else {
-  // Flash keeps its server-side rendering, actions and API routes on Vercel,
+  // ScalDive keeps its server-side rendering, actions and API routes on Vercel,
   // so the shell loads the deployed app instead of a (non-functional) static
   // copy. This keeps payment, live location and push notifications working.
   config.server = config.server ?? {};

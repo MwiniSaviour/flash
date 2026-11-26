@@ -22,7 +22,7 @@ const TONES: Record<NonNullable<KpiCard["tone"]>, string> = {
  * The console's key figures.
  *
  * The card anatomy follows the admin reference — icon tile, large number,
- * label — in Flash's own paper/surface tokens. There is no trend arrow unless
+ * label — in ScalDive's own paper/surface tokens. There is no trend arrow unless
  * a real comparison exists; a note fills that corner with a fact instead.
  */
 export function KpiCards({ cards }: { cards: KpiCard[] }) {

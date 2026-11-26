@@ -1,11 +1,11 @@
-# AGENTS.md — Flash
+# AGENTS.md — ScalDive
 
 Read this before running anything. It exists because the platform constraints and
 the design rules are both easy to break by accident.
 
 ## 1. What this is
 
-**Flash** — one app for three urban services in Accra: event tickets, rides and
+**ScalDive** — one app for three urban services in Accra: event tickets, rides and
 food.
 
 The interface is complete, and the backend is wired behind a seam: every screen
@@ -76,7 +76,7 @@ It is a separate package with its own toolchain — type-check it there
 - **No kickers or eyebrows above headings.** The heading carries its own weight.
 - **Status is never colour alone** — every state chip carries an icon and a word.
 - **Icons come from Lucide** through `src/components/flash/Icon.tsx`, under
-  Flash's own semantic names. Do not inline a one-off SVG glyph; add a name to
+  ScalDive's own semantic names. Do not inline a one-off SVG glyph; add a name to
   the icon map.
 - **Photography must carry alt text that describes the frame**, not the menu
   item beside it. Every file under `public/assets/` is catalogued in

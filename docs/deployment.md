@@ -1,6 +1,6 @@
-# Deploying Flash to Vercel
+# Deploying ScalDive to Vercel
 
-Flash is a Next.js 16 App Router app. Every service screen reads through
+ScalDive is a Next.js 16 App Router app. Every service screen reads through
 `src/lib/flash/repository.ts`: with no Supabase keys the app serves seeded demo
 data, with keys it reads Postgres. Clerk and Cloudinary mount the same way, so a
 deployment with no service keys is a fully working demo.
@@ -75,7 +75,7 @@ live in Clerk's **public metadata** so they are visible in the Clerk Dashboard:
 3. Set `{ "role": "business_owner" }` for kitchen and event owners who manage
    the console at `/dashboard` - only this role (or an administrator) can open
    it.
-4. Set `{ "role": "customer" }` for everyone else - this is the default Flash
+4. Set `{ "role": "customer" }` for everyone else - this is the default ScalDive
    assigns new accounts in the Clerk `user.created` webhook.
 
 The three role labels are `Administrator` (`admin`), `Business owner`

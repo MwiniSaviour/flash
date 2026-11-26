@@ -1,4 +1,4 @@
-# Prototype Radio — mobile app (Capacitor)
+# ScalDive — mobile app (Capacitor)
 
 A Capacitor shell around a Vite + React + Tailwind bundle. It runs in the browser
 during development and ships to iOS and Android from the same bundle.

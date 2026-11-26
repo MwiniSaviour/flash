@@ -1,4 +1,4 @@
-# Smart notifications for Flash — design
+# Smart notifications for ScalDive — design
 
 Date: 2026-11-21
 Status: proposed
@@ -18,18 +18,18 @@ registry and one payload contract.
   funnel, FCM + Resend adapters, semantic helpers), `routes/v1/notifications.ts`
   (token registry + inbox API), `src/lib/notifications.ts` (TTS/alerts),
   `assignment.ts` (`notifyDriverOffer`), `recommend/push.ts`.
-- Flash: `src/lib/flash/actions.ts` (the four writes), `notifications.ts`
+- ScalDive: `src/lib/flash/actions.ts` (the four writes), `notifications.ts`
   (derived inbox), `NotificationInbox.tsx`, `notification_reads` migration,
   `src/lib/dispatch/*`, the Paystack webhook, `fulfilPayment`, and the business
   consoles.
 
 ## Decisions
 
-1. **One self-contained funnel in Flash.** A new server-only module
+1. **One self-contained funnel in ScalDive.** A new server-only module
    `src/lib/notifications/` mirrors the reference: persist one row per
    recipient, fan out to push + email in parallel, record per-channel status,
    and never throw. Callers use `void notify…()` fire-and-forget. The shared
-   dispatch engine keeps owning driver offers (`notifyDriverOffer`); Flash
+   dispatch engine keeps owning driver offers (`notifyDriverOffer`); ScalDive
    sends the jobs that trigger them.
 2. **One token registry, two transports.** `notification_tokens` stores a
    `platform` of `web | android | ios`. Web subscriptions go out through Web

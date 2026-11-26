@@ -1,7 +1,7 @@
 import { cn } from "~/lib/cn";
 
 /**
- * The Prototype wordmark: five rounded waveform bars + the PROTOTYPE / RADIO lock-up.
+ * The ScalDive wordmark: five rounded waveform bars + the ScalDive lock-up.
  *
  * The bars are the brand's only logo graphic — drawn in SVG (not a raster asset)
  * so the mark stays crisp on every density and can flip to white over imagery,
@@ -26,7 +26,7 @@ export function PulseLogo({
     <span
       className={cn("inline-flex items-center gap-[9px]", className)}
       style={{ height: 30 * scale }}
-      aria-label="Prototype Radio"
+      aria-label="ScalDive — Experience the best!"
       role="img"
     >
       <svg
@@ -56,20 +56,20 @@ export function PulseLogo({
               lineHeight: 1,
             }}
           >
-            Prototype
+            ScalDive
           </span>
           <span
-            className="font-semibold uppercase"
+            className="font-semibold whitespace-nowrap"
             style={{
               color: tone === "light" ? "rgba(255,255,255,0.92)" : "#131A26",
-              fontSize: 8.6 * scale,
-              letterSpacing: "0.46em",
+              fontSize: Math.min(12, Math.max(9, 10 * scale)),
+              letterSpacing: "0.005em",
               marginTop: 3 * scale,
               marginLeft: 1.5 * scale,
               lineHeight: 1,
             }}
           >
-            Radio
+            Experience the best!
           </span>
         </span>
       ) : null}

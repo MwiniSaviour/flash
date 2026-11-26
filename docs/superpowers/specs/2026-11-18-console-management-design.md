@@ -18,11 +18,11 @@ a business's legal details after application.
 
 - **Chrome moves up, not out.** A server `ConsoleTopbar` sits above the page
   content and carries the shop name, a greeting and the account menu. The
-  sidebar keeps the Flash mark, the business switcher and the section nav;
+  sidebar keeps the ScalDive mark, the business switcher and the section nav;
   "Your dashboard" and "Your account" are removed from it. The phone gets the
   same top bar above the existing page header and hamburger.
 - **KPI cards follow the supplied reference's anatomy** — icon tile, large
-  value, label, trend — but use Flash's paper/surface tokens and its existing
+  value, label, trend — but use ScalDive's paper/surface tokens and its existing
   semantic colours. No dark theme, no new accent. Four cards per console:
   kitchen = open orders, revenue, dishes, customers; events = tickets sold,
   revenue, events, attendees. Values derive from real rows. A trend appears
@@ -74,7 +74,7 @@ morning/afternoon/evening from the server clock). Right: the account control
 moved out of the sidebar. On the phone the same bar renders above the page
 header; the hamburger stays in the header and the bottom nav is unchanged.
 
-The sidebar becomes: Flash mark back-link, business switcher (only at two or
+The sidebar becomes: ScalDive mark back-link, business switcher (only at two or
 more businesses), section nav with scroll-spy. Nothing else.
 
 ## Overview

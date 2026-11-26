@@ -21,7 +21,7 @@ export interface HeroSlide {
 /**
  * The home hero: five slides of what is trending, events and food.
  *
- * The reference app opens on one live broadcast; Flash opens on the same
+ * The reference app opens on one live broadcast; ScalDive opens on the same
  * shape — a full-bleed media panel with a scrim, the headline and a round
  * action — but the slide show moves through what is actually trending tonight.
  * The pulse meter (the brand's own bars) is the position indicator.

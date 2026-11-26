@@ -94,7 +94,7 @@ function dispatchEta(view: DispatchView, etaMinutes: number, scheduledFor: strin
   return view.active ? etaText(etaMinutes) : "";
 }
 
-/** While no rider is assigned, the customer reaches Flash support. */
+/** While no rider is assigned, the customer reaches ScalDive support. */
 function unassignedRider(): Delivery["rider"] {
   return {
     name: "Costumer Support",

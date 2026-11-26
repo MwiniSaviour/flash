@@ -14,7 +14,7 @@ import type { FlashUser } from "@/lib/flash/types";
 export function BrandHeader({ user }: { user: FlashUser }) {
   return (
     <header className="flex items-center justify-between px-5 pt-3.5 pb-3.5 lg:hidden">
-      <Link href="/" aria-label="Flash — home">
+      <Link href="/" aria-label="ScalDive — home">
         <FlashLogo />
       </Link>
 

@@ -104,7 +104,7 @@ export const activeOrder: Order = {
 
 /**
  * The bookings ledger — the fifth destination. One list holding every kind of
- * commitment the customer has made with Flash, newest first.
+ * commitment the customer has made with ScalDive, newest first.
  */
 export const bookings: Booking[] = [
   {
@@ -174,7 +174,7 @@ export const bookings: Booking[] = [
   {
     id: "bkg-ride-5488",
     kind: "ride",
-    title: "Flash Bike to East Legon",
+    title: "ScalDive Bike to East Legon",
     subtitle: "Osu → East Legon",
     status: "cancelled",
     when: "2026-11-12T08:15:00.000Z",

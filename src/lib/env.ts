@@ -132,7 +132,7 @@ export function hasPaystackEnv(): boolean {
   return Boolean(getEnv().paystackSecretKey?.startsWith("sk_"));
 }
 
-/** True when Flash can post ride and parcel jobs to the shared engine. */
+/** True when ScalDive can post ride and parcel jobs to the shared engine. */
 export function hasDispatchEnv(): boolean {
   const env = getEnv();
   return Boolean(env.dispatchBaseUrl && env.dispatchApiKey && env.dispatchAppId);

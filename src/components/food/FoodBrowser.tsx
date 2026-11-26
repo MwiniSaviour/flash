@@ -18,7 +18,7 @@ type CuisineFilter = (typeof CUISINES)[number];
  *
  * Two questions decide this screen — what is close, and what is worth the
  * money — so it answers both in order: the kitchens nearest you, then the ones
- * Flash is moving most. Search and the cuisine chips narrow both rails, and
+ * ScalDive is moving most. Search and the cuisine chips narrow both rails, and
  * "View all" turns a rail into the full list it stands for.
  */
 export function FoodBrowser({

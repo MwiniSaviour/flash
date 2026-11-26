@@ -8,7 +8,7 @@ import { DEFAULT_ROLE, roleOf, type UserRole } from "@/lib/flash/roles";
 /**
  * The server session.
  *
- * Flash runs signed-in as the seeded demo customer until Clerk is connected.
+ * ScalDive runs signed-in as the seeded demo customer until Clerk is connected.
  * With Clerk mounted the real session wins, and a signed-out visitor gets
  * nobody at all — one customer's data never leaks into another's screen.
  */
@@ -25,7 +25,7 @@ export async function currentUserId(): Promise<string | null> {
 }
 
 /**
- * The signed-in account's Flash role.
+ * The signed-in account's ScalDive role.
  *
  * Clerk public metadata is the source of truth; the session token claim is a
  * faster fallback. Without Clerk, the demo account is a customer.
@@ -58,7 +58,7 @@ export async function currentClerkIdentity(): Promise<{
 
   return {
     id: user.id,
-    name: name || "Flash customer",
+    name: name || "ScalDive customer",
     email: user.primaryEmailAddress?.emailAddress ?? "",
     avatarUrl: user.imageUrl,
   };

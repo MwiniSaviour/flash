@@ -1,7 +1,7 @@
 /**
  * The waiting state.
  *
- * Every screen in Flash reads from the database, so every screen can be
+ * Every screen in ScalDive reads from the database, so every screen can be
  * waiting. The skeleton keeps the same rhythm as the real content so the
  * layout does not jump when the data lands.
  */

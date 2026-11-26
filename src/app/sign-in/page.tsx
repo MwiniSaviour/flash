@@ -25,7 +25,7 @@ export default async function SignInPage({
             href="/"
             className="mt-4 inline-flex h-10 items-center rounded-[11px] bg-brand-solid px-4 text-[13px] font-bold text-white"
           >
-            Back to Flash
+            Back to ScalDive
           </Link>
         </div>
       )}

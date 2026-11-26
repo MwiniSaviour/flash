@@ -27,7 +27,7 @@ export async function ensureProfile(
   if (data) return data as ProfileRow;
 
   const identity = await currentClerkIdentity();
-  const name = identity?.name ?? "Flash customer";
+  const name = identity?.name ?? "ScalDive customer";
 
   const { data: created, error: insertError } = await client
     .from("profiles")

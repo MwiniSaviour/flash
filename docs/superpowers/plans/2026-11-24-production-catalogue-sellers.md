@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace Flash's fixture-backed demo with a database-backed, seller-owned product catalogue whose images are compressed and stored in Cloudinary.
+**Goal:** Replace ScalDive's fixture-backed demo with a database-backed, seller-owned product catalogue whose images are compressed and stored in Cloudinary.
 
 **Architecture:** Postgres/Migrations remain the source of truth. Clerk is the identity provider; a `sellers` table maps Clerk user ids to product owners, and the existing console's `DataTable`/`RecordDrawer` become seller-scoped CRUD. Repository and actions lose all no-database branches. A single server action owns image uploads; a one-time script moves the current catalogue into Cloudinary and rewrites URLs before local files are deleted.
 
@@ -23,7 +23,7 @@
 
 ## Review Focus
 
-1. **Missing credentials at boot** — a deployment with no DB/Clerk/Cloudinary must fail loudly. Test: `src/lib/env.test.ts`, `assertProductionEnv()` throws the exact "Flash is not configured" message when any key is absent.
+1. **Missing credentials at boot** — a deployment with no DB/Clerk/Cloudinary must fail loudly. Test: `src/lib/env.test.ts`, `assertProductionEnv()` throws the exact "ScalDive is not configured" message when any key is absent.
 2. **Cross-seller write by direct id** — a seller must not edit another seller's row even by guessing an id. Test: `src/lib/flash/ownership.test.ts`, `assertSellerOwns()` rejects a mismatched id and returns void for a match.
 3. **Uploaded bytes vs declared MIME** — an 8 MB+ or mislabelled file must be rejected before any provider call. Test: `src/lib/media/actions.test.ts`, existing `validateImageUpload` rules and no `uploadImage()` call on failure.
 4. **Image removal before URL backfill** — no local file is deleted while any row still points at `/assets/images/`. Test: `scripts/check-media-migration.mjs` exits non-zero when a remote URL is missing.
@@ -39,7 +39,7 @@
 
 **Interfaces:**
 - Consumes: existing `getEnv()`, `hasSupabaseAdminEnv()`, `hasCloudinaryEnv()`.
-- Produces: `assertProductionEnv(): void` — throws `Error("Flash is not configured: <missing keys>")` listing every absent key from `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
+- Produces: `assertProductionEnv(): void` — throws `Error("ScalDive is not configured: <missing keys>")` listing every absent key from `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
 
 - [ ] **Step 1: Write the failing test in `src/lib/env.test.ts`**
 

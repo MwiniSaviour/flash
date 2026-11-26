@@ -9,7 +9,7 @@ import type { ImageAsset } from "@/lib/flash/types";
  * One tile in the home "Up Next" rail.
  *
  * The reference app's programme tile — artwork, the name, when it starts and
- * who is behind it. Flash keeps that shape and fills it with what is next
+ * who is behind it. ScalDive keeps that shape and fills it with what is next
  * across the three services: the next show, the next ride, the next meal and
  * the next ticket.
  *

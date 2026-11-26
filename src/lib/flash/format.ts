@@ -1,4 +1,4 @@
-/** Date, time and money helpers shared across Flash's screens. */
+/** Date, time and money helpers shared across ScalDive's screens. */
 
 const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
@@ -44,7 +44,7 @@ export function clock(value: string) {
   return `${display}:${minute} ${suffix}`;
 }
 
-/** Whole cedis, GHC-prefixed — Flash never shows decimals. */
+/** Whole cedis, GHC-prefixed — ScalDive never shows decimals. */
 export function cedis(amount: number) {
   return `GHC${amount}`;
 }

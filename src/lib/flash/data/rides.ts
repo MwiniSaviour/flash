@@ -5,7 +5,7 @@
  * the transport Accra actually moves on — the keke (pragya), the goods-carrying
  * tricycle for short hops, the trotro between neighbourhoods, a hired taxi and
  * the private premium ride — priced in whole cedis like every other surface in
- * Flash.
+ * ScalDive.
  */
 
 import type { Driver, RideClass, RideQuote } from "@/lib/flash/types";
@@ -50,7 +50,7 @@ export const rideClasses: RideClass[] = [
 ];
 
 /**
- * The biggest party Flash can carry in one ride — the classes top out at six
+ * The biggest party ScalDive can carry in one ride — the classes top out at six
  * seats, so the party size on the Ride screen stops there.
  */
 export const MAX_PASSENGERS = 6;

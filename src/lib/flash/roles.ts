@@ -1,4 +1,4 @@
-/** Flash account roles, stored in Clerk public metadata as `role`. */
+/** ScalDive account roles, stored in Clerk public metadata as `role`. */
 export const USER_ROLES = ["admin", "business_owner", "customer"] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];

@@ -18,7 +18,7 @@ export default async function NotificationsPage() {
     <>
       <ProfilePageHeader
         title="Notifications"
-        subtitle="Things that need your attention across Flash."
+        subtitle="Things that need your attention across ScalDive."
       />
       <NotificationPreference enabled={user.notificationsEnabled} />
       <div className="mt-3">

@@ -7,13 +7,13 @@ import type { CreateDispatchJobInput, DispatchJobDTO } from "./types";
 /**
  * The server-only dispatch client.
  *
- * Flash never holds a customer's dispatch credential in the browser. The key
+ * ScalDive never holds a customer's dispatch credential in the browser. The key
  * authenticates the product (the engine maps it to an app id), and the app id is
  * sent alongside it so a mistake is visible instead of silently landing in the
  * wrong tenant. Native fetch keeps the dependency list unchanged.
  */
 
-/** True only when Flash can authenticate to the engine. */
+/** True only when ScalDive can authenticate to the engine. */
 export function dispatchConfigured(): boolean {
   const env = getEnv();
   return Boolean(env.dispatchBaseUrl && env.dispatchApiKey && env.dispatchAppId);

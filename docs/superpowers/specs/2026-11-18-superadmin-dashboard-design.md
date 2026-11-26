@@ -5,11 +5,11 @@ Status: approved for implementation
 
 ## Goal
 
-Give Flash a production superadmin surface at `/admin` that monitors platform
+Give ScalDive a production superadmin surface at `/admin` that monitors platform
 activity across customers, businesses, orders, tickets, rides, parcels,
 payments and payouts. The screen takes its anatomy from the supplied admin
 reference — grouped sidebar, sticky top bar, KPI grid, chart panel, activity
-column — in Flash's warm-paper design system, with no dark theme and no demo
+column — in ScalDive's warm-paper design system, with no dark theme and no demo
 labelling.
 
 Out of scope: cloning the reference repository, a driver console, chat/email,
@@ -20,9 +20,9 @@ marketing/analytics pages from the template, and a charting dependency.
 - **Build, do not clone.** `NextAdminHQ/nextjs-admin-dashboard` has no OSS
   license (its license page permits only paid tiers and excludes SaaS
   end-products without an Extended license), 31 runtime dependencies, a
-  Tailgrids token vocabulary that collides with Flash's, hard-coded indigo and
+  Tailgrids token vocabulary that collides with ScalDive's, hard-coded indigo and
   dark-mode CSS, and widgets bound to mock APIs. It is read-only reference for
-  layout patterns. Everything shipped is built from Flash primitives.
+  layout patterns. Everything shipped is built from ScalDive primitives.
 - **No demo bypass.** Every admin page and every admin read is gated on the
   server by `requireAdmin()`. The authoritative check is the Clerk identity's
   `publicMetadata.role === "admin"`; when Supabase is connected,
@@ -40,7 +40,7 @@ marketing/analytics pages from the template, and a charting dependency.
   parcels are whole cedis. Rides and parcels are *booked* value, not collected
   revenue. Where no rows exist the figure is zero and the table is empty —
   no invented money, charts, presence or activity.
-- **Flash tokens only.** Paper ground, white cards, hairline borders, one
+- **ScalDive tokens only.** Paper ground, white cards, hairline borders, one
   orange signal, one typeface. Status always carries an icon and a word.
   The chart is drawn with SVG from real aggregates — no chart library.
 

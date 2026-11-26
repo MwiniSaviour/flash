@@ -18,7 +18,7 @@ export function TopBar({ user }: { user: FlashUser }) {
         <input
           type="search"
           name="q"
-          placeholder="Search Flash"
+          placeholder="Search ScalDive"
           aria-label="Search events, venues, kitchens and rides"
           className="w-full bg-transparent text-[13.5px] text-ink placeholder:text-muted focus:outline-none"
         />

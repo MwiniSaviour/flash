@@ -101,7 +101,7 @@ export interface SocialLink {
 }
 
 /**
- * Prototype Radio (mobile) domain types.
+ * ScalDive (mobile) domain types.
  *
  * The Capacitor app in apps/mobile reads these through the same content layer
  * the website uses, so the CMS stays the single source of truth for the seeded
